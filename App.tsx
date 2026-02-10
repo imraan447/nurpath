@@ -31,10 +31,9 @@ const App: React.FC = () => {
     const saved = localStorage.getItem('nurpath_user');
     if (saved) {
       try {
-        const parsed = JSON.parse(saved);
-        setUser(parsed);
+        setUser(JSON.parse(saved));
       } catch (e) {
-        console.error("Failed to parse user data", e);
+        console.error("Auth error", e);
       }
     }
   }, []);
@@ -46,12 +45,19 @@ const App: React.FC = () => {
 
   const handleQuestSelect = (q: Quest) => {
     if (!user || q.isGreyed) return;
-    const isAlreadyActive = user.activeQuests.includes(q.id);
-    if (isAlreadyActive) {
+    if (user.activeQuests.includes(q.id)) {
       setActiveTab('active');
     } else {
       setConfirmQuest(q);
     }
+  };
+
+  const addAllSalah = () => {
+    if (!user) return;
+    const coreIds = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+    const updated = { ...user, activeQuests: [...new Set([...user.activeQuests, ...coreIds])] };
+    saveUser(updated);
+    setActiveTab('active');
   };
 
   const addToActive = () => {
@@ -82,63 +88,26 @@ const App: React.FC = () => {
   const handleDownloadProject = async () => {
     setIsExporting(true);
     const zip = new JSZip();
-
+    const files = ['index.html', 'index.tsx', 'App.tsx', 'types.ts', 'constants.ts', 'metadata.json', 'package.json', 'vite.config.ts', 'tsconfig.json', 'services/geminiService.ts', 'components/QuestCard.tsx', 'components/ReflectionFeed.tsx'];
     try {
-      // List of EVERY file in the project based on your repo structure
-      const projectFiles = [
-        'index.html',
-        'index.tsx',
-        'App.tsx',
-        'types.ts',
-        'constants.ts',
-        'metadata.json',
-        'package.json',
-        'vite.config.ts',
-        'tsconfig.json',
-        'services/geminiService.ts',
-        'components/QuestCard.tsx',
-        'components/ReflectionFeed.tsx'
-      ];
-
-      // Fetch each file content. 
-      // Note: We use relative paths. For index.html specifically, we fetch from root.
-      for (const filePath of projectFiles) {
-        try {
-          const res = await fetch(`/${filePath}`);
-          if (res.ok) {
-            const content = await res.text();
-            zip.file(filePath, content);
-          } else if (filePath === 'index.html') {
-             // Fallback for index.html if fetch('/') fails
-             const resAlt = await fetch('/index.html');
-             if (resAlt.ok) zip.file('index.html', await resAlt.text());
-          }
-        } catch (e) {
-          console.warn(`Skipping ${filePath} due to fetch error:`, e);
-        }
+      for (const f of files) {
+        const r = await fetch(`/${f}`);
+        if (r.ok) zip.file(f, await r.text());
       }
-
-      const blob = await zip.generateAsync({ type: 'blob' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'nurpath_full_source.zip';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("Export failed", err);
-      alert("Export failed. Please try again.");
+      const b = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(b);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'nurpath_source.zip';
+      a.click();
+    } catch (e) {
+      console.error(e);
     } finally {
       setIsExporting(false);
     }
   };
 
   if (!user) return <AuthScreen onLogin={saveUser} />;
-
-  const sunnahQuests = ALL_QUESTS.filter(q => q.category === QuestCategory.SUNNAH).slice(0, 12);
-  const sideQuests = ALL_QUESTS.filter(q => q.category === QuestCategory.CHARITY || ['hug_loved_one', 'reflect_universe', 'call_relative', 'remove_road_obstacle', 'forgive_grudge'].includes(q.id));
 
   return (
     <div className="max-w-md mx-auto h-screen bg-[#fdfbf7] overflow-hidden flex flex-col relative border-x border-slate-100 shadow-2xl">
@@ -157,7 +126,7 @@ const App: React.FC = () => {
         </header>
       )}
 
-      <main className={`flex-1 overflow-y-auto ${activeTab === 'reflect' ? '' : 'pb-32 px-6'} transition-all scrollbar-hide`}>
+      <main className={`flex-1 overflow-y-auto scrollbar-hide ${activeTab === 'reflect' ? '' : 'pb-32 px-6'}`}>
         {activeTab === 'collect' && (
           <div className="space-y-10 py-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="space-y-2">
@@ -168,7 +137,12 @@ const App: React.FC = () => {
             </div>
 
             <section className="space-y-4">
-              <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Core Foundations</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Core Foundations</h2>
+                <button onClick={addAllSalah} className="text-[9px] font-black text-[#064e3b] uppercase tracking-widest bg-[#064e3b]/5 px-4 py-1.5 rounded-full flex items-center gap-2 border border-[#064e3b]/10 hover:bg-[#064e3b]/10 transition-all">
+                  <Plus size={12} /> Add All Salah
+                </button>
+              </div>
               <div className="grid grid-cols-1 gap-4">
                 {ALL_QUESTS.filter(q => q.category === QuestCategory.MAIN).map(q => (
                   <QuestCard key={q.id} quest={q} onAction={handleQuestSelect} />
@@ -181,7 +155,7 @@ const App: React.FC = () => {
                <h3 className="text-xl font-bold mb-2">Sunnah Deeds</h3>
                <p className="text-white/60 text-[10px] mb-8 uppercase tracking-widest">Following the Messenger (PBUH).</p>
                <div className="grid grid-cols-2 gap-3">
-                 {sunnahQuests.map(q => (
+                 {ALL_QUESTS.filter(q => q.category === QuestCategory.SUNNAH).slice(0, 10).map(q => (
                    <button key={q.id} onClick={() => handleQuestSelect(q)} className={`p-4 rounded-3xl text-left border-2 transition-all active:scale-95 ${user.activeQuests.includes(q.id) ? 'bg-[#d4af37] border-transparent text-white shadow-lg' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}>
                      <div className="font-bold text-[11px] mb-1 line-clamp-1">{q.title}</div>
                      <div className="text-[9px] opacity-50">+{q.xp} XP</div>
@@ -191,12 +165,9 @@ const App: React.FC = () => {
             </section>
 
             <section className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Side Quests</h2>
-                <Heart size={14} className="text-rose-400 fill-rose-400" />
-              </div>
+              <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Community & Charity</h2>
               <div className="grid grid-cols-1 gap-4">
-                {sideQuests.map(q => (
+                {ALL_QUESTS.filter(q => q.category === QuestCategory.CHARITY).map(q => (
                   <QuestCard key={q.id} quest={q} onAction={handleQuestSelect} />
                 ))}
               </div>
@@ -207,7 +178,7 @@ const App: React.FC = () => {
                   <AlertCircle size={20} className="text-rose-500" />
                   <h3 className="text-lg font-bold tracking-tight">Path Correction</h3>
                </div>
-               <p className="text-xs text-slate-500 leading-relaxed">If you slipped today, use these deeds to find your way back.</p>
+               <p className="text-xs text-slate-500">Restore your state through these deeds of repentance.</p>
                <div className="grid grid-cols-2 gap-2">
                   {Object.keys(CORRECTION_QUESTS).map(type => (
                     <button key={type} onClick={() => handleCorrection(type)} className="py-4 px-4 bg-slate-50 border border-slate-100 rounded-2xl text-[9px] font-black text-slate-600 uppercase tracking-widest hover:bg-slate-100 transition-all flex items-center justify-between">
@@ -226,7 +197,7 @@ const App: React.FC = () => {
                <div className="w-16 h-16 bg-[#064e3b] rounded-[22px] flex items-center justify-center text-white shadow-xl"><Target size={30} /></div>
                <div>
                  <h2 className="text-2xl font-bold tracking-tight text-slate-900">Active Path</h2>
-                 <p className="text-[10px] text-[#d4af37] font-black uppercase tracking-widest">Ongoing Commitments</p>
+                 <p className="text-[10px] text-[#d4af37] font-black uppercase tracking-widest">Your Current Focus</p>
                </div>
             </div>
             {user.activeQuests.length === 0 ? (
@@ -256,31 +227,24 @@ const App: React.FC = () => {
       </nav>
 
       {showProfile && (
-        <div className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm flex justify-end" onClick={() => setShowProfile(false)}>
-           <div className="w-4/5 bg-[#fdfbf7] h-full p-10 animate-in slide-in-from-right duration-500 shadow-3xl flex flex-col overflow-y-auto scrollbar-hide" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex justify-end" onClick={() => setShowProfile(false)}>
+           <div className="w-4/5 bg-[#fdfbf7] h-full p-10 animate-in slide-in-from-right duration-500 shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
               <div className="w-20 h-20 bg-[#064e3b] rounded-[24px] minaret-shape mb-8 flex items-center justify-center text-white text-3xl font-black border-2 border-[#d4af37]/30">{user.name[0]}</div>
               <h2 className="text-3xl font-bold text-slate-900">{user.name}</h2>
               <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-2 mb-12">{user.email}</p>
               
               <div className="space-y-4 mb-12">
                 <div className="bg-white p-6 rounded-[30px] border border-slate-100 flex justify-between items-center shadow-sm">
-                  <div className="text-[10px] font-black uppercase text-slate-400">Total XP</div>
+                  <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest">XP Points</div>
                   <div className="text-xl font-black text-[#064e3b]">{user.xp}</div>
                 </div>
               </div>
 
               <div className="flex-1 space-y-6">
-                <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Developer Utilities</h4>
-                <button 
-                  onClick={handleDownloadProject} 
-                  disabled={isExporting}
-                  className="flex items-center justify-between text-[#064e3b] font-black text-[10px] uppercase tracking-widest p-6 bg-[#064e3b]/5 border-2 border-[#064e3b]/10 rounded-[25px] w-full active:scale-95 transition-all disabled:opacity-50"
-                >
-                  {isExporting ? 'Bundling Source...' : 'Download Full Source'}
+                <button onClick={handleDownloadProject} disabled={isExporting} className="flex items-center justify-between text-[#064e3b] font-black text-[10px] uppercase tracking-widest p-6 bg-[#064e3b]/5 border-2 border-[#064e3b]/10 rounded-[25px] w-full active:scale-95 transition-all">
+                  {isExporting ? 'Bundling...' : 'Download Source'}
                   {isExporting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
                 </button>
-
-                <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-widest pt-6">Account Settings</h4>
                 <button onClick={() => { localStorage.clear(); window.location.reload(); }} className="flex items-center justify-between text-rose-500 font-bold text-xs p-6 bg-rose-50 rounded-[25px] w-full active:scale-95 transition-all">
                   Sign Out <LogOut size={16} />
                 </button>
@@ -290,10 +254,10 @@ const App: React.FC = () => {
       )}
 
       {confirmQuest && (
-        <div className="fixed inset-0 z-[300] bg-black/60 backdrop-blur-md flex items-center justify-center p-8">
+        <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-md flex items-center justify-center p-8">
           <div className="bg-white w-full rounded-[40px] p-8 text-center space-y-6 animate-in zoom-in-95">
-            <h3 className="text-xl font-bold">Add to Active?</h3>
-            <p className="text-sm text-slate-500 leading-relaxed">Commit to: <br/><strong>{confirmQuest.title}</strong></p>
+            <h3 className="text-xl font-bold">New Commitment</h3>
+            <p className="text-sm text-slate-500">Will you commit to <strong>{confirmQuest.title}</strong> today?</p>
             <div className="flex gap-3 pt-4">
               <button onClick={() => setConfirmQuest(null)} className="flex-1 py-4 bg-slate-50 text-slate-400 font-bold rounded-2xl">Cancel</button>
               <button onClick={addToActive} className="flex-1 py-4 bg-[#064e3b] text-white font-bold rounded-2xl shadow-lg">Commit</button>
@@ -318,9 +282,9 @@ const AuthScreen = ({onLogin}) => {
 
   if (step === 'verify') return (
     <div className="max-w-md mx-auto h-screen bg-[#fdfbf7] flex flex-col items-center justify-center p-12 text-center">
-      <h2 className="text-3xl font-bold mb-4">Verify Identity</h2>
-      <p className="text-slate-400 text-sm mb-12">A code was sent to {data.email}</p>
-      <button onClick={() => onLogin({...data, xp:0, activeQuests:[], isVerified:true, location:'Earth'})} className="w-full py-5 bg-[#064e3b] text-white rounded-3xl font-bold text-lg shadow-2xl">Verify (Use 123456)</button>
+      <h2 className="text-3xl font-bold mb-4">Verification</h2>
+      <p className="text-slate-400 text-sm mb-12">A gateway link has been sent to your email.</p>
+      <button onClick={() => onLogin({...data, xp:0, activeQuests:[], isVerified:true, location:'Earth'})} className="w-full py-5 bg-[#064e3b] text-white rounded-3xl font-bold text-lg shadow-2xl uppercase tracking-widest">Enter Path</button>
     </div>
   );
 
@@ -330,11 +294,11 @@ const AuthScreen = ({onLogin}) => {
          <Star size={40} className="fill-[#d4af37] text-[#d4af37]" />
       </div>
       <h1 className="text-6xl font-black text-[#064e3b] mb-4 tracking-tighter">NurPath</h1>
-      <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.6em] mb-16 text-center">Spiritual Growth Reimagined</p>
+      <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.6em] mb-16 text-center">Spiritual Mastery Reimagined</p>
       <form className="w-full space-y-4 z-10" onSubmit={e => {e.preventDefault(); setStep('verify')}}>
-        <input required placeholder="Full Name" className="w-full p-6 rounded-[30px] border-2 border-slate-100 outline-none focus:border-[#064e3b] transition-colors" onChange={e => setData({...data, name: e.target.value})} />
-        <input required type="email" placeholder="Email Address" className="w-full p-6 rounded-[30px] border-2 border-slate-100 outline-none focus:border-[#064e3b] transition-colors" onChange={e => setData({...data, email: e.target.value})} />
-        <button type="submit" className="w-full py-7 bg-[#064e3b] text-white rounded-[30px] font-black text-xl shadow-2xl">Begin Journey</button>
+        <input required placeholder="Name" className="w-full p-6 rounded-[30px] border-2 border-slate-100 outline-none focus:border-[#064e3b] transition-colors" onChange={e => setData({...data, name: e.target.value})} />
+        <input required type="email" placeholder="Email" className="w-full p-6 rounded-[30px] border-2 border-slate-100 outline-none focus:border-[#064e3b] transition-colors" onChange={e => setData({...data, email: e.target.value})} />
+        <button type="submit" className="w-full py-7 bg-[#064e3b] text-white rounded-[30px] font-black text-xl shadow-2xl uppercase tracking-widest mt-4">Begin Journey</button>
       </form>
     </div>
   );
