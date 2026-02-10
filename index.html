@@ -6,9 +6,11 @@
     <title>NurPath</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --oasis-gold: #d4af37; --midnight-teal: #064e3b; --ivory: #fdfbf7; }
+        body { background-color: var(--ivory); font-family: 'Plus Jakarta Sans', sans-serif; }
+        .minaret-shape { clip-path: polygon(50% 0%, 100% 20%, 100% 100%, 0 100%, 0 20%); }
+    </style>
 </head>
-<body>
-    <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
-</body>
+<body><div id="root"></div><script type="module" src="index.tsx"></script></body>
 </html>
