@@ -1,31 +1,41 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
-/**
- * Generates spiritual reflections using the latest SDK standards.
- */
-export async function generateReflections(count: number = 3): Promise<any[]> {
+export async function generateReflections(count: number = 5): Promise<any[]> {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-lite-latest',
-      contents: `Generate ${count} profound reflective items for "NurPath". 
-      Include types like 'verse', 'hadith', 'nature', 'animal'. 
-      'details' must be an extensive article of 500+ words per item.
+      model: 'gemini-3-flash-preview',
+      contents: `Generate ${count} highly profound Islamic spiritual reflections. 
+      The 'details' field MUST be a deep, long-form masterwork essay of at least 1200 words.
+      Varied types: 
+      - 'verse' (Exegesis of a Quranic sign)
+      - 'hadith' (Spiritual wisdom from the Prophet PBUH)
+      - 'nature' (The vastness of the cosmos, quantum world, or deep sea wonders as signs of Allah)
+      - 'animal' (Intelligent design in the biological behavior or anatomy of specific animals)
+      - 'question' (Self-reflection prompts for the soul: family gratitude, purpose, legacy)
+      
+      STRICTLY EXCLUDE: Human architecture, buildings, or man-made objects. Focus purely on Divine design and the human heart.
+      
       Return JSON ONLY.`,
       config: {
+        systemInstruction: `You are a world-class Islamic sage and scientist. 
+        Your writing must induce 'Khashya' (awe) and 'Tadabbur' (deep contemplation). 
+        For nature and animal types, use sophisticated scientific terminology to demonstrate the complexity of creation.
+        For question types, write an incredibly touching and deep guide for the user to reflect on their own life and relationships.
+        'praise' must be one of: Subhanallah, Alhamdulillah, Allahu Akbar, MashaAllah.`,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.ARRAY,
           items: {
             type: Type.OBJECT,
             properties: {
-              type: { type: Type.STRING },
-              content: { type: Type.STRING },
-              source: { type: Type.STRING },
+              type: { type: Type.STRING, description: 'verse, hadith, nature, animal, question' },
+              content: { type: Type.STRING, description: 'Short captivating title' },
+              source: { type: Type.STRING, description: 'Citation if applicable' },
               praise: { type: Type.STRING },
-              details: { type: Type.STRING },
-              mediaUrl: { type: Type.STRING }
+              details: { type: Type.STRING, description: 'A massive, 1200+ word spiritual essay' },
+              mediaUrl: { type: Type.STRING, description: 'Keywords for background (galaxy, deep ocean, microscopic cell, nebula, forest, desert night)' }
             },
             required: ['type', 'content', 'praise', 'details']
           }
@@ -33,7 +43,7 @@ export async function generateReflections(count: number = 3): Promise<any[]> {
       }
     });
 
-    const text = response.text; // Access .text property, not .text() method
+    const text = response.text;
     if (!text) return [];
     
     const results = JSON.parse(text);
@@ -48,9 +58,6 @@ export async function generateReflections(count: number = 3): Promise<any[]> {
   }
 }
 
-/**
- * Maps grounding implementation.
- */
 export async function findNearbyPlace(query: string, latitude: number, longitude: number): Promise<{text: string, distance?: string}> {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   try {
@@ -66,12 +73,10 @@ export async function findNearbyPlace(query: string, latitude: number, longitude
         }
       },
     });
-
     const text = response.text || "No information found.";
     const kmMatch = text.match(/(\d+(\.\d+)?)\s*km/i);
     return { text, distance: kmMatch ? kmMatch[0] : undefined };
   } catch (error) {
-    console.error("Maps Error:", error);
     return { text: "Location services unavailable." };
   }
 }
