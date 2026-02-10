@@ -1,4 +1,43 @@
-export enum QuestCategory { MAIN = 'Main Quest', SUNNAH = 'Sunnah Quest', CORRECTION = 'Correction Quest', CHARITY = 'Charity Quest' }
-export interface Quest { id: string; title: string; description: string; category: QuestCategory; xp: number; isGreyed?: boolean; locationType?: 'mosque' | 'charity' | 'soup_kitchen' | 'community' | null; }
-export interface User { name: string; email: string; xp: number; activeQuests: string[]; location: string; isVerified: boolean; }
-export interface ReflectionItem { id: string; type: string; content: string; source?: string; praise: string; details?: string; mediaUrl?: string; }
+
+export enum QuestCategory {
+  MAIN = 'Main Quest',
+  SUNNAH = 'Sunnah Quest',
+  CORRECTION = 'Correction Quest',
+  CHARITY = 'Charity Quest'
+}
+
+export interface Quest {
+  id: string;
+  title: string;
+  description: string;
+  category: QuestCategory;
+  xp: number;
+  isGreyed?: boolean;
+  disclaimer?: string;
+  locationType?: 'mosque' | 'charity' | 'soup_kitchen' | 'community' | null;
+  completed?: boolean;
+}
+
+export interface User {
+  name: string;
+  email: string;
+  location: string;
+  xp: number;
+  isVerified: boolean;
+  activeQuests: string[];
+}
+
+export interface ReflectionItem {
+  id: string;
+  type: 'hadith' | 'verse' | 'nature' | 'animal' | 'wonder' | 'story' | 'quote' | 'question';
+  content: string;
+  source?: string;
+  mediaUrl?: string;
+  praise: 'Subhanallah' | 'Alhamdulillah' | 'Allahu Akbar' | 'MashaAllah';
+  details?: string;
+}
+
+export interface XPRecord {
+  date: string;
+  xp: number;
+}
