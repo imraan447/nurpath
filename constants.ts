@@ -46,11 +46,19 @@ export const CORRECTION_QUESTS: Record<string, Quest[]> = {
 
 export const SEED_REFLECTIONS: ReflectionItem[] = [
   {
-    id: 'seed-1',
-    type: 'verse',
-    content: "And He is with you wherever you are.",
-    source: "Quran 57:4",
-    praise: "Subhanallah",
-    details: `This verse serves as a profound reminder of Allah's omnipresence and infinite knowledge...`
+    id: 'intro-blessing',
+    type: 'question',
+    content: "The Fragility of Every Breath",
+    praise: "Alhamdulillah",
+    mediaUrl: "https://images.unsplash.com/photo-1516627145497-ae6968895b74?q=80&w=2070&auto=format&fit=crop",
+    details: `Take a deep, slow breath. Feel the coolness of the air as it enters your lungs. This single breath is a gift that millions this very second are struggling to take. 
+
+If your parents are still alive, know that your time with them is a rapidly diminishing treasure. One day, you would give the entire world just to hear their voice one more time, to see their smile, or to apologize for a moment of impatience. Do not wait for that day. 
+
+Think of your spouse, your siblings, your children. They are the souls Allah chose to walk alongside you in this brief journey. Your health, your ability to see these words, the fact that you woke up today—these are not 'defaults' of life. They are active, continuous favors from the Almighty. 
+
+Allah says: "And if you should count the favors of Allah, you could not enumerate them" (16:18). We often worry about what we lack, forgetting that we are currently living in the middle of prayers that have already been answered. 
+
+Close your eyes. Visualize your loved ones. Feel the warmth in your heart. You are alive. You are chosen. You are loved by the Most Merciful. Let your heart truly say: Alhamdulillah.`
   }
 ];
