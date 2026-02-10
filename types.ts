@@ -1,4 +1,3 @@
-
 export enum QuestCategory {
   MAIN = 'Main Quest',
   SUNNAH = 'Sunnah Quest',
@@ -18,6 +17,12 @@ export interface Quest {
   completed?: boolean;
 }
 
+export interface UserSettings {
+  darkMode: boolean;
+  notifications: boolean;
+  fontSize: 'small' | 'medium' | 'large';
+}
+
 export interface User {
   name: string;
   email: string;
@@ -25,6 +30,7 @@ export interface User {
   xp: number;
   isVerified: boolean;
   activeQuests: string[];
+  settings?: UserSettings;
 }
 
 export interface ReflectionItem {
