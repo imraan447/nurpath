@@ -84,31 +84,37 @@ const App: React.FC = () => {
     const zip = new JSZip();
 
     try {
-      // THE COMPLETE PROJECT EXPORT
-      const filesToInclude = [
-        { path: 'index.html', fetchPath: '/' },
-        { path: 'index.tsx', fetchPath: '/index.tsx' },
-        { path: 'App.tsx', fetchPath: '/App.tsx' },
-        { path: 'types.ts', fetchPath: '/types.ts' },
-        { path: 'constants.ts', fetchPath: '/constants.ts' },
-        { path: 'metadata.json', fetchPath: '/metadata.json' },
-        { path: 'package.json', fetchPath: '/package.json' },
-        { path: 'vite.config.ts', fetchPath: '/vite.config.ts' },
-        { path: 'tsconfig.json', fetchPath: '/tsconfig.json' },
-        { path: 'services/geminiService.ts', fetchPath: '/services/geminiService.ts' },
-        { path: 'components/QuestCard.tsx', fetchPath: '/components/QuestCard.tsx' },
-        { path: 'components/ReflectionFeed.tsx', fetchPath: '/components/ReflectionFeed.tsx' }
+      // List of EVERY file in the project based on your repo structure
+      const projectFiles = [
+        'index.html',
+        'index.tsx',
+        'App.tsx',
+        'types.ts',
+        'constants.ts',
+        'metadata.json',
+        'package.json',
+        'vite.config.ts',
+        'tsconfig.json',
+        'services/geminiService.ts',
+        'components/QuestCard.tsx',
+        'components/ReflectionFeed.tsx'
       ];
 
-      for (const file of filesToInclude) {
+      // Fetch each file content. 
+      // Note: We use relative paths. For index.html specifically, we fetch from root.
+      for (const filePath of projectFiles) {
         try {
-          const res = await fetch(file.fetchPath);
+          const res = await fetch(`/${filePath}`);
           if (res.ok) {
             const content = await res.text();
-            zip.file(file.path, content);
+            zip.file(filePath, content);
+          } else if (filePath === 'index.html') {
+             // Fallback for index.html if fetch('/') fails
+             const resAlt = await fetch('/index.html');
+             if (resAlt.ok) zip.file('index.html', await resAlt.text());
           }
         } catch (e) {
-          console.warn(`Could not bundle ${file.path}`, e);
+          console.warn(`Skipping ${filePath} due to fetch error:`, e);
         }
       }
 
@@ -123,6 +129,7 @@ const App: React.FC = () => {
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Export failed", err);
+      alert("Export failed. Please try again.");
     } finally {
       setIsExporting(false);
     }
@@ -130,8 +137,8 @@ const App: React.FC = () => {
 
   if (!user) return <AuthScreen onLogin={saveUser} />;
 
-  const sunnahQuests = ALL_QUESTS.filter(q => q.category === QuestCategory.SUNNAH).slice(0, 10);
-  const sideQuests = ALL_QUESTS.filter(q => q.category === QuestCategory.CHARITY || q.id === 'reflect_universe' || q.id === 'hug_loved_one' || q.id === 'forgive_grudge');
+  const sunnahQuests = ALL_QUESTS.filter(q => q.category === QuestCategory.SUNNAH).slice(0, 12);
+  const sideQuests = ALL_QUESTS.filter(q => q.category === QuestCategory.CHARITY || ['hug_loved_one', 'reflect_universe', 'call_relative', 'remove_road_obstacle', 'forgive_grudge'].includes(q.id));
 
   return (
     <div className="max-w-md mx-auto h-screen bg-[#fdfbf7] overflow-hidden flex flex-col relative border-x border-slate-100 shadow-2xl">
