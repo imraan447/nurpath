@@ -32,13 +32,13 @@ export const ALL_QUESTS: Quest[] = [
   { id: 'clothes_poor', title: 'Give Clothes to Poor', description: 'Share your blessings with those in need', category: QuestCategory.CHARITY, xp: 250, locationType: 'charity' },
   { id: 'food_needy', title: 'Feed the Needy', description: 'No one should go hungry in your community', category: QuestCategory.CHARITY, xp: 200, locationType: 'soup_kitchen' },
   { id: 'hug_loved_one', title: 'Hug a Loved One', description: 'Spread warmth and mercy in your own home', category: QuestCategory.SUNNAH, xp: 50 },
-  { id: 'reflect_universe', title: 'Universe Reflection', description: 'Contemplate the vastness of creation and your unique existence', category: QuestCategory.SUNNAH, xp: 100 },
+  { id: 'reflect_universe', title: 'Universe Reflection', description: 'Contemplate the vastness of creation and your unique existence against such high odds', category: QuestCategory.SUNNAH, xp: 100 },
   { id: 'call_relative', title: 'Call a Relative', description: 'Maintaining the ties of kinship', category: QuestCategory.SUNNAH, xp: 120 },
   { id: 'remove_road_obstacle', title: 'Clear the Path', description: 'Remove something harmful from the road', category: QuestCategory.SUNNAH, xp: 80 },
   { id: 'water_thirsty_plant', title: 'Water a Thirsty Plant', description: 'Mercy to creation is mercy from the Creator', category: QuestCategory.CHARITY, xp: 40 },
   { id: 'feed_stray_animal', title: 'Feed a Stray Animal', description: 'Kindness to animals is an act of charity', category: QuestCategory.CHARITY, xp: 90 },
-  { id: 'help_neighbor_groceries', title: 'Help a Neighbor', description: 'Assist someone in your building or street', category: QuestCategory.CHARITY, xp: 150 },
-  { id: 'tidy_public_space', title: 'Tidy Public Space', description: 'Pick up litter in your local park or street', category: QuestCategory.CHARITY, xp: 110 },
+  { id: 'help_neighbor_groceries', title: 'Help a Neighbor', description: 'Assist someone in your building or street with their tasks', category: QuestCategory.CHARITY, xp: 150 },
+  { id: 'tidy_public_space', title: 'Tidy Public Space', description: 'Pick up litter in your local park or street to benefit the community', category: QuestCategory.CHARITY, xp: 110 },
   { id: 'forgive_grudge', title: 'Release a Grudge', description: 'Forgive someone who hurt you today for the sake of Allah', category: QuestCategory.SUNNAH, xp: 300 },
 ];
 

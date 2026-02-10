@@ -84,33 +84,31 @@ const App: React.FC = () => {
     const zip = new JSZip();
 
     try {
-      // THE COMPLETE PROJECT EXPORT - ALL FILES INCLUDED
-      zip.file('index.html', document.documentElement.outerHTML);
-      zip.file('package.json', JSON.stringify({
-        "name": "nurpath", "private": true, "version": "0.1.0", "type": "module",
-        "scripts": { "dev": "vite", "build": "vite build", "preview": "vite preview" },
-        "dependencies": { "@google/genai": "^1.40.0", "lucide-react": "^0.460.0", "react": "^19.0.0", "react-dom": "^19.0.0", "jszip": "^3.10.1" },
-        "devDependencies": { "@types/react": "^19.0.0", "@types/react-dom": "^19.0.0", "@vitejs/plugin-react": "^4.3.4", "typescript": "^5.7.2", "vite": "^6.0.3" }
-      }, null, 2));
-
-      // We explicitly fetch and bundle the current application source files
+      // THE COMPLETE PROJECT EXPORT
       const filesToInclude = [
-        'index.tsx', 'App.tsx', 'types.ts', 'constants.ts', 
-        'metadata.json', 'tsconfig.json', 'vite.config.ts',
-        'services/geminiService.ts', 
-        'components/QuestCard.tsx', 
-        'components/ReflectionFeed.tsx'
+        { path: 'index.html', fetchPath: '/' },
+        { path: 'index.tsx', fetchPath: '/index.tsx' },
+        { path: 'App.tsx', fetchPath: '/App.tsx' },
+        { path: 'types.ts', fetchPath: '/types.ts' },
+        { path: 'constants.ts', fetchPath: '/constants.ts' },
+        { path: 'metadata.json', fetchPath: '/metadata.json' },
+        { path: 'package.json', fetchPath: '/package.json' },
+        { path: 'vite.config.ts', fetchPath: '/vite.config.ts' },
+        { path: 'tsconfig.json', fetchPath: '/tsconfig.json' },
+        { path: 'services/geminiService.ts', fetchPath: '/services/geminiService.ts' },
+        { path: 'components/QuestCard.tsx', fetchPath: '/components/QuestCard.tsx' },
+        { path: 'components/ReflectionFeed.tsx', fetchPath: '/components/ReflectionFeed.tsx' }
       ];
 
-      for (const filePath of filesToInclude) {
+      for (const file of filesToInclude) {
         try {
-          const res = await fetch(`/${filePath}`);
+          const res = await fetch(file.fetchPath);
           if (res.ok) {
             const content = await res.text();
-            zip.file(filePath, content);
+            zip.file(file.path, content);
           }
         } catch (e) {
-          console.warn(`Could not fetch ${filePath} for ZIP`, e);
+          console.warn(`Could not bundle ${file.path}`, e);
         }
       }
 
@@ -118,7 +116,7 @@ const App: React.FC = () => {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'nurpath_complete_source.zip';
+      link.download = 'nurpath_full_source.zip';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -132,8 +130,8 @@ const App: React.FC = () => {
 
   if (!user) return <AuthScreen onLogin={saveUser} />;
 
-  const sunnahQuests = ALL_QUESTS.filter(q => q.category === QuestCategory.SUNNAH).slice(0, 8);
-  const sideQuests = ALL_QUESTS.filter(q => q.category === QuestCategory.CHARITY || ['hug_loved_one', 'reflect_universe', 'call_relative', 'remove_road_obstacle', 'forgive_grudge'].includes(q.id));
+  const sunnahQuests = ALL_QUESTS.filter(q => q.category === QuestCategory.SUNNAH).slice(0, 10);
+  const sideQuests = ALL_QUESTS.filter(q => q.category === QuestCategory.CHARITY || q.id === 'reflect_universe' || q.id === 'hug_loved_one' || q.id === 'forgive_grudge');
 
   return (
     <div className="max-w-md mx-auto h-screen bg-[#fdfbf7] overflow-hidden flex flex-col relative border-x border-slate-100 shadow-2xl">
@@ -266,8 +264,6 @@ const App: React.FC = () => {
 
               <div className="flex-1 space-y-6">
                 <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Developer Utilities</h4>
-                
-                {/* ULTIMATE COMPLETE EXPORT BUTTON */}
                 <button 
                   onClick={handleDownloadProject} 
                   disabled={isExporting}
