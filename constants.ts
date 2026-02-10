@@ -1,4 +1,4 @@
-import { Quest, QuestCategory, ReflectionItem } from '@/types';
+import { Quest, QuestCategory } from '@/types';
 export const ALL_QUESTS: Quest[] = [
   {
     "id": "fajr",
@@ -217,4 +217,3 @@ export const CORRECTION_QUESTS: Record<string, Quest[]> = {
     }
   ]
 };
-export const SEED_REFLECTIONS: ReflectionItem[] = [];
