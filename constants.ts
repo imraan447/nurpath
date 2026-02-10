@@ -217,4 +217,4 @@ export const CORRECTION_QUESTS: Record<string, Quest[]> = {
     }
   ]
 };
-export const SEED_REFLECTIONS: ReflectionItem[] = []; // Initial seed handled by UI
+export const SEED_REFLECTIONS: ReflectionItem[] = [];
