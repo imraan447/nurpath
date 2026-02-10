@@ -325,9 +325,9 @@ const App: React.FC = () => {
       </main>
 
       <nav className={`fixed bottom-10 left-10 right-10 backdrop-blur-3xl border border-white/50 rounded-[40px] p-2 flex justify-between items-center shadow-2xl z-[60] transition-colors ${user.settings?.darkMode ? 'bg-white/5' : 'bg-white/95'}`}>
-        <NavBtn active={activeTab === 'collect'} icon={<LayoutGrid />} onClick={() => setActiveTab('collect'} label="Collect" darkMode={user.settings?.darkMode} />
-        <NavBtn active={activeTab === 'active'} icon={<Map />} onClick={() => setActiveTab('active'} label="Active" darkMode={user.settings?.darkMode} />
-        <NavBtn active={activeTab === 'reflect'} icon={<Sparkles />} onClick={() => setActiveTab('reflect'} label="Reflect" darkMode={user.settings?.darkMode} />
+        <NavBtn active={activeTab === 'collect'} icon={<LayoutGrid />} onClick={() => setActiveTab('collect')} label="Collect" darkMode={user.settings?.darkMode} />
+        <NavBtn active={activeTab === 'active'} icon={<Map />} onClick={() => setActiveTab('active')} label="Active" darkMode={user.settings?.darkMode} />
+        <NavBtn active={activeTab === 'reflect'} icon={<Sparkles />} onClick={() => setActiveTab('reflect')} label="Reflect" darkMode={user.settings?.darkMode} />
       </nav>
 
       {/* Profile Sidebar */}
