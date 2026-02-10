@@ -63,7 +63,7 @@ export const CORRECTION_QUESTS: Record<string, Quest[]> = {
   missed_salah: [{ id: 'qadha', title: 'Qadha Salah', description: 'Restoring your covenant', category: QuestCategory.CORRECTION, xp: 400 }],
 };
 
-export const HARDCODED_REFLECTIONS: ReflectionItem[] = [
+export const SEED_REFLECTIONS: ReflectionItem[] = [
   {
     id: 'ref-1',
     type: 'question',
