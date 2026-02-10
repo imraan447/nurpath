@@ -1,0 +1,4 @@
+export enum QuestCategory { MAIN = 'Main Quest', SUNNAH = 'Sunnah Quest', CORRECTION = 'Correction Quest', CHARITY = 'Charity Quest' }
+export interface Quest { id: string; title: string; description: string; category: QuestCategory; xp: number; isGreyed?: boolean; locationType?: 'mosque' | 'charity' | 'soup_kitchen' | 'community' | null; }
+export interface User { name: string; email: string; xp: number; activeQuests: string[]; }
+export interface ReflectionItem { id: string; type: string; content: string; source?: string; praise: string; details?: string; mediaUrl?: string; }
