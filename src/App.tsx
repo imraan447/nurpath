@@ -1,6 +1,8 @@
+
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { User, Quest, QuestCategory, ReflectionItem, UserSettings, GuideSection, NaflPrayerItem, AdhkarItem } from './types';
-import { ALL_QUESTS, CORRECTION_QUESTS, HARDCODED_REFLECTIONS, GUIDE_SECTIONS, SEERAH_CHAPTERS, NAFL_PRAYERS } from './constants';
+import { ALL_QUESTS, CORRECTION_SUB_CATEGORIES, HARDCODED_REFLECTIONS, GUIDE_SECTIONS, SEERAH_CHAPTERS, NAFL_PRAYERS } from './constants';
 import JSZip from 'jszip';
 import { 
   LayoutGrid, 
@@ -67,7 +69,7 @@ const getLevelInfo = (xp: number) => {
 
 // --- COMPONENTS DEFINED INTERNALLY ---
 
-const NavBtn = ({ active, label, icon, onClick, darkMode }: { active: boolean; label: string; icon: React.ReactNode; onClick: () => void; darkMode?: boolean }) => (
+const NavBtn = ({ active, label, icon, onClick, darkMode }: { active: boolean; label: string; icon: React.ReactElement<any>; onClick: () => void; darkMode?: boolean }) => (
   <button 
     onClick={onClick}
     className={`flex flex-col items-center gap-1.5 px-6 py-3 rounded-[30px] transition-all relative ${
@@ -76,7 +78,7 @@ const NavBtn = ({ active, label, icon, onClick, darkMode }: { active: boolean; l
         : 'text-slate-400 hover:text-slate-600'
     }`}
   >
-    {React.cloneElement(icon as React.ReactElement, { size: 20 })}
+    {React.cloneElement(icon, { size: 20 })}
     <span className="text-[8px] font-black uppercase tracking-widest">{label}</span>
   </button>
 );
@@ -94,35 +96,6 @@ const AdhkarListItem: React.FC<{ item: AdhkarItem; darkMode?: boolean }> = ({ it
   </div>
 );
 
-const NaflPrayerCard: React.FC<{ prayer: NaflPrayerItem; darkMode?: boolean }> = ({ prayer, darkMode }) => {
-  const [expanded, setExpanded] = useState(false);
-  return (
-    <div 
-      onClick={() => setExpanded(!expanded)}
-      className={`p-5 rounded-[25px] border transition-all cursor-pointer ${darkMode ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-white border-slate-100 hover:border-[#064e3b]/20 hover:shadow-md'}`}
-    >
-       <div className="flex justify-between items-start">
-          <div>
-            <h3 className="font-bold text-sm dark:text-white">{prayer.title}</h3>
-            <p className="text-xs text-slate-500 mt-1">{prayer.rakaats} • {prayer.time}</p>
-          </div>
-          <div className="p-2 rounded-full bg-slate-50 dark:bg-white/10 text-slate-400">
-             {expanded ? <ChevronDown size={14} className="rotate-180 transition-transform" /> : <ChevronDown size={14} />}
-          </div>
-       </div>
-       
-       {expanded && (
-         <div className="mt-4 pt-4 border-t border-slate-100 dark:border-white/10 animate-in slide-in-from-top-2">
-            <p className="text-xs text-[#064e3b] font-bold mb-2 dark:text-emerald-400">Benefit: {prayer.benefit}</p>
-            {prayer.details && (
-              <p className="text-xs text-slate-500 leading-relaxed whitespace-pre-line dark:text-slate-400">{prayer.details.replace(/\*\*/g, '')}</p>
-            )}
-         </div>
-       )}
-    </div>
-  );
-};
-
 const AuthScreen = ({ onLogin }: { onLogin: (user: User) => void }) => {
   const [name, setName] = useState('');
   
@@ -135,7 +108,8 @@ const AuthScreen = ({ onLogin }: { onLogin: (user: User) => void }) => {
       xp: 0,
       isVerified: false,
       activeQuests: [],
-      settings: DEFAULT_SETTINGS
+      settings: DEFAULT_SETTINGS,
+      completedDailyQuests: {}
     });
   };
 
@@ -173,7 +147,6 @@ const AuthScreen = ({ onLogin }: { onLogin: (user: User) => void }) => {
   );
 };
 
-// EMBEDDED SOURCE FILES TO GUARANTEE DOWNLOAD WORKS
 const STATIC_SOURCE_FILES: Record<string, string> = {
   'index.html': `<!DOCTYPE html>
 <html lang="en">
@@ -440,7 +413,8 @@ const App: React.FC = () => {
   const [showProfile, setShowProfile] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [confirmQuest, setConfirmQuest] = useState<Quest | null>(null);
-  const [openCorrectionCategory, setOpenCorrectionCategory] = useState<string | null>(null);
+  const [showTasbeehGuide, setShowTasbeehGuide] = useState(false);
+  const [openCategories, setOpenCategories] = useState<string[]>([]);
 
   // Guide State
   const [activeGuideSection, setActiveGuideSection] = useState<string>('fajr_phase');
@@ -456,15 +430,35 @@ const App: React.FC = () => {
 
   const seerahScrollRef = useRef<HTMLDivElement>(null);
 
+  const fardSalahIds = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+  const naflPrayerQuestIds = ['ishraq_salah', 'awwaabeen', 'tahajjud', 'salatul_tasbeeh', 'duha', 'tahiyyatul_wudhu', 'tahiyyatul_masjid'];
+
+  const questSections = {
+    'The Five Pillars': ALL_QUESTS.filter(q => q.category === QuestCategory.MAIN),
+    'Nafl Salaah': ALL_QUESTS.filter(q => naflPrayerQuestIds.includes(q.id)),
+    'Daily Remembrance': ALL_QUESTS.filter(q => q.category === QuestCategory.DHIKR),
+    'Sunnah & Character': ALL_QUESTS.filter(q => q.category === QuestCategory.SUNNAH && !naflPrayerQuestIds.includes(q.id)),
+    'Community & Charity': ALL_QUESTS.filter(q => q.category === QuestCategory.CHARITY),
+    'Correction Quests': ALL_QUESTS.filter(q => q.category === QuestCategory.CORRECTION)
+  };
+
+  const toggleCategory = (category: string) => {
+    setOpenCategories(prev => 
+      prev.includes(category) 
+        ? prev.filter(c => c !== category)
+        : [...prev, category]
+    );
+  };
+
   useEffect(() => {
     const hour = new Date().getHours();
-    let sectionId = 'tahajjud_phase'; 
+    let sectionId = 'night_phase'; 
     if (hour >= 4 && hour < 6) sectionId = 'fajr_phase';
-    else if (hour >= 6 && hour < 12) sectionId = 'ishraq_phase';
-    else if (hour >= 12 && hour < 15) sectionId = 'dhuhr_phase';
-    else if (hour >= 15 && hour < 17) sectionId = 'asr_phase';
-    else if (hour >= 17 && hour < 20) sectionId = 'maghrib_phase';
-    else if (hour >= 20 && hour <= 23) sectionId = 'isha_phase';
+    else if (hour >= 6 && hour < 12) sectionId = 'fajr_phase';
+    else if (hour >= 12 && hour < 15) sectionId = 'post_salah';
+    else if (hour >= 15 && hour < 17) sectionId = 'post_salah';
+    else if (hour >= 17 && hour < 20) sectionId = 'post_salah';
+    else if (hour >= 20 && hour <= 23) sectionId = 'night_phase';
     setActiveGuideSection(sectionId);
   }, []);
 
@@ -481,7 +475,10 @@ const App: React.FC = () => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        setUser(parsed);
+        setUser({
+          ...parsed,
+          completedDailyQuests: parsed.completedDailyQuests || {}
+        });
         if (parsed.settings?.seerahBookmark) {
           setSeerahIndex(parsed.settings.seerahBookmark);
         }
@@ -548,19 +545,24 @@ const App: React.FC = () => {
     setSeerahIndex(index);
     updateSettings({ seerahBookmark: index });
   };
+  
+  const isCompletedToday = (questId: string) => {
+    if (!user || !user.completedDailyQuests) return false;
+    const today = new Date().toISOString().split('T')[0];
+    return user.completedDailyQuests[questId] === today;
+  };
 
   const handleQuestSelect = (q: Quest) => {
-    if (!user || q.isGreyed) return;
+    if (!user || q.isGreyed || (fardSalahIds.includes(q.id) && isCompletedToday(q.id))) return;
     if (user.activeQuests.includes(q.id)) setActiveTab('active');
     else setConfirmQuest(q);
   };
 
   const addAllSalah = () => {
     if (!user) return;
-    const coreIds = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
-    const updated = { ...user, activeQuests: [...new Set([...user.activeQuests, ...coreIds])] };
+    const uncompletedSalah = fardSalahIds.filter(id => !isCompletedToday(id));
+    const updated = { ...user, activeQuests: [...new Set([...user.activeQuests, ...uncompletedSalah])] };
     saveUser(updated);
-    setActiveTab('active');
   };
 
   const addToActive = () => {
@@ -568,16 +570,28 @@ const App: React.FC = () => {
     const updated = { ...user, activeQuests: [...new Set([...user.activeQuests, confirmQuest.id])] };
     saveUser(updated);
     setConfirmQuest(null);
-    setActiveTab('active');
+  };
+  
+  const removeQuest = (quest: Quest) => {
+    if(!user) return;
+    const updated = { ...user, activeQuests: user.activeQuests.filter(id => id !== quest.id) };
+    saveUser(updated);
   };
 
   const completeQuest = (q: Quest) => {
     if (!user) return;
-    const wasActive = user.activeQuests.includes(q.id);
+    
+    let completedDailies = user.completedDailyQuests || {};
+    if (fardSalahIds.includes(q.id)) {
+      const today = new Date().toISOString().split('T')[0];
+      completedDailies = { ...completedDailies, [q.id]: today };
+    }
+
     const updated = { 
       ...user, 
       xp: user.xp + q.xp, 
-      activeQuests: wasActive ? user.activeQuests.filter(id => id !== q.id) : user.activeQuests 
+      activeQuests: user.activeQuests.filter(id => id !== q.id),
+      completedDailyQuests: completedDailies
     };
     saveUser(updated);
   };
@@ -590,46 +604,11 @@ const App: React.FC = () => {
     }
 
     setIsZipping(true);
-
     try {
       const zip = new JSZip();
-      
-      // 1. Add static files (embedded to guarantee availability)
       Object.entries(STATIC_SOURCE_FILES).forEach(([path, content]) => {
         zip.file(path, content);
       });
-
-      // 2. Add App.tsx and constants.ts (Try to fetch, fall back to simple message if fails)
-      const dynamicFiles = ['App.tsx'];
-      
-      for (const file of dynamicFiles) {
-        let content = '';
-        // Try multiple paths because environments differ (Vite root vs src)
-        const pathsToTry = [file, `/${file}`, `/src/${file}`];
-        
-        for (const path of pathsToTry) {
-           try {
-             const res = await fetch(path);
-             if (res.ok) {
-               const text = await res.text();
-               // Basic check to ensure we didn't get index.html back
-               if (!text.includes('<!DOCTYPE html>')) {
-                 content = text;
-                 break;
-               }
-             }
-           } catch (e) { /* continue */ }
-        }
-
-        if (content) {
-          zip.file(file, content);
-        } else {
-           if (file === 'App.tsx') {
-               zip.file(file, '// Could not fetch App.tsx automatically. Please copy the current file content.');
-           }
-        }
-      }
-
       const content = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(content);
       const a = document.createElement("a");
@@ -650,12 +629,19 @@ const App: React.FC = () => {
   const activeSectionData = GUIDE_SECTIONS.find(s => s.id === activeGuideSection);
   const levelInfo = user ? getLevelInfo(user.xp) : { level: 1, rank: 'Seeker', progress: 0 };
 
-  if (!user) return <AuthScreen onLogin={(u) => saveUser({...u, settings: DEFAULT_SETTINGS})} />;
+  if (!user) return <AuthScreen onLogin={(u) => saveUser(u)} />;
+
+  const tasbeehPrayer = NAFL_PRAYERS.find(p => p.id === 'n7');
+  
+  const activeQuestSections = user ? Object.entries(questSections).map(([category, quests]) => {
+      const activeInCategory = quests.filter(q => user.activeQuests.includes(q.id));
+      return { category, quests: activeInCategory };
+  }).filter(section => section.quests.length > 0) : [];
+
 
   return (
     <div className={`max-w-md mx-auto h-screen overflow-hidden flex flex-col relative shadow-2xl transition-all ${activeTab === 'reflect' ? '' : 'border-x border-slate-100'} ${user.settings?.darkMode ? 'bg-[#050a09]' : 'bg-[#fdfbf7]'}`}>
       
-      {/* Header (Hidden in Reflect tab only) */}
       {activeTab !== 'reflect' && (
         <header className={`z-20 backdrop-blur-md ${user.settings?.darkMode ? 'bg-[#050a09]/90' : 'bg-[#fdfbf7]/90'}`}>
           <div className="p-6 pb-4 flex items-center justify-between">
@@ -671,7 +657,6 @@ const App: React.FC = () => {
             </div>
           </div>
           
-          {/* XP Progress Bar */}
           <div className="px-6 pb-6 pt-0">
              <div className="flex justify-between items-end mb-1">
                 <span className={`text-[10px] font-black uppercase tracking-widest ${user.settings?.darkMode ? 'text-slate-400' : 'text-slate-400'}`}>Level {levelInfo.level} • {levelInfo.rank}</span>
@@ -684,113 +669,80 @@ const App: React.FC = () => {
         </header>
       )}
 
-      {/* Main Content Area - Updated to handle Reflect tab full screen */}
       <main className={`flex-1 scrollbar-hide ${activeTab === 'reflect' ? 'overflow-hidden p-0' : 'overflow-y-auto pb-40 px-6'}`}>
         
-        {/* COLLECT TAB */}
         {activeTab === 'collect' && (
-          <div className="space-y-10 py-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div className="space-y-2">
+          <div className="space-y-6 py-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="space-y-2 px-6">
               <h1 className={`text-4xl font-bold leading-tight tracking-tight ${user.settings?.darkMode ? 'text-white' : 'text-slate-900'}`}>Salam, <br/><span className="text-[#064e3b]">{user.name.split(' ')[0]}</span></h1>
               <p className="text-[10px] text-[#d4af37] font-black uppercase tracking-[0.3em] flex items-center gap-2">
                 <Star size={12} className="fill-[#d4af37]" /> Path of the Believer
               </p>
             </div>
             
-            <section className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">The Five Pillars</h2>
-                <button onClick={addAllSalah} className={`text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-full flex items-center gap-2 border transition-all ${user.settings?.darkMode ? 'text-white bg-white/5 border-white/10 hover:bg-white/10' : 'text-[#064e3b] bg-[#064e3b]/5 border-[#064e3b]/10 hover:bg-[#064e3b]/10'}`}>
-                  <Plus size={12} /> Add All Salah
-                </button>
-              </div>
-              <div className="grid grid-cols-1 gap-4">
-                {ALL_QUESTS.filter(q => q.category === QuestCategory.MAIN && !user.activeQuests.includes(q.id)).map(q => (
-                  <QuestCard key={q.id} quest={q} onAction={handleQuestSelect} darkMode={user.settings?.darkMode} />
-                ))}
-              </div>
-            </section>
-
-             <section className="space-y-4">
-               <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Daily Remembrance</h2>
-               <div className="grid grid-cols-1 gap-4">
-                 {ALL_QUESTS.filter(q => q.category === QuestCategory.DHIKR && !user.activeQuests.includes(q.id)).map(q => (
-                   <QuestCard key={q.id} quest={q} onAction={handleQuestSelect} darkMode={user.settings?.darkMode} />
-                 ))}
-               </div>
-             </section>
-
-            <section className="space-y-4">
-               <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Sunnah & Character</h2>
-               <div className="grid grid-cols-1 gap-4">
-                 {ALL_QUESTS.filter(q => q.category === QuestCategory.SUNNAH && !user.activeQuests.includes(q.id)).map(q => (
-                   <QuestCard key={q.id} quest={q} onAction={handleQuestSelect} darkMode={user.settings?.darkMode} />
-                 ))}
-               </div>
-            </section>
-
-             <section className="space-y-4">
-               <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Community & Charity</h2>
-               <div className="grid grid-cols-1 gap-4">
-                 {ALL_QUESTS.filter(q => q.category === QuestCategory.CHARITY && !user.activeQuests.includes(q.id)).map(q => (
-                   <QuestCard key={q.id} quest={q} onAction={handleQuestSelect} darkMode={user.settings?.darkMode} />
-                 ))}
-               </div>
-             </section>
-
-            <section className="pt-8 border-t border-slate-100 dark:border-white/10">
-              <button 
-                onClick={() => setOpenCorrectionCategory(openCorrectionCategory ? null : 'menu')}
-                className="w-full py-4 flex flex-col items-center justify-center gap-2 bg-rose-50 rounded-[30px] border-2 border-rose-100 hover:bg-rose-100 transition-all dark:bg-rose-900/10 dark:border-rose-900/20"
-              >
-                <div className="flex items-center gap-2 text-rose-500 font-bold">
-                  <RefreshCcw size={20} />
-                  <span>Did I Slip?</span>
-                </div>
-                <span className="text-[9px] font-black uppercase tracking-widest text-rose-400">Correction & Tawbah</span>
-              </button>
-
-              {openCorrectionCategory && (
-                <div className="mt-6 space-y-6 animate-in slide-in-from-top-4 duration-300">
-                  <div className="grid grid-cols-2 gap-3">
-                    {[
-                      { id: 'minor_sin', label: 'Minor Sin', icon: AlertCircle },
-                      { id: 'major_sin', label: 'Major Sin', icon: ShieldAlert },
-                      { id: 'wronged_someone', label: 'Wronged Someone', icon: HeartHandshake },
-                      { id: 'missed_salah', label: 'Missed Salah', icon: Clock },
-                    ].map(cat => (
-                       <button
-                         key={cat.id}
-                         onClick={() => setOpenCorrectionCategory(cat.id)}
-                         className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${
-                           openCorrectionCategory === cat.id
-                           ? 'bg-rose-500 text-white border-rose-500 shadow-lg scale-105'
-                           : 'bg-white border-slate-100 text-slate-500 hover:bg-slate-50 dark:bg-white/5 dark:border-white/10 dark:text-slate-400'
-                         }`}
-                       >
-                         <cat.icon size={20} />
-                         <span className="text-xs font-bold">{cat.label}</span>
-                       </button>
-                    ))}
-                  </div>
-
-                  {openCorrectionCategory !== 'menu' && CORRECTION_QUESTS[openCorrectionCategory] && (
-                     <div className="space-y-4 p-6 bg-rose-50 rounded-[30px] border border-rose-100 dark:bg-rose-900/10 dark:border-rose-900/20">
-                        <h3 className="text-rose-600 font-bold text-center mb-2 flex items-center justify-center gap-2">
-                          <Sparkles size={16} /> Recommended Action
-                        </h3>
-                        {CORRECTION_QUESTS[openCorrectionCategory].map(q => (
-                           <QuestCard key={q.id} quest={q} onAction={handleQuestSelect} darkMode={user.settings?.darkMode} />
-                        ))}
-                     </div>
-                  )}
-                </div>
-              )}
-            </section>
+            <div className="space-y-4">
+              {Object.entries(questSections).map(([category, quests]) => {
+                  const availableQuests = quests.filter(q => !user.activeQuests.includes(q.id));
+                  const availableCount = availableQuests.filter(q => !(fardSalahIds.includes(q.id) && isCompletedToday(q.id))).length;
+                  
+                  if (availableQuests.length === 0) return null;
+                  
+                  const isOpen = openCategories.includes(category);
+                  
+                  return (
+                    <section key={category} className="space-y-4">
+                      <button 
+                        onClick={() => toggleCategory(category)}
+                        className="w-full flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-white/5"
+                      >
+                        <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 dark:text-slate-400">{category}</h2>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-400 dark:text-slate-500">{availableCount}</span>
+                          <ChevronDown size={16} className={`text-slate-400 dark:text-slate-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                        </div>
+                      </button>
+                      {isOpen && (
+                        <div className="grid grid-cols-1 gap-4 pt-2 animate-in fade-in slide-in-from-top-2">
+                          {category === 'The Five Pillars' && (
+                            <button onClick={addAllSalah} className={`w-full text-[9px] font-black uppercase tracking-widest px-3 py-3 rounded-2xl flex items-center justify-center gap-2 border transition-all mb-2 ${user.settings?.darkMode ? 'text-white bg-white/5 border-white/10 hover:bg-white/10' : 'text-[#064e3b] bg-[#064e3b]/5 border-[#064e3b]/10 hover:bg-[#064e3b]/10'}`}>
+                              <Plus size={12} /> Add All 5 Salah
+                            </button>
+                           )}
+                          {category === 'Correction Quests' ? (
+                            CORRECTION_SUB_CATEGORIES.map(subCat => {
+                              const subCatQuests = availableQuests.filter(q => q.subCategory === subCat);
+                              if (subCatQuests.length === 0) return null;
+                              return (
+                                <div key={subCat} className="space-y-3">
+                                  <h3 className="text-xs font-bold text-rose-500 dark:text-rose-400 pl-2">{subCat}</h3>
+                                  <div className="grid grid-cols-1 gap-4">
+                                    {subCatQuests.map(q => (
+                                      <QuestCard key={q.id} quest={q} onAction={handleQuestSelect} darkMode={user.settings?.darkMode} />
+                                    ))}
+                                  </div>
+                                </div>
+                              )
+                            })
+                          ) : (
+                            availableQuests.map(q => (
+                              <QuestCard 
+                                key={q.id} 
+                                quest={q} 
+                                onAction={handleQuestSelect} 
+                                darkMode={user.settings?.darkMode} 
+                                isGreyed={q.isGreyed || (fardSalahIds.includes(q.id) && isCompletedToday(q.id))} 
+                              />
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </section>
+                  );
+                })}
+            </div>
           </div>
         )}
 
-        {/* ACTIVE TAB */}
         {activeTab === 'active' && (
            <div className="space-y-8 py-8 animate-in fade-in slide-in-from-right-4 duration-500">
              <div className="flex items-center gap-5">
@@ -800,25 +752,58 @@ const App: React.FC = () => {
                  <p className="text-[10px] text-[#d4af37] font-black uppercase tracking-widest">Active Commitments</p>
                </div>
             </div>
-             {user.activeQuests.length === 0 ? (
+             {activeQuestSections.length === 0 ? (
               <div className="h-[55vh] flex flex-col items-center justify-center text-center opacity-40">
                 <LayoutGrid size={72} className={`mb-6 ${user.settings?.darkMode ? 'text-white' : 'text-[#064e3b]'}`} />
                 <p className={`text-sm font-bold ${user.settings?.darkMode ? 'text-white' : 'text-slate-900'}`}>No active quests</p>
                 <p className="text-xs text-slate-500 mt-2">Visit the collection to start your journey</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-4">
-                {user.activeQuests.map(id => {
-                  const q = ALL_QUESTS.find(aq => aq.id === id) || Object.values(CORRECTION_QUESTS).flat().find(aq => aq.id === id);
-                  if (!q) return null;
-                  return <QuestCard key={q.id} quest={q} isActive onComplete={completeQuest} darkMode={user.settings?.darkMode} />;
-                })}
-              </div>
+               <div className="space-y-4">
+                 {activeQuestSections.map(({ category, quests }) => {
+                   const isOpen = openCategories.includes(category);
+                   return (
+                     <section key={category} className="space-y-4">
+                       <button 
+                         onClick={() => toggleCategory(category)}
+                         className="w-full flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-white/5"
+                       >
+                         <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 dark:text-slate-400">{category}</h2>
+                         <div className="flex items-center gap-2">
+                           <span className="text-xs font-bold text-slate-400 dark:text-slate-500">{quests.length}</span>
+                           <ChevronDown size={16} className={`text-slate-400 dark:text-slate-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                         </div>
+                       </button>
+                       {isOpen && (
+                         <div className="grid grid-cols-1 gap-4 pt-2 animate-in fade-in slide-in-from-top-2">
+                           {category === 'Correction Quests' ? (
+                             CORRECTION_SUB_CATEGORIES.map(subCat => {
+                               const subCatQuests = quests.filter(q => q.subCategory === subCat);
+                               if (subCatQuests.length === 0) return null;
+                               return (
+                                 <div key={subCat} className="space-y-3">
+                                   <h3 className="text-xs font-bold text-rose-500 dark:text-rose-400 pl-2">{subCat}</h3>
+                                   <div className="grid grid-cols-1 gap-4">
+                                     {subCatQuests.map(q => (
+                                       <QuestCard key={q.id} quest={q} isActive onComplete={completeQuest} onRemove={removeQuest} onShowTasbeehGuide={() => setShowTasbeehGuide(true)} darkMode={user.settings?.darkMode} />
+                                     ))}
+                                   </div>
+                                 </div>
+                               )
+                             })
+                           ) : (
+                            quests.map(q => <QuestCard key={q.id} quest={q} isActive onComplete={completeQuest} onRemove={removeQuest} onShowTasbeehGuide={() => setShowTasbeehGuide(true)} darkMode={user.settings?.darkMode} />)
+                           )}
+                         </div>
+                       )}
+                     </section>
+                   );
+                 })}
+               </div>
             )}
            </div>
         )}
 
-        {/* REFLECT TAB */}
         {activeTab === 'reflect' && (
           <ReflectionFeed 
             items={reflections} 
@@ -829,7 +814,6 @@ const App: React.FC = () => {
           />
         )}
 
-        {/* GUIDE TAB */}
         {activeTab === 'guide' && (
           <div className="space-y-10 py-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <button 
@@ -857,7 +841,6 @@ const App: React.FC = () => {
               </p>
             </header>
 
-            {/* Guide Section Selector */}
             <div className="flex flex-wrap justify-center gap-2.5 pb-4">
               {GUIDE_SECTIONS.map((section) => {
                 const isActive = activeGuideSection === section.id;
@@ -877,7 +860,6 @@ const App: React.FC = () => {
               })}
             </div>
             
-            {/* Guide Content */}
             {activeSectionData && (
                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <div className="bg-emerald-50 p-6 rounded-[30px] border border-emerald-100 dark:bg-emerald-900/10 dark:border-emerald-900/20">
@@ -894,6 +876,22 @@ const App: React.FC = () => {
                        </div>
                     </div>
                   </div>
+
+                  {activeSectionData.specialGuide && (
+                    <div className="space-y-4">
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Knowledge</h4>
+                      <div className="p-8 rounded-[35px] bg-[#fdfbf7] border border-slate-100 dark:bg-white/5 dark:border-white/10">
+                         <h3 className="font-serif text-2xl font-bold mb-4 dark:text-white">{activeSectionData.specialGuide.title}</h3>
+                         <div className="prose prose-sm max-w-none dark:prose-invert">
+                           <div className="whitespace-pre-wrap font-serif leading-8 text-base text-slate-600 dark:text-slate-300">
+                             {activeSectionData.specialGuide.content.split('**').map((part, i) => 
+                               i % 2 === 1 ? <strong key={i} className="text-[#064e3b] dark:text-emerald-400 block mt-4 mb-2 text-lg">{part}</strong> : part
+                             )}
+                           </div>
+                         </div>
+                      </div>
+                    </div>
+                  )}
 
                   {activeSectionData.quests.length > 0 && (
                     <div className="space-y-4">
@@ -914,37 +912,12 @@ const App: React.FC = () => {
                        ))}
                     </div>
                   )}
-                  
-                  {activeGuideSection === 'nafl_prayers' && (
-                    <div className="space-y-4">
-                       <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Voluntary Prayers</h4>
-                       {NAFL_PRAYERS.map(np => (
-                         <NaflPrayerCard key={np.id} prayer={np} darkMode={user.settings?.darkMode} />
-                       ))}
-                    </div>
-                  )}
 
-                  {activeSectionData.specialGuide && (
-                    <div className="space-y-4">
-                      <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Knowledge</h4>
-                      <div className="p-8 rounded-[35px] bg-[#fdfbf7] border border-slate-100 dark:bg-white/5 dark:border-white/10">
-                         <h3 className="font-serif text-2xl font-bold mb-4 dark:text-white">{activeSectionData.specialGuide.title}</h3>
-                         <div className="prose prose-sm max-w-none dark:prose-invert">
-                           <div className="whitespace-pre-wrap font-serif leading-8 text-base text-slate-600 dark:text-slate-300">
-                             {activeSectionData.specialGuide.content.split('**').map((part, i) => 
-                               i % 2 === 1 ? <strong key={i} className="text-[#064e3b] dark:text-emerald-400 block mt-4 mb-2 text-lg">{part}</strong> : part
-                             )}
-                           </div>
-                         </div>
-                      </div>
-                    </div>
-                  )}
                </div>
             )}
           </div>
         )}
 
-        {/* SEERAH TAB */}
         {activeTab === 'seerah' && (
            <div className="py-10 animate-in fade-in slide-in-from-right-4 duration-500">
               <div className="mb-8 px-6">
@@ -992,28 +965,26 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {/* NAVIGATION */}
       <nav className={`fixed bottom-0 left-0 right-0 max-w-md mx-auto p-6 z-50 transition-all`}>
           <div className={`rounded-[40px] p-2 flex items-center justify-around shadow-2xl border ${user.settings?.darkMode ? 'bg-[#050a09]/90 border-white/10 backdrop-blur-xl' : 'bg-white/95 border-[#064e3b]/5 backdrop-blur-md'}`}>
-            <NavBtn active={activeTab === 'collect'} label="Journey" icon={<LayoutGrid />} onClick={() => setActiveTab('collect')} darkMode={user.settings?.darkMode} />
-            <NavBtn active={activeTab === 'active'} label="Path" icon={<Target />} onClick={() => setActiveTab('active')} darkMode={user.settings?.darkMode} />
+            <NavBtn active={activeTab === 'collect'} label="All Quests" icon={<LayoutGrid />} onClick={() => setActiveTab('collect')} darkMode={user.settings?.darkMode} />
+            <NavBtn active={activeTab === 'active'} label="My Quests" icon={<Target />} onClick={() => setActiveTab('active')} darkMode={user.settings?.darkMode} />
             <NavBtn active={activeTab === 'reflect'} label="Reflect" icon={<Sparkles />} onClick={() => setActiveTab('reflect')} darkMode={user.settings?.darkMode} />
             <NavBtn active={activeTab === 'guide'} label="Guide" icon={<BookOpen />} onClick={() => setActiveTab('guide')} darkMode={user.settings?.darkMode} />
           </div>
       </nav>
 
-      {/* SETTINGS MODAL */}
       {showSettings && (
          <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/50 backdrop-blur-sm animate-in fade-in">
             <div className={`w-full max-w-sm p-8 rounded-[40px] shadow-2xl space-y-6 ${user.settings?.darkMode ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}`}>
                <div className="flex justify-between items-center">
                  <h3 className="text-2xl font-bold">Settings</h3>
-                 <button onClick={() => setShowSettings(false)} className="p-2 bg-slate-100 rounded-full dark:bg-white/10"><X size={20} /></button>
+                 <button onClick={() => setShowSettings(false)} className="p-2 bg-slate-100 rounded-full dark:bg-white/10"><X size={20} className="text-slate-600 dark:text-slate-300" /></button>
                </div>
                
                <div className="space-y-4">
                   <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-white/5">
-                     <div className="flex items-center gap-3">
+                     <div className="flex items-center gap-3 dark:text-slate-200">
                        {user.settings?.darkMode ? <Moon size={20} /> : <Sun size={20} />}
                        <span className="font-bold text-sm">Dark Mode</span>
                      </div>
@@ -1026,11 +997,11 @@ const App: React.FC = () => {
                   </div>
 
                   <button onClick={handleDownloadSource} className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-white/5 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
-                     <div className="flex items-center gap-3">
+                     <div className="flex items-center gap-3 dark:text-slate-200">
                        <Download size={20} />
                        <span className="font-bold text-sm">Download Source</span>
                      </div>
-                     {isZipping ? <Loader2 size={16} className="animate-spin" /> : <ChevronRight size={16} />}
+                     {isZipping ? <Loader2 size={16} className="animate-spin dark:text-slate-200" /> : <ChevronRight size={16} className="text-slate-400" />}
                   </button>
 
                   <button onClick={() => { setUser(null); setShowSettings(false); localStorage.removeItem('nurpath_user'); }} className="w-full p-4 rounded-2xl bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400 flex items-center justify-between">
@@ -1048,13 +1019,12 @@ const App: React.FC = () => {
          </div>
       )}
 
-      {/* PROFILE MODAL */}
       {showProfile && (
          <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/50 backdrop-blur-sm animate-in fade-in">
             <div className={`w-full max-w-sm p-8 rounded-[40px] shadow-2xl space-y-8 text-center ${user.settings?.darkMode ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}`}>
                <div className="flex justify-between items-start w-full">
-                 <button onClick={() => { setShowProfile(false); setShowSettings(true); }} className="p-2 bg-slate-100 rounded-full dark:bg-white/10"><Settings size={20} /></button>
-                 <button onClick={() => setShowProfile(false)} className="p-2 bg-slate-100 rounded-full dark:bg-white/10"><X size={20} /></button>
+                 <button onClick={() => { setShowProfile(false); setShowSettings(true); }} className="p-2 bg-slate-100 rounded-full dark:bg-white/10 text-slate-600 dark:text-slate-300"><Settings size={20} /></button>
+                 <button onClick={() => setShowProfile(false)} className="p-2 bg-slate-100 rounded-full dark:bg-white/10 text-slate-600 dark:text-slate-300"><X size={20} /></button>
                </div>
                
                <div className="flex flex-col items-center">
@@ -1083,7 +1053,22 @@ const App: React.FC = () => {
          </div>
       )}
 
-      {/* CONFIRMATION DIALOG */}
+      {showTasbeehGuide && tasbeehPrayer?.details && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in" onClick={() => setShowTasbeehGuide(false)}>
+          <div className={`w-full max-w-sm p-8 rounded-[40px] space-y-6 animate-in slide-in-from-bottom-10 ${user.settings?.darkMode ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}`} onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center">
+                <h3 className="text-xl font-bold">How to Pray Salatul Tasbeeh</h3>
+                <button onClick={() => setShowTasbeehGuide(false)} className="p-2 bg-slate-100 rounded-full dark:bg-white/10"><X size={20} /></button>
+            </div>
+            <div className="prose prose-sm max-w-none dark:prose-invert">
+                <p className="whitespace-pre-wrap font-serif text-slate-600 dark:text-slate-300 leading-relaxed">
+                    {tasbeehPrayer.details.replace(/\*\*/g, '')}
+                </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {confirmQuest && (
         <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
           <div className={`w-full max-w-sm p-6 rounded-[40px] space-y-6 animate-in slide-in-from-bottom-10 ${user.settings?.darkMode ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}`}>
