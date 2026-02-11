@@ -1,4 +1,5 @@
 
+
 import { Quest, QuestCategory, ReflectionItem, GuideSection, SeerahChapter, AdhkarItem, NaflPrayerItem } from './types';
 import { Sun, Moon, Sunrise, Sunset, Clock, Star, CloudSun, Hand, CalendarDays, Shield, BookHeart } from 'lucide-react';
 
@@ -43,6 +44,8 @@ export const ALL_QUESTS: Quest[] = [
   { id: 'drink_water_3_breaths', title: 'Water in 3 Breaths', description: 'Prophetic method of drinking', category: QuestCategory.SUNNAH, xp: 120 },
   { id: 'dua_after_adhan', title: 'Dua After Adhan', description: 'Intercession guaranteed', category: QuestCategory.SUNNAH, xp: 280 },
   { id: 'ayatul_kursi_salah', title: 'Ayatul Kursi Post-Salah', description: 'Protection until next prayer', category: QuestCategory.SUNNAH, xp: 320 },
+  { id: 'tahiyyatul_wudhu', title: 'Tahiyyatul Wudhu', description: '2 Rakaats after performing Wudhu, a key to Jannah.', category: QuestCategory.SUNNAH, xp: 250 },
+  { id: 'tahiyyatul_masjid', title: 'Tahiyyatul Masjid', description: '2 Rakaats upon entering the Masjid, honoring Allah\'s house.', category: QuestCategory.SUNNAH, xp: 200 },
 
   // CHARACTER & COMMUNITY
   { id: 'forgive_someone', title: 'Forgive a Grudge', description: 'Release a grievance for the sake of Allah.', category: QuestCategory.SUNNAH, xp: 1600 },
@@ -54,14 +57,39 @@ export const ALL_QUESTS: Quest[] = [
   { id: 'reflect_universe', title: 'Universe Reflection', description: 'Contemplate the vastness of creation', category: QuestCategory.SUNNAH, xp: 400 },
   { id: 'feed_stray_animal', title: 'Feed a Stray Animal', description: 'Mercy to all creation', category: QuestCategory.CHARITY, xp: 360 },
   { id: 'help_neighbor', title: 'Help a Neighbor', description: 'Assist with groceries or tasks', category: QuestCategory.CHARITY, xp: 600 },
+  { id: 'convey_islam', title: 'Convey Islam\'s Message', description: 'Convey the message of Islam to someone, even with a smile.', category: QuestCategory.CHARITY, xp: 1500 },
+  { id: 'quran_traffic', title: 'Quran During Commute', description: 'Listen to the Quran during traffic or your daily commute.', category: QuestCategory.CHARITY, xp: 300 },
+  { id: 'no_road_rage', title: 'Patience on the Road', description: 'Repress road rage and practice patience while driving.', category: QuestCategory.CHARITY, xp: 500 },
+  { id: 'dua_for_ummah', title: 'Dua for the Ummah', description: 'Make a sincere dua for the well-being of the Muslim community.', category: QuestCategory.CHARITY, xp: 250 },
+  { id: 'help_elderly', title: 'Assist the Elderly', description: 'Assist, be kind to, and spend time with an elderly person.', category: QuestCategory.CHARITY, xp: 700 },
+
+
+  // GUIDE-DERIVED QUESTS
+  { id: 'jumuah_surah_kahf', title: 'Recite Surah Kahf', description: 'A light illuminated for you until the next Jumu\'ah.', category: QuestCategory.DHIKR, xp: 400 },
+  { id: 'jumuah_durood_80', title: '80x Durood (Post-Asr)', description: 'On Jumu\'ah, after Asr, 80 years of sins are forgiven.', category: QuestCategory.DHIKR, xp: 300 },
+  { id: 'read_manzil', title: 'Recite Manzil', description: 'The 33 verses of security and protection against evil influences.', category: QuestCategory.DHIKR, xp: 350 },
+  { id: 'tasbeeh_fatimi', title: 'Tasbeeh Fatimi', description: 'Recite before sleep: Subhanallah (33x), Alhamdulillah (33x), Allahu Akbar (34x). Better than a servant.', category: QuestCategory.DHIKR, xp: 150 },
+  { id: 'post_salah_adhkar', title: 'Post-Salah Adhkar', description: 'Perform the sunnah remembrance after obligatory prayers.', category: QuestCategory.DHIKR, xp: 200 },
+  
+  // --- NEW CORRECTION QUESTS ---
+  // Minor Sin
+  { id: 'corr_pay_sadaqa_minor', title: 'Pay Sadaqa', description: 'Charity extinguishes sin as water extinguishes fire.', category: QuestCategory.CORRECTION, subCategory: 'Minor Sin', xp: 300, locationType: 'charity' },
+  { id: 'corr_istighfar_100_minor', title: '100x Astaghfirullah', description: 'Seek Allah\'s forgiveness to cleanse the heart.', category: QuestCategory.CORRECTION, subCategory: 'Minor Sin', xp: 200 },
+  { id: 'corr_subhanallah_100_minor', title: '100x Subhanallah', description: 'Glorify Allah to erase misdeeds.', category: QuestCategory.CORRECTION, subCategory: 'Minor Sin', xp: 200 },
+  // Major Sin
+  { id: 'corr_salah_taubah', title: 'Salat-ul-Tawbah', description: 'Offer 2 Rakaats of sincere repentance.', category: QuestCategory.CORRECTION, subCategory: 'Major Sin', xp: 1200 },
+  { id: 'corr_pay_sadaqa_major', title: 'Pay Sadaqa Generously', description: 'Give charity to seek mercy and forgiveness.', category: QuestCategory.CORRECTION, subCategory: 'Major Sin', xp: 800, locationType: 'charity' },
+  { id: 'corr_istighfar_100_major', title: '100x Astaghfirullah', description: 'Beg for forgiveness with deep regret.', category: QuestCategory.CORRECTION, subCategory: 'Major Sin', xp: 300 },
+  { id: 'corr_subhanallah_100_major', title: '100x Subhanallah', description: 'Glorify Allah\'s perfection as a part of repentance.', category: QuestCategory.CORRECTION, subCategory: 'Major Sin', xp: 300 },
+  { id: 'corr_feed_needy', title: 'Feed a Family', description: 'Provide a good meal to a person or family in need.', category: QuestCategory.CORRECTION, subCategory: 'Major Sin', xp: 1000, locationType: 'soup_kitchen' },
+  { id: 'corr_sacrifice_animal', title: 'Sacrifice for the Poor', description: 'Sacrifice an animal and distribute the meat to the needy.', category: QuestCategory.CORRECTION, subCategory: 'Major Sin', xp: 2000, locationType: 'community' },
+  // Wronged Someone
+  { id: 'corr_apology', title: 'Seek Forgiveness', description: 'Sincerely apologize to the one you have wronged.', category: QuestCategory.CORRECTION, subCategory: 'Wronged Someone', xp: 1600 },
+  // Missed Salah
+  { id: 'corr_qadha', title: 'Pray Qadha Salah', description: 'Make up the obligatory prayer you missed.', category: QuestCategory.CORRECTION, subCategory: 'Missed Salah', xp: 400 },
 ];
 
-export const CORRECTION_QUESTS: Record<string, Quest[]> = {
-  minor_sin: [{ id: 'dhikr_100_correction', title: '100x Subhanallah', description: 'Erases sins like foam of the sea', category: QuestCategory.CORRECTION, xp: 200 }],
-  major_sin: [{ id: 'salah_taubah', title: 'Salat-ul-Tawbah', description: '2 Rakaats of Repentance', category: QuestCategory.CORRECTION, xp: 1200 }],
-  wronged_someone: [{ id: 'apology', title: 'Seek Forgiveness', description: 'Heal the heart of another', category: QuestCategory.CORRECTION, xp: 1600 }],
-  missed_salah: [{ id: 'qadha', title: 'Qadha Salah', description: 'Restoring your covenant', category: QuestCategory.CORRECTION, xp: 400 }],
-};
+export const CORRECTION_SUB_CATEGORIES = ['Minor Sin', 'Major Sin', 'Wronged Someone', 'Missed Salah'];
 
 export const HARDCODED_REFLECTIONS: ReflectionItem[] = [
   {
@@ -177,8 +205,6 @@ You have your own whale. It might be debt. It might be a failing marriage. It mi
   }
 ];
 
-// --- ADHKAR DATA EXPANDED FROM BOOK ---
-
 const POST_SALAH_ADHKAR: AdhkarItem[] = [
   { id: 'ps1', arabic: 'اللهُ أَكْبَرُ', translation: 'Allah is the Greatest!', count: 1, reference: 'Bukhari/Muslim', virtue: 'Habit of Prophet ﷺ after Fard Salaat.' },
   { id: 'ps2', arabic: 'أَسْتَغْفِرُ اللهَ', translation: 'I seek the forgiveness of Allah.', count: 3, reference: 'Muslim', virtue: 'Recited 3 times after Salaat.' },
@@ -217,7 +243,10 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     adhkar: MORNING_EVENING_ADHKAR,
     specialGuide: {
       title: 'Morning Routine',
-      content: `**Upon Awakening:**\n1. Rub face with hands to remove sleep effects.\n2. Recite: "Alhamdulillahil-ladhi ahyana ba'da ma amatana wa ilayhin-nushur."\n3. Use Miswaak immediately.`
+      content: `**Upon Awakening:**
+1. Rub face with hands to remove sleep effects.
+2. Recite: "Alhamdulillahil-ladhi ahyana ba'da ma amatana wa ilayhin-nushur."
+3. Use Miswaak immediately.`
     }
   },
   {
@@ -226,21 +255,16 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     timeRange: 'Every Prayer',
     description: 'Sunnah practices to be observed after every Fard Salaat as detailed in the Treasures of Jannah.',
     icon: Hand,
-    quests: [],
+    quests: ['post_salah_adhkar', 'ayatul_kursi_salah'],
     adhkar: POST_SALAH_ADHKAR,
     specialGuide: {
       title: 'Special Surahs After Salah',
-      content: `**After Fajr:** Surah Yaseen (Solves all problems)\n**After Zohr:** Surah Fatah (Saves from fitnah)\n**After Asr:** Surah Naba (Grants great knowledge)\n**After Maghrib:** Surah Waqiah (Protects from poverty)\n**After Esha:** Surah Mulk (Protection from grave)`
+      content: `**After Fajr:** Surah Yaseen (Solves all problems)
+**After Zohr:** Surah Fatah (Saves from fitnah)
+**After Asr:** Surah Naba (Grants great knowledge)
+**After Maghrib:** Surah Waqiah (Protects from poverty)
+**After Esha:** Surah Mulk (Protection from grave)`
     }
-  },
-  {
-    id: 'nafl_prayers',
-    title: 'Nafl Salah',
-    timeRange: 'Voluntary',
-    description: 'Special prayers to gain closeness to Allah outside of the obligatory times.',
-    icon: Star,
-    quests: ['ishraq_salah'],
-    adhkar: [],
   },
   {
     id: 'jumuah_tab',
@@ -248,7 +272,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     timeRange: 'Friday',
     description: 'The best day of the week. Prepare from Thursday night.',
     icon: CalendarDays,
-    quests: [],
+    quests: ['jumuah_surah_kahf', 'jumuah_durood_80'],
     adhkar: [
       { id: 'j1', arabic: 'اَللّهُمَّ صَلِّ عَلى مُحَمَّدِ نِ النَّبِيِّ الْأُمِّيِّ وَعَلى آلِهِ وَسَلِّمْ تَسْلِيْمًا', translation: 'O Allah, bestow Your blessings...', count: 80, virtue: 'Recited 80x after Asr on Friday: 80 years of sins forgiven.' },
       { id: 'j2', arabic: 'Recite Surah Kahf', translation: 'Read the Cave', count: 1, virtue: 'A light illuminated for you until the next Jumu\'ah.' },
@@ -256,7 +280,16 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     ],
     specialGuide: {
       title: 'Etiquette of Friday',
-      content: `**Thursday Night:**\n- Prepare clothes, clip nails, recite Surah Dukhaan.\n\n**Friday Morning:**\n- Perform Ghusl (Sunnah bath).\n- Use Miswaak.\n- Wear best clothes (preferably white).\n- Apply non-alcoholic perfume (Itr).\n- Proceed early to the Masjid by foot.\n- Sit near the Imam and listen attentively to Khutbah.`
+      content: `**Thursday Night:**
+- Prepare clothes, clip nails, recite Surah Dukhaan.
+
+**Friday Morning:**
+- Perform Ghusl (Sunnah bath).
+- Use Miswaak.
+- Wear best clothes (preferably white).
+- Apply non-alcoholic perfume (Itr).
+- Proceed early to the Masjid by foot.
+- Sit near the Imam and listen attentively to Khutbah.`
     }
   },
   {
@@ -265,11 +298,30 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     timeRange: 'Protection',
     description: 'The verses of security and protection against evil influences.',
     icon: Shield,
-    quests: [],
+    quests: ['read_manzil'],
     adhkar: [],
     specialGuide: {
       title: 'The 33 Verses',
-      content: `**Benefits:**\n- Protection against Jinn, Black Magic (Sihr), and Sorcery.\n- Safety from thieves and burglars.\n- Security of home, family, and honour.\n\n**The Verses Include:**\n- Surah Fatihah (1-7)\n- Surah Baqarah (1-5, 163, 255-257, 284-286)\n- Surah Aal-e-Imran (18, 26, 27)\n- Surah A'araf (54-56)\n- Surah Israa (110-111)\n- Surah Muminoon (115-118)\n- Surah Saaffaat (1-11)\n- Surah Rehman (33-40)\n- Surah Hashr (21-24)\n- Surah Jinn (1-4)\n- Surah Kaafiroon (1-6)\n- Surah Ikhlas (1-4)\n- Surah Falaq (1-5)\n- Surah Naas (1-6)`
+      content: `**Benefits:**
+- Protection against Jinn, Black Magic (Sihr), and Sorcery.
+- Safety from thieves and burglars.
+- Security of home, family, and honour.
+
+**The Verses Include:**
+- Surah Fatihah (1-7)
+- Surah Baqarah (1-5, 163, 255-257, 284-286)
+- Surah Aal-e-Imran (18, 26, 27)
+- Surah A'araf (54-56)
+- Surah Israa (110-111)
+- Surah Muminoon (115-118)
+- Surah Saaffaat (1-11)
+- Surah Rehman (33-40)
+- Surah Hashr (21-24)
+- Surah Jinn (1-4)
+- Surah Kaafiroon (1-6)
+- Surah Ikhlas (1-4)
+- Surah Falaq (1-5)
+- Surah Naas (1-6)`
     }
   },
   {
@@ -278,14 +330,18 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     timeRange: 'Isha-Tahajjud',
     description: 'Protection before sleep and the special acceptance of the last third of the night.',
     icon: Moon,
-    quests: ['isha', 'surah_mulk', 'surah_sajdah', 'tahajjud'],
+    quests: ['isha', 'surah_mulk', 'surah_sajdah', 'tahajjud', 'tasbeeh_fatimi', 'wudu_before_sleep'],
     adhkar: [
       { id: 'n1', arabic: 'بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا', translation: 'In Your Name O Allah I die and live.', count: 1 },
       { id: 'n2', arabic: 'Subhanallah (33) Alhamdulillah (33) Allahu Akbar (34)', translation: 'Tasbeeh before sleep.', count: 1, virtue: 'Better than having a servant.' }
     ],
     specialGuide: {
       title: 'Method of Sleep',
-      content: `**Sunnahs:**\n1. Perform Wudu.\n2. Dust the bedding 3 times with a cloth.\n3. Sleep on the right side facing Qiblah.\n4. Recite Ayatul Kursi and the last 2 verses of Surah Baqarah.`
+      content: `**Sunnahs:**
+1. Perform Wudu.
+2. Dust the bedding 3 times with a cloth.
+3. Sleep on the right side facing Qiblah.
+4. Recite Ayatul Kursi and the last 2 verses of Surah Baqarah.`
     }
   }
 ];
