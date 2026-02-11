@@ -1,9 +1,4 @@
 
-
-
-
-
-
 export enum QuestCategory {
   MAIN = 'Main Quest',
   SUNNAH = 'Sunnah Quest',
@@ -33,9 +28,11 @@ export interface UserSettings {
 }
 
 export interface User {
+  id?: string; // Supabase UUID
   name: string;
   email: string;
   location: string;
+  country?: string; // ISO code or name for leaderboard
   xp: number;
   isVerified: boolean;
   activeQuests: string[];
