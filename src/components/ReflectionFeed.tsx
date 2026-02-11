@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { ReflectionItem } from '../types';
 import { ChevronDown, BookOpen, Loader2, Sparkles, Star, AlignLeft } from 'lucide-react';
@@ -16,11 +17,13 @@ const ReflectionFeed: React.FC<ReflectionFeedProps> = ({ items, loading, hasMore
   const [generatingDetails, setGeneratingDetails] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Monitor visible index to trigger load-more
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           const index = parseInt(entry.target.getAttribute('data-index') || '0');
+          // Only trigger if we are near the end AND we are allowed to load more
           if (index >= items.length - 2 && !loading && hasMore) {
             onLoadMore();
           }
@@ -39,9 +42,13 @@ const ReflectionFeed: React.FC<ReflectionFeedProps> = ({ items, loading, hasMore
 
   const handleExpand = async (item: ReflectionItem) => {
     setExpandedId(item.id);
+    
+    // If we already have the full essay, don't re-generate
     if (item.details && item.details.length > 200) {
       return;
     }
+
+    // Otherwise, generate it now
     setGeneratingDetails(true);
     try {
       const fullText = await generateReflectionDeepDive(item);
@@ -114,8 +121,10 @@ const ReflectionFeed: React.FC<ReflectionFeedProps> = ({ items, loading, hasMore
         );
       })}
 
+      {/* EXPANDED MODAL */}
       {expandedItem && (
         <div className="fixed inset-0 z-[200] bg-[#fdfbf7] animate-in slide-in-from-bottom-10 duration-500">
+           {/* Header */}
            <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center bg-[#fdfbf7]/95 backdrop-blur-md z-20 border-b border-slate-100">
               <button onClick={() => setExpandedId(null)} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#064e3b] bg-[#064e3b]/5 px-6 py-3 rounded-full hover:bg-[#064e3b]/10 transition-colors">
                 <ChevronDown size={18} /> Close
@@ -126,6 +135,7 @@ const ReflectionFeed: React.FC<ReflectionFeedProps> = ({ items, loading, hasMore
               </div>
            </div>
 
+           {/* Content */}
            <div className="h-full overflow-y-auto p-8 pt-32 scrollbar-hide">
               <div className="max-w-2xl mx-auto space-y-12 pb-40">
                 <div className="space-y-6">
@@ -142,6 +152,7 @@ const ReflectionFeed: React.FC<ReflectionFeedProps> = ({ items, loading, hasMore
                   )}
                 </div>
 
+                {/* Loading State or Content */}
                 {generatingDetails ? (
                   <div className="flex flex-col items-center justify-center py-20 space-y-6 animate-pulse opacity-50">
                     <AlignLeft size={64} className="text-slate-300" />
@@ -168,6 +179,7 @@ const ReflectionFeed: React.FC<ReflectionFeedProps> = ({ items, loading, hasMore
         </div>
       )}
       
+      {/* Scroll Sentinel / Bottom Loader */}
       {hasMore ? (
         <div className="snap-start h-screen w-full flex flex-col items-center justify-center bg-[#fdfbf7] gap-4">
           <div className="relative">
