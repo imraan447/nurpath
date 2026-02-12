@@ -269,33 +269,7 @@ const App: React.FC = () => {
     }
   }, [user?.settings?.darkMode]);
 
-// SUPABASE AUTH INIT
-  useEffect(() => {
-    const initAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session) {
-        await fetchProfile(session.user.id, session.user.email!, session.user.created_at);
-      } else {
-        setLoadingAuth(false);
-      }
-
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-        if (session) {
-          await fetchProfile(session.user.id, session.user.email!, session.user.created_at);
-        } else {
-          setUser(null);
-          setLoadingAuth(false);
-        }
-      });
-
-      return () => subscription.unsubscribe();
-    };
-
-    initAuth();
-  }, []);
-
-  const fetchProfile = async (userId: string, email: string, createdAt: string) => {
+const fetchProfile = async (userId: string, email: string, createdAt: string) => {
     try {
       const { data: profileData } = await supabase.from('profiles').select('*').eq('id', userId).single();
 
@@ -313,19 +287,20 @@ const App: React.FC = () => {
       
       if (todaysQuests) {
         todaysQuests.forEach(q => {
-             dbDailyCompletions[q.quest_id] = todayKey;
+              dbDailyCompletions[q.quest_id] = todayKey;
         });
       }
 
       const saved = localStorage.getItem(`nurpath_user_${userId}`);
       let localData: Partial<User> = {};
       if (saved) {
-         localData = JSON.parse(saved);
+          localData = JSON.parse(saved);
       } else {
-         localData = { activeQuests: [], completedDailyQuests: {}, settings: DEFAULT_SETTINGS };
+          localData = { activeQuests: [], completedDailyQuests: {}, settings: DEFAULT_SETTINGS };
       }
 
       const mergedDailyQuests = { ...localData.completedDailyQuests, ...dbDailyCompletions };
+      
       // HANDLE AUTO-ADD PINNED
       let activeQuests = localData.activeQuests || [];
       if (profileData?.auto_add_pinned && profileData?.pinned_quests) {
@@ -336,10 +311,28 @@ const App: React.FC = () => {
         }
       }
 
-      // Sync activeQuests
+      // Sync activeQuests - THIS NOW WORKS BECAUSE OF 'async' ABOVE
       if (profileData && JSON.stringify(profileData.active_quests) !== JSON.stringify(activeQuests)) {
-         await supabase.from('profiles').update({ active_quests: activeQuests }).eq('id', userId);
+          await supabase.from('profiles').update({ active_quests: activeQuests }).eq('id', userId);
       }
+
+      // Final state update
+      setUser({
+        ...profileData,
+        id: userId,
+        email: email,
+        completedDailyQuests: mergedDailyQuests,
+        activeQuests: activeQuests,
+        createdAt: createdAt
+      });
+
+    } catch (error) {
+      console.error("Error in fetchProfile:", error);
+    } finally {
+      // THIS KILLS THE HANGING CIRCLE
+      setLoadingAuth(false);
+    }
+  };
 
       const { count } = await supabase
         .from('friendships')
