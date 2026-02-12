@@ -282,6 +282,8 @@ const App: React.FC = () => {
 
       const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
         if (session) {
+          // Set loading true here to handle login flow transition
+          setLoadingAuth(true); 
           await fetchProfile(session.user.id, session.user.email!, session.user.created_at);
         } else {
           setUser(null);
@@ -768,7 +770,7 @@ const App: React.FC = () => {
   const questsCompletedCount = Object.keys(user?.completedDailyQuests || {}).length;
 
   if (loadingAuth) return <div className="h-screen w-full flex items-center justify-center bg-[#fdfbf7]"><Loader2 className="animate-spin text-[#064e3b]" size={48} /></div>;
-  if (!user) return <Auth onLoginSuccess={() => setLoadingAuth(true)} />;
+  if (!user) return <Auth onLoginSuccess={() => {}} />;
 
   const pinnedQuestsList = user.pinnedQuests?.map(pid => ALL_QUESTS.find(q => q.id === pid)).filter(Boolean) as Quest[] || [];
 
