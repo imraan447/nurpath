@@ -107,22 +107,16 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-6 bg-[#fdfbf7] relative overflow-hidden">
-      {/* Background Elements */}
-      <div className="absolute inset-0 arabian-pattern opacity-30 pointer-events-none" />
-      <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-[#064e3b]/5 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-[#d4af37]/5 rounded-full blur-3xl pointer-events-none" />
-
+    <div className="min-h-screen w-full flex items-center justify-center p-6 bg-[#f7f1e3] relative overflow-hidden">
+      
       <div className="w-full max-w-md relative z-10 animate-in fade-in zoom-in-95 duration-700">
         
         {/* Logo Section */}
-        <div className="text-center mb-8">
-            <div className="w-20 h-20 mx-auto bg-gradient-to-br from-[#064e3b] to-[#042f24] rounded-[24px] flex items-center justify-center text-white shadow-2xl minaret-shape mb-6 border-4 border-[#d4af37]">
-                <span className="text-3xl font-serif">N</span>
-            </div>
-            <h1 className="text-4xl font-bold text-slate-900 tracking-tight mb-2">NurPath</h1>
-            <p className="text-[#d4af37] font-black uppercase tracking-[0.3em] text-xs">Journey to Light</p>
-        </div>
+<img 
+  src="/images/nurpath_logo.png" 
+  alt="NurPath" 
+  className="w-48 h-auto mx-auto mb-6 object-contain"
+/>
 
         {/* Card */}
         <div className="bg-white/80 backdrop-blur-xl rounded-[40px] shadow-2xl p-8 border border-white/50">
