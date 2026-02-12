@@ -1,5 +1,5 @@
 {
-  "name": "NurPath - Muslim Gamification",
+  "name": "NurPath7",
   "description": "A minimalist, gamified app for spiritual growth, featuring quest-based worship tracking, location-aware community services, and a reflective media feed.",
   "requestFramePermissions": [
     "geolocation"
