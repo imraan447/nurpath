@@ -24,7 +24,9 @@ export interface UserSettings {
   darkMode: boolean;
   notifications: boolean;
   fontSize: 'small' | 'medium' | 'large';
-  seerahBookmark?: number; // Index of the last read Seerah card
+  seerahBookmark?: number; 
+  calcMethod?: number; // 2 for ISNA, 1 for MWL etc
+  madhab?: number; // 0 for Shafi/Standard, 1 for Hanafi
 }
 
 export interface User {
@@ -36,8 +38,11 @@ export interface User {
   xp: number;
   isVerified: boolean;
   activeQuests: string[];
+  pinnedQuests?: string[];
+  autoAddPinned?: boolean;
   settings?: UserSettings;
   completedDailyQuests?: { [questId: string]: string }; // e.g. { 'fajr': '2023-10-27' }
+  createdAt?: string;
 }
 
 export interface ReflectionItem {
@@ -106,4 +111,53 @@ export interface SeerahChapter {
   period: 'Mecca' | 'Medina' | 'Pre-Prophethood' | 'Migration';
   year: string;
   content: string;
+}
+
+export interface AllahName {
+  id: number;
+  arabic: string;
+  transliteration: string;
+  meaning: string;
+  explanation: string;
+}
+
+export interface LibraryBook {
+  id: string;
+  title: string;
+  author: string;
+  coverUrl: string; // Color or Image
+  description: string;
+  readUrl: string; // External Link
+  tags: string[];
+}
+
+// --- COMMUNITY TYPES ---
+
+export interface FriendRequest {
+  id: string;
+  sender_id: string;
+  receiver_id: string;
+  status: 'pending' | 'accepted';
+  created_at: string;
+  sender?: { username: string; xp: number; country: string };
+}
+
+export interface Friend {
+  id: string;
+  username: string;
+  xp: number;
+  country: string;
+  active_quests?: string[];
+}
+
+export interface Group {
+  id: string;
+  name: string;
+  created_by: string;
+  created_at: string;
+  members?: Friend[]; 
+}
+
+export interface GroupQuest extends Quest {
+  sharedBy: string[]; // Usernames of people in the group doing this quest
 }
