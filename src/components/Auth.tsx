@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { Loader2, ArrowRight, Mail, Lock, User, Globe, AlertCircle, CheckCircle2, ChevronDown } from 'lucide-react';
+import { Loader2, ArrowRight, Mail, Lock, User, Globe, AlertCircle, CheckCircle2, ChevronDown, ArrowLeft } from 'lucide-react';
 
 interface AuthProps {
   onLoginSuccess: () => void;
@@ -18,7 +18,7 @@ const COUNTRIES = [
 ];
 
 const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
-  const [isLogin, setIsLogin] = useState(true);
+  const [view, setView] = useState<'login' | 'signup' | 'forgot'>('login');
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -34,14 +34,14 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
     setMessage(null);
 
     try {
-      if (isLogin) {
+      if (view === 'login') {
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password
         });
         if (error) throw error;
         onLoginSuccess();
-      } else {
+      } else if (view === 'signup') {
         // Sign Up
         const { data, error: signUpError } = await supabase.auth.signUp({
           email,
@@ -58,7 +58,14 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
         if (signUpError) throw signUpError;
 
         setMessage("Verification email sent! Please check your inbox.");
-        setIsLogin(true);
+        setView('login');
+      } else if (view === 'forgot') {
+        // Reset Password
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin,
+        });
+        if (resetError) throw resetError;
+        setMessage("Password reset link sent to your email.");
       }
     } catch (err: any) {
       setError(err.message || "An error occurred");
@@ -87,30 +94,42 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
 
         {/* Card */}
         <div className="bg-white/80 backdrop-blur-xl rounded-[40px] shadow-2xl p-8 border border-white/50">
-            <div className="flex justify-center mb-8 bg-slate-100 p-1.5 rounded-full w-fit mx-auto">
-                <button 
-                    onClick={() => { setIsLogin(true); setError(null); }}
-                    className={`px-6 py-2 rounded-full text-xs font-bold transition-all ${isLogin ? 'bg-white text-[#064e3b] shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
-                >
-                    Log In
-                </button>
-                <button 
-                    onClick={() => { setIsLogin(false); setError(null); }}
-                    className={`px-6 py-2 rounded-full text-xs font-bold transition-all ${!isLogin ? 'bg-white text-[#064e3b] shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
-                >
-                    Sign Up
-                </button>
-            </div>
+            {view !== 'forgot' && (
+                <div className="flex justify-center mb-8 bg-slate-100 p-1.5 rounded-full w-fit mx-auto">
+                    <button 
+                        onClick={() => { setView('login'); setError(null); }}
+                        className={`px-6 py-2 rounded-full text-xs font-bold transition-all ${view === 'login' ? 'bg-white text-[#064e3b] shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+                    >
+                        Log In
+                    </button>
+                    <button 
+                        onClick={() => { setView('signup'); setError(null); }}
+                        className={`px-6 py-2 rounded-full text-xs font-bold transition-all ${view === 'signup' ? 'bg-white text-[#064e3b] shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+                    >
+                        Sign Up
+                    </button>
+                </div>
+            )}
+
+            {view === 'forgot' && (
+                <div className="mb-6">
+                    <button onClick={() => { setView('login'); setError(null); setMessage(null); }} className="flex items-center gap-2 text-slate-400 hover:text-[#064e3b] text-xs font-bold mb-4">
+                        <ArrowLeft size={16} /> Back to Login
+                    </button>
+                    <h2 className="text-xl font-bold text-slate-900">Reset Password</h2>
+                    <p className="text-sm text-slate-500 mt-1">Enter your email to receive a reset link.</p>
+                </div>
+            )}
 
             <form onSubmit={handleAuth} className="space-y-4">
                 
-                {!isLogin && (
+                {view === 'signup' && (
                     <>
                     <div className="relative group">
                         <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#064e3b] transition-colors" size={20} />
                         <input 
                             type="text" 
-                            required={!isLogin}
+                            required
                             placeholder="Username"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
@@ -120,7 +139,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
                     <div className="relative group">
                         <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#064e3b] transition-colors" size={20} />
                         <select
-                            required={!isLogin}
+                            required
                             value={country}
                             onChange={(e) => setCountry(e.target.value)}
                             className="w-full p-4 pl-12 rounded-2xl bg-slate-50 border-2 border-slate-100 focus:border-[#064e3b] outline-none font-bold text-slate-900 transition-all focus:bg-white appearance-none text-sm"
@@ -147,17 +166,27 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
                     />
                 </div>
 
-                <div className="relative group">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#064e3b] transition-colors" size={20} />
-                    <input 
-                        type="password" 
-                        required
-                        placeholder="Password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full p-4 pl-12 rounded-2xl bg-slate-50 border-2 border-slate-100 focus:border-[#064e3b] outline-none font-bold text-slate-900 placeholder:text-slate-300 transition-all focus:bg-white"
-                    />
-                </div>
+                {view !== 'forgot' && (
+                    <div className="relative group">
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#064e3b] transition-colors" size={20} />
+                        <input 
+                            type="password" 
+                            required
+                            placeholder="Password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="w-full p-4 pl-12 rounded-2xl bg-slate-50 border-2 border-slate-100 focus:border-[#064e3b] outline-none font-bold text-slate-900 placeholder:text-slate-300 transition-all focus:bg-white"
+                        />
+                    </div>
+                )}
+                
+                {view === 'login' && (
+                    <div className="flex justify-end">
+                        <button type="button" onClick={() => setView('forgot')} className="text-[10px] font-bold text-slate-400 hover:text-[#064e3b] uppercase tracking-wider">
+                            Forgot Password?
+                        </button>
+                    </div>
+                )}
 
                 {error && (
                     <div className="p-4 rounded-2xl bg-rose-50 border border-rose-100 flex items-start gap-3">
@@ -180,7 +209,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
                 >
                     {loading ? <Loader2 className="animate-spin" size={20} /> : (
                         <>
-                            {isLogin ? 'Continue Journey' : 'Begin Journey'} 
+                            {view === 'login' ? 'Continue Journey' : view === 'signup' ? 'Begin Journey' : 'Send Reset Link'} 
                             <ArrowRight size={18} />
                         </>
                     )}

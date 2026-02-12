@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { Trophy, Globe, MapPin, Loader2, Crown } from 'lucide-react';
+import { Trophy, Globe, MapPin, Loader2, Crown, Users } from 'lucide-react';
 
 interface LeaderboardEntry {
   id: string;
@@ -16,10 +16,11 @@ interface LeaderboardProps {
   currentUserId?: string;
   onClose: () => void;
   darkMode?: boolean;
+  embedded?: boolean;
 }
 
-const Leaderboard: React.FC<LeaderboardProps> = ({ currentUserCountry, currentUserId, onClose, darkMode }) => {
-  const [activeTab, setActiveTab] = useState<'global' | 'country'>('global');
+const Leaderboard: React.FC<LeaderboardProps> = ({ currentUserCountry, currentUserId, onClose, darkMode, embedded }) => {
+  const [activeTab, setActiveTab] = useState<'global' | 'country' | 'friends'>('global');
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -30,17 +31,45 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentUserCountry, currentUs
   const fetchLeaderboard = async () => {
     setLoading(true);
     try {
-      let query = supabase
-        .from('profiles')
-        .select('id, username, xp, country')
-        .order('xp', { ascending: false })
-        .limit(50);
+      let data: any[] | null = [];
+      let error = null;
 
-      if (activeTab === 'country' && currentUserCountry) {
-        query = query.eq('country', currentUserCountry);
+      if (activeTab === 'friends' && currentUserId) {
+        // Fetch friends first
+        const { data: friendships } = await supabase
+           .from('friendships')
+           .select('user_id_1, user_id_2')
+           .or(`user_id_1.eq.${currentUserId},user_id_2.eq.${currentUserId}`)
+           .eq('status', 'accepted');
+        
+        const friendIds = friendships?.map(f => f.user_id_1 === currentUserId ? f.user_id_2 : f.user_id_1) || [];
+        friendIds.push(currentUserId); // Add self
+
+        const res = await supabase
+          .from('profiles')
+          .select('id, username, xp, country')
+          .in('id', friendIds)
+          .order('xp', { ascending: false });
+        
+        data = res.data;
+        error = res.error;
+
+      } else {
+        // Global or Country
+        let query = supabase
+          .from('profiles')
+          .select('id, username, xp, country')
+          .order('xp', { ascending: false })
+          .limit(50);
+
+        if (activeTab === 'country' && currentUserCountry) {
+          query = query.eq('country', currentUserCountry);
+        }
+        
+        const res = await query;
+        data = res.data;
+        error = res.error;
       }
-
-      const { data, error } = await query;
       
       if (error) throw error;
       
@@ -54,24 +83,34 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentUserCountry, currentUs
     }
   };
 
+  const containerClasses = embedded 
+    ? "h-full flex flex-col"
+    : `fixed inset-0 z-[80] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md animate-in fade-in`;
+  
+  const innerClasses = embedded
+    ? "h-full flex flex-col bg-transparent"
+    : `w-full max-w-md h-[80vh] flex flex-col rounded-[40px] shadow-2xl relative overflow-hidden ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}`;
+
   return (
-    <div className={`fixed inset-0 z-[80] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md animate-in fade-in`}>
-      <div className={`w-full max-w-md h-[80vh] flex flex-col rounded-[40px] shadow-2xl relative overflow-hidden ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}`}>
+    <div className={containerClasses}>
+      <div className={innerClasses}>
         
         {/* Header */}
         <div className="p-6 pb-2 shrink-0 z-10 bg-inherit">
-           <div className="flex justify-between items-center mb-6">
-              <div className="flex items-center gap-3">
-                 <div className="w-12 h-12 bg-[#d4af37] rounded-2xl flex items-center justify-center shadow-lg text-white">
-                    <Trophy size={24} />
-                 </div>
-                 <div>
-                    <h2 className="text-xl font-bold">Leaderboard</h2>
-                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Top Seekers</p>
-                 </div>
-              </div>
-              <button onClick={onClose} className="px-4 py-2 bg-slate-100 dark:bg-white/10 rounded-full text-xs font-bold text-slate-500 dark:text-slate-300">Close</button>
-           </div>
+           {!embedded && (
+             <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-3">
+                   <div className="w-12 h-12 bg-[#d4af37] rounded-2xl flex items-center justify-center shadow-lg text-white">
+                      <Trophy size={24} />
+                   </div>
+                   <div>
+                      <h2 className="text-xl font-bold">Leaderboard</h2>
+                      <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Top Seekers</p>
+                   </div>
+                </div>
+                <button onClick={onClose} className="px-4 py-2 bg-slate-100 dark:bg-white/10 rounded-full text-xs font-bold text-slate-500 dark:text-slate-300">Close</button>
+             </div>
+           )}
 
            <div className="flex p-1 bg-slate-100 dark:bg-white/5 rounded-2xl">
               <button 
@@ -84,7 +123,13 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentUserCountry, currentUs
                 onClick={() => setActiveTab('country')}
                 className={`flex-1 py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${activeTab === 'country' ? 'bg-white dark:bg-white/10 shadow-md text-[#064e3b] dark:text-white' : 'text-slate-400'}`}
               >
-                <MapPin size={14} /> {currentUserCountry || 'National'}
+                <MapPin size={14} /> National
+              </button>
+              <button 
+                onClick={() => setActiveTab('friends')}
+                className={`flex-1 py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${activeTab === 'friends' ? 'bg-white dark:bg-white/10 shadow-md text-[#064e3b] dark:text-white' : 'text-slate-400'}`}
+              >
+                <Users size={14} /> Friends
               </button>
            </div>
         </div>
@@ -98,7 +143,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentUserCountry, currentUs
                 </div>
             ) : entries.length === 0 ? (
                 <div className="text-center py-10 opacity-50">
-                    <p>No seekers found in this region yet.</p>
+                    <p>No seekers found.</p>
                 </div>
             ) : (
                 entries.map((entry, index) => {
@@ -123,7 +168,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentUserCountry, currentUs
                             </div>
                             
                             <div className="flex-1">
-                                <h3 className={`font-bold text-sm ${isMe ? 'text-[#064e3b] dark:text-emerald-400' : ''}`}>
+                                <h3 className={`font-bold text-sm ${isMe ? 'text-[#064e3b] dark:text-emerald-400' : 'dark:text-white'}`}>
                                     {entry.username} {isMe && '(You)'}
                                 </h3>
                                 <p className="text-[10px] text-slate-400 uppercase tracking-wider">{entry.country}</p>
@@ -139,10 +184,11 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentUserCountry, currentUs
             )}
         </div>
 
-        {/* Footer info */}
-        <div className="p-4 text-center bg-slate-50 dark:bg-white/5 border-t border-slate-100 dark:border-white/10">
-            <p className="text-[10px] text-slate-400">Ranks updated in real-time</p>
-        </div>
+        {!embedded && (
+            <div className="p-4 text-center bg-slate-50 dark:bg-white/5 border-t border-slate-100 dark:border-white/10">
+                <p className="text-[10px] text-slate-400">Ranks updated in real-time</p>
+            </div>
+        )}
 
       </div>
     </div>
