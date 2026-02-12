@@ -554,13 +554,31 @@ const App: React.FC = () => {
       await completeQuests([q], xpMultiplier);
   };
 
+  // REFACTORED: togglePinQuest now correctly removes items from Active list if unpinned
   const togglePinQuest = async (quest: Quest) => {
     if (!user) return;
     const currentPinned = user.pinnedQuests || [];
-    let newPinned = currentPinned.includes(quest.id) ? currentPinned.filter(id => id !== quest.id) : [...currentPinned, quest.id];
-    const updated = { ...user, pinnedQuests: newPinned };
-    setUser(updated); 
-    await supabase.from('profiles').update({ pinned_quests: newPinned }).eq('id', user.id);
+    const isUnpinning = currentPinned.includes(quest.id);
+    
+    let newPinned;
+    let newActive = user.activeQuests;
+
+    if (isUnpinning) {
+        newPinned = currentPinned.filter(id => id !== quest.id);
+        // FIX: Remove from active quests if not completed today so it "goes back" to the list
+        if (!isCompletedToday(quest.id)) {
+            newActive = newActive.filter(id => id !== quest.id);
+        }
+    } else {
+        newPinned = [...currentPinned, quest.id];
+        // If auto-add is on, ensure it's active
+        if (user.autoAddPinned && !newActive.includes(quest.id) && !isCompletedToday(quest.id)) {
+            newActive = [...newActive, quest.id];
+        }
+    }
+
+    const updated = { ...user, pinnedQuests: newPinned, activeQuests: newActive };
+    saveUser(updated);
   };
 
   const toggleAutoAddPinned = async () => {
