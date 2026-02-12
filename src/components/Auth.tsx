@@ -33,42 +33,74 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
     setError(null);
     setMessage(null);
 
+    const cleanEmail = email.trim();
+    const cleanUsername = username.trim();
+
     try {
       if (view === 'login') {
         const { error } = await supabase.auth.signInWithPassword({
-          email,
+          email: cleanEmail,
           password
         });
         if (error) throw error;
         onLoginSuccess();
       } else if (view === 'signup') {
-        // Sign Up
+        
+        // Direct Sign Up
         const { data, error: signUpError } = await supabase.auth.signUp({
-          email,
+          email: cleanEmail,
           password,
           options: {
             data: {
-              username,
+              username: cleanUsername,
               country,
-              xp: 0
             }
           }
         });
         
         if (signUpError) throw signUpError;
 
-        setMessage("Verification email sent! Please check your inbox.");
-        setView('login');
+        // 3. Handle Auto-Login vs Email Verification
+        if (data.session) {
+            // ARTIFICIAL DELAY: Give the DB Trigger time to create the profile
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            onLoginSuccess();
+        } else if (data.user) {
+            setMessage("Verification email sent! Please check your inbox to activate your account.");
+            setView('login');
+            setPassword('');
+        }
       } else if (view === 'forgot') {
-        // Reset Password
-        const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
             redirectTo: window.location.origin,
         });
         if (resetError) throw resetError;
         setMessage("Password reset link sent to your email.");
       }
     } catch (err: any) {
-      setError(err.message || "An error occurred");
+      console.error("Auth error:", err);
+      let errMsg = err.message || (typeof err === 'string' ? err : "An error occurred");
+      const lowerMsg = errMsg.toLowerCase();
+
+      // 1. Handle Existing User -> Redirect to Login
+      if (lowerMsg.includes("already registered") || lowerMsg.includes("unique constraint") || lowerMsg.includes("already exists")) {
+         setView('login');
+         setMessage("Account already exists. Please log in.");
+         setLoading(false);
+         return; 
+      } 
+      
+      // 2. Handle Rate Limit -> Extended Wait Message (Doubled again as requested: ~10 minutes)
+      else if (lowerMsg.includes("rate limit") || lowerMsg.includes("too many requests") || lowerMsg.includes("429")) {
+         errMsg = "Security Pause: Please wait 10 minutes before trying again.";
+      } 
+      
+      // 3. Handle Weak Password
+      else if (lowerMsg.includes("security purposes") || lowerMsg.includes("weak password")) {
+         errMsg = "Password is too weak. Try using a longer password.";
+      }
+      
+      setError(errMsg);
     } finally {
       setLoading(false);
     }
@@ -189,14 +221,14 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
                 )}
 
                 {error && (
-                    <div className="p-4 rounded-2xl bg-rose-50 border border-rose-100 flex items-start gap-3">
+                    <div className="p-4 rounded-2xl bg-rose-50 border border-rose-100 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
                         <AlertCircle className="text-rose-500 shrink-0" size={20} />
                         <p className="text-xs font-bold text-rose-600 leading-relaxed">{error}</p>
                     </div>
                 )}
 
                 {message && (
-                    <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-start gap-3">
+                    <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
                         <CheckCircle2 className="text-emerald-500 shrink-0" size={20} />
                         <p className="text-xs font-bold text-emerald-600 leading-relaxed">{message}</p>
                     </div>
@@ -216,10 +248,6 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
                 </button>
             </form>
         </div>
-        
-        <p className="text-center mt-8 text-[10px] text-slate-400 font-black uppercase tracking-widest">
-            Protected by Supabase Auth
-        </p>
       </div>
     </div>
   );
