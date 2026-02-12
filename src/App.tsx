@@ -269,7 +269,7 @@ const App: React.FC = () => {
     }
   }, [user?.settings?.darkMode]);
 
-// SUPABASE AUTH INIT
+  // SUPABASE AUTH INIT
   useEffect(() => {
     const initAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -282,6 +282,8 @@ const App: React.FC = () => {
 
       const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
         if (session) {
+          // Set loading true here to handle login flow transition
+          setLoadingAuth(true); 
           await fetchProfile(session.user.id, session.user.email!, session.user.created_at);
         } else {
           setUser(null);
@@ -297,7 +299,57 @@ const App: React.FC = () => {
 
   const fetchProfile = async (userId: string, email: string, createdAt: string) => {
     try {
-      const { data: profileData } = await supabase.from('profiles').select('*').eq('id', userId).single();
+      // 1. Try to get existing profile
+      let { data: profileData } = await supabase.from('profiles').select('*').eq('id', userId).single();
+
+      // 2. SELF-HEALING (Robust): Force creation if missing
+      if (!profileData) {
+         console.log("Profile missing, attempting robust self-healing...");
+         const { data: authUser } = await supabase.auth.getUser();
+         const meta = authUser.user?.user_metadata || {};
+         const baseUsername = meta.username || `User-${userId.substring(0,6)}`;
+         
+         const fullProfile = {
+             id: userId,
+             username: baseUsername,
+             country: meta.country || 'Unknown',
+             xp: 0,
+             active_quests: [],
+             pinned_quests: [],
+             auto_add_pinned: false,
+             calc_method: 2,
+             madhab: 0
+         };
+         
+         // Attempt 1: Full Profile Insert
+         let { data: inserted, error: insertError } = await supabase
+            .from('profiles')
+            .upsert(fullProfile)
+            .select()
+            .single();
+         
+         // Attempt 2: If conflict (duplicate username), try with suffix
+         if (insertError && (insertError.code === '23505' || insertError.message.includes('unique'))) {
+             console.log("Username collision, retrying with suffix...");
+             fullProfile.username = `${baseUsername}_${Math.floor(Math.random() * 9999)}`;
+             const retry = await supabase.from('profiles').upsert(fullProfile).select().single();
+             inserted = retry.data;
+             insertError = retry.error;
+         }
+
+         // Attempt 3: Minimal Insert (Fallback if schema is missing columns like 'active_quests')
+         if (insertError) {
+             console.log("Full insert failed (likely schema mismatch), trying minimal insert...", insertError);
+             const minimalProfile = { id: userId, username: fullProfile.username };
+             const minimalRetry = await supabase.from('profiles').upsert(minimalProfile).select().single();
+             inserted = minimalRetry.data;
+             // If minimal insert works, we have a profile!
+         }
+
+         if (inserted) {
+             profileData = inserted; 
+         }
+      }
 
       const startOfUtcDay = new Date();
       startOfUtcDay.setUTCHours(0, 0, 0, 0);
@@ -326,6 +378,7 @@ const App: React.FC = () => {
       }
 
       const mergedDailyQuests = { ...localData.completedDailyQuests, ...dbDailyCompletions };
+
       // HANDLE AUTO-ADD PINNED
       let activeQuests = localData.activeQuests || [];
       if (profileData?.auto_add_pinned && profileData?.pinned_quests) {
@@ -338,7 +391,12 @@ const App: React.FC = () => {
 
       // Sync activeQuests
       if (profileData && JSON.stringify(profileData.active_quests) !== JSON.stringify(activeQuests)) {
-         await supabase.from('profiles').update({ active_quests: activeQuests }).eq('id', userId);
+         // Only try to update active_quests if profileData has the field (checking via presence)
+         // But since we can't easily check schema here, we just try. 
+         // If minimal insert happened, this update might fail if column missing, but that's okay for now.
+         try {
+            await supabase.from('profiles').update({ active_quests: activeQuests }).eq('id', userId);
+         } catch (e) { console.log("Could not sync active_quests"); }
       }
 
       const { count } = await supabase
@@ -350,19 +408,19 @@ const App: React.FC = () => {
       setHasFriendRequests(count !== null && count > 0);
 
       if (profileData) {
-        // Correctly Map DB Columns to User Object using new column names
+        // Correctly Map DB Columns to User Object using standard names
         const dbSettings = {
            ...DEFAULT_SETTINGS,
            ...(localData.settings || {}),
-           calcMethod: profileData.salaah_calc ? parseInt(profileData.salaah_calc) : 2, // Map salaah_calc
-           madhab: profileData.asr_calc ? parseInt(profileData.asr_calc) : 0 // Map asr_calc
+           calcMethod: profileData.calc_method ?? 2,
+           madhab: profileData.madhab ?? 0
         };
 
         setUser({
           id: userId,
           name: profileData.username || 'Traveler',
           email: email,
-          location: profileData.location || '', // Read location from DB column
+          location: profileData.location || '',
           country: profileData.country || 'Unknown',
           xp: profileData.xp || 0,
           isVerified: true,
@@ -376,6 +434,7 @@ const App: React.FC = () => {
         setPendingSettings(dbSettings); // Initialize pending settings for modal
         setManualLocationInput(profileData.location || '');
       } else {
+        // Fallback if self-healing completely failed (should not happen often)
         setUser({
           id: userId,
           name: 'Traveler',
@@ -424,8 +483,8 @@ const App: React.FC = () => {
           location: u.location, 
           auto_add_pinned: u.autoAddPinned,
           pinned_quests: u.pinnedQuests,
-          salaah_calc: u.settings?.calcMethod?.toString(), // Store as string in salaah_calc
-          asr_calc: u.settings?.madhab?.toString() // Store as string in asr_calc
+          calc_method: u.settings?.calcMethod, 
+          madhab: u.settings?.madhab
         }).eq('id', u.id);
       } catch (e) { console.error("Save User Error:", e); }
     }
@@ -488,6 +547,7 @@ const App: React.FC = () => {
     const uncompletedSalah = fardSalahIds.filter(id => !isCompletedToday(id));
     const updated = { ...user, activeQuests: [...new Set([...user.activeQuests, ...uncompletedSalah])] };
     saveUser(updated);
+    setActiveTab('active'); // Auto-switch to active view to show changes
   };
 
   const addToActive = () => {
@@ -495,6 +555,7 @@ const App: React.FC = () => {
     const updated = { ...user, activeQuests: [...new Set([...user.activeQuests, confirmQuest.id])] };
     saveUser(updated);
     setConfirmQuest(null);
+    setActiveTab('active'); // Auto-switch to active view to show changes
   };
   
   const removeQuest = (quest: Quest) => {
@@ -553,7 +614,6 @@ const App: React.FC = () => {
       await completeQuests([q], xpMultiplier);
   };
 
-  // REFACTORED: togglePinQuest now correctly removes items from Active list if unpinned
   const togglePinQuest = async (quest: Quest) => {
     if (!user) return;
     const currentPinned = user.pinnedQuests || [];
@@ -564,7 +624,7 @@ const App: React.FC = () => {
 
     if (isUnpinning) {
         newPinned = currentPinned.filter(id => id !== quest.id);
-        // FIX: Remove from active quests if not completed today so it "goes back" to the list
+        // FORCE REMOVE from active quests if not completed today so it "goes back" to the list
         if (!isCompletedToday(quest.id)) {
             newActive = newActive.filter(id => id !== quest.id);
         }
@@ -710,7 +770,7 @@ const App: React.FC = () => {
   const questsCompletedCount = Object.keys(user?.completedDailyQuests || {}).length;
 
   if (loadingAuth) return <div className="h-screen w-full flex items-center justify-center bg-[#fdfbf7]"><Loader2 className="animate-spin text-[#064e3b]" size={48} /></div>;
-  if (!user) return <Auth onLoginSuccess={() => setLoadingAuth(true)} />;
+  if (!user) return <Auth onLoginSuccess={() => {}} />;
 
   const pinnedQuestsList = user.pinnedQuests?.map(pid => ALL_QUESTS.find(q => q.id === pid)).filter(Boolean) as Quest[] || [];
 
