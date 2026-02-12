@@ -1,8 +1,8 @@
 
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { supabase } from './lib/supabaseClient';
 import { User, Quest, QuestCategory, ReflectionItem, UserSettings, GuideSection, NaflPrayerItem, AdhkarItem } from './types';
-import { ALL_QUESTS, CORRECTION_SUB_CATEGORIES, HARDCODED_REFLECTIONS, GUIDE_SECTIONS, SEERAH_CHAPTERS, NAFL_PRAYERS } from './constants';
+import { ALL_QUESTS, CORRECTION_SUB_CATEGORIES, HARDCODED_REFLECTIONS, GUIDE_SECTIONS, SEERAH_CHAPTERS, NAFL_PRAYERS, PRAYER_RELATED_QUESTS } from './constants';
 import JSZip from 'jszip';
 import { 
   LayoutGrid, 
@@ -39,17 +39,36 @@ import {
   Shield,
   BookHeart,
   Book,
-  Download
+  Download,
+  Trophy,
+  Users,
+  Pin,
+  MapPin,
+  Zap,
+  Check,
+  CheckSquare,
+  Square,
+  Save,
+  Bell,
+  EyeOff,
+  Smartphone,
+  Globe
 } from 'lucide-react';
 import QuestCard from './components/QuestCard';
 import ReflectionFeed from './components/ReflectionFeed';
+import Auth from './components/Auth';
+import Leaderboard from './components/Leaderboard'; 
+import Community from './components/Community';
+import Citadel from './components/TreasuryGuide';
 import { generateReflections } from './services/geminiService';
 
 const DEFAULT_SETTINGS: UserSettings = {
   darkMode: false,
   notifications: true,
   fontSize: 'medium',
-  seerahBookmark: 0
+  seerahBookmark: 0,
+  calcMethod: 2, // ISNA
+  madhab: 0 // Shafi/Standard
 };
 
 const getLevelInfo = (xp: number) => {
@@ -83,338 +102,28 @@ const NavBtn = ({ active, label, icon, onClick, darkMode }: { active: boolean; l
   </button>
 );
 
-const AdhkarListItem: React.FC<{ item: AdhkarItem; darkMode?: boolean }> = ({ item, darkMode }) => (
-  <div className={`p-5 rounded-[25px] border flex items-center justify-between gap-4 transition-all ${darkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100 hover:border-[#064e3b]/20 hover:shadow-md'}`}>
-     <div>
-       <div className="flex items-center gap-2 mb-2">
-         <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-lg bg-[#d4af37]/10 text-[#d4af37]">{item.count}x</span>
-         {item.virtue && <span className="text-[9px] text-slate-400 font-bold line-clamp-1">{item.virtue}</span>}
-       </div>
-       <h3 className="font-serif text-xl mb-1 dark:text-white leading-relaxed">{item.arabic}</h3>
-       <p className="text-xs text-slate-500 italic dark:text-slate-400">{item.translation}</p>
-     </div>
-  </div>
-);
-
-const AuthScreen = ({ onLogin }: { onLogin: (user: User) => void }) => {
-  const [name, setName] = useState('');
-  
-  const handleStart = () => {
-    if(!name.trim()) return;
-    onLogin({
-      name,
-      email: '',
-      location: '',
-      xp: 0,
-      isVerified: false,
-      activeQuests: [],
-      settings: DEFAULT_SETTINGS,
-      completedDailyQuests: {}
-    });
-  };
-
-  return (
-    <div className="h-screen w-full flex flex-col items-center justify-center p-8 bg-[#fdfbf7] relative overflow-hidden">
-      <div className="absolute inset-0 arabian-pattern opacity-50 pointer-events-none" />
-      <div className="relative z-10 w-full max-w-sm space-y-8 text-center animate-in fade-in zoom-in duration-1000">
-         <div className="w-24 h-24 mx-auto bg-[#064e3b] rounded-[30px] flex items-center justify-center text-white shadow-2xl minaret-shape mb-4">
-           <div className="text-4xl">﷽</div>
-         </div>
-         
-         <div className="space-y-2">
-           <h1 className="text-4xl font-bold text-slate-900 tracking-tight">NurPath</h1>
-           <p className="text-[#d4af37] font-black uppercase tracking-[0.4em] text-xs">Journey to Light</p>
-         </div>
-
-         <div className="space-y-4 pt-8">
-           <input 
-             type="text" 
-             placeholder="What should we call you?"
-             value={name}
-             onChange={(e) => setName(e.target.value)}
-             className="w-full p-4 rounded-2xl bg-white border-2 border-slate-100 focus:border-[#064e3b] outline-none text-center font-bold text-slate-900 placeholder:text-slate-300 transition-all focus:shadow-xl"
-           />
-           <button 
-             onClick={handleStart}
-             disabled={!name.trim()}
-             className="w-full py-4 rounded-2xl bg-[#064e3b] text-white font-bold uppercase tracking-widest shadow-xl shadow-[#064e3b]/20 disabled:opacity-50 disabled:shadow-none transition-all active:scale-95 hover:bg-[#053c2e]"
-           >
-             Begin Journey
-           </button>
-         </div>
-      </div>
-    </div>
-  );
-};
-
-const STATIC_SOURCE_FILES: Record<string, string> = {
-  'index.html': `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NurPath - Spiritual Journey</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --nur-green: #064e3b;
-            --nur-gold: #d4af37;
-            --nur-white: #fdfbf7;
-        }
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: var(--nur-white);
-            color: #1a1a1a;
-            -webkit-tap-highlight-color: transparent;
-            overflow-x: hidden;
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-        .dark {
-            background-color: #050a09 !important;
-            color: #fdfbf7 !important;
-        }
-        .arabian-pattern {
-            background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M40 0l20 40-20 40-20-40z' fill='%23064e3b' fill-opacity='0.03'/%3E%3C/svg%3E");
-        }
-        .dark .arabian-pattern {
-            background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M40 0l20 40-20 40-20-40z' fill='%23ffffff' fill-opacity='0.02'/%3E%3C/svg%3E");
-        }
-        .minaret-shape {
-            clip-path: polygon(50% 0%, 100% 25%, 100% 100%, 0 100%, 0 25%);
-        }
-        .quran-font {
-            font-family: 'Amiri', serif;
-        }
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-        }
-        .scrollbar-hide {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-            100% { transform: translateY(0px); }
-        }
-        .animate-float {
-            animation: float 6s ease-in-out infinite;
-        }
-    </style>
-</head>
-<body class="arabian-pattern">
-    <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
-</body>
-</html>`,
-  'vite.config.ts': `import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-
-export default defineConfig({
-  plugins: [react()],
-  define: {
-    'process.env.API_KEY': JSON.stringify(process.env.API_KEY)
-  },
-  server: {
-    port: 3000
-  },
-  build: {
-    outDir: 'dist',
-    sourcemap: true
-  }
-});`,
-  'tsconfig.json': `{
-  "compilerOptions": {
-    "target": "ESNext",
-    "useDefineForClassFields": true,
-    "lib": ["DOM", "DOM.Iterable", "ESNext"],
-    "allowJs": false,
-    "skipLibCheck": true,
-    "esModuleInterop": false,
-    "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "module": "ESNext",
-    "moduleResolution": "Node",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx"
-  },
-  "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules"]
-}`,
-  'package.json': `{
-  "name": "nurpath",
-  "private": true,
-  "version": "0.1.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@google/genai": "^1.40.0",
-    "lucide-react": "^0.460.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "jszip": "^3.10.1"
-  },
-  "devDependencies": {
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "@vitejs/plugin-react": "^4.3.4",
-    "typescript": "^5.7.2",
-    "vite": "^6.0.3"
-  }
-}`,
-  'index.tsx': `import React from 'react';
-import { createRoot } from 'react-dom/client';
-import App from './App.tsx';
-
-const rootElement = document.getElementById('root');
-if (!rootElement) {
-  throw new Error("Could not find root element");
-}
-
-const root = createRoot(rootElement);
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);`,
-  'types.ts': `
-export enum QuestCategory {
-  MAIN = 'Main Quest',
-  SUNNAH = 'Sunnah Quest',
-  CORRECTION = 'Correction Quest',
-  CHARITY = 'Charity Quest',
-  DHIKR = 'Dhikr & Dua'
-}
-
-export interface Quest {
-  id: string;
-  title: string;
-  description: string;
-  category: QuestCategory;
-  xp: number;
-  isGreyed?: boolean;
-  disclaimer?: string;
-  locationType?: 'mosque' | 'charity' | 'soup_kitchen' | 'community' | null;
-  completed?: boolean;
-}
-
-export interface UserSettings {
-  darkMode: boolean;
-  notifications: boolean;
-  fontSize: 'small' | 'medium' | 'large';
-  seerahBookmark?: number; // Index of the last read Seerah card
-}
-
-export interface User {
-  name: string;
-  email: string;
-  location: string;
-  xp: number;
-  isVerified: boolean;
-  activeQuests: string[];
-  settings?: UserSettings;
-}
-
-export interface ReflectionItem {
-  id: string;
-  type: 'hadith' | 'verse' | 'nature' | 'animal' | 'wonder' | 'story' | 'quote' | 'question' | 'prophecy';
-  content: string; // The Hook/Title
-  summary?: string; // Short teaser (always present)
-  source?: string;
-  mediaUrl?: string;
-  praise: 'Subhanallah' | 'Alhamdulillah' | 'Allahu Akbar' | 'MashaAllah' | 'Astaghfirullah' | 'Ya Allah' | 'La ilaha illa anta';
-  details?: string; // The full 500-1000 word essay (loaded on demand)
-}
-
-export interface ScholarProfile {
-  id: string;
-  rank: number;
-  name: string;
-  channelName: string;
-  channelUrl: string;
-  imageUrl: string;
-  tags: string[];
-}
-
-export interface XPRecord {
-  date: string;
-  xp: number;
-}
-
-export interface AdhkarItem {
-  id: string;
-  arabic: string;
-  transliteration?: string;
-  translation: string;
-  reference?: string;
-  count: number;
-  virtue?: string;
-}
-
-export interface NaflPrayerItem {
-  id: string;
-  title: string;
-  time: string;
-  rakaats: string;
-  benefit: string;
-  details?: string;
-}
-
-export interface GuideSection {
-  id: string;
-  title: string;
-  timeRange: string; // e.g. "Fajr - Sunrise"
-  description: string;
-  quests: string[]; // IDs of quests in this section
-  icon: any;
-  adhkar: AdhkarItem[];
-  specialGuide?: {
-    title: string;
-    content: string; // Markdown/Text description
-    steps?: string[];
-  };
-}
-
-export interface SeerahChapter {
-  id: string;
-  title: string;
-  period: 'Mecca' | 'Medina' | 'Pre-Prophethood' | 'Migration';
-  year: string;
-  content: string;
-}`,
-  'constants.ts': `
-import { Quest, QuestCategory, ReflectionItem, GuideSection, SeerahChapter, AdhkarItem, NaflPrayerItem } from './types';
-import { Sun, Moon, Sunrise, Sunset, Clock, Star, CloudSun, Hand, CalendarDays, Shield, BookHeart } from 'lucide-react';
-
-export const ALL_QUESTS: Quest[] = [
-  // SALAH (MAIN)
-  { id: 'fajr', title: 'Fajr Salah', description: 'The light before dawn. "Prayer is better than sleep."', category: QuestCategory.MAIN, xp: 600, locationType: 'mosque' },
-  { id: 'dhuhr', title: 'Dhuhr Salah', description: 'Noontime connection amidst the chaos of the day.', category: QuestCategory.MAIN, xp: 480, locationType: 'mosque' },
-  { id: 'asr', title: 'Asr Salah', description: 'The middle prayer. Guard it strictly.', category: QuestCategory.MAIN, xp: 480, locationType: 'mosque' },
-  { id: 'maghrib', title: 'Maghrib Salah', description: 'The gratitude at the end of the day.', category: QuestCategory.MAIN, xp: 480, locationType: 'mosque' },
-  { id: 'isha', title: 'Isha Salah', description: 'The heavy prayer that proves faith.', category: QuestCategory.MAIN, xp: 600, locationType: 'mosque' },
-  // ... (Full content of constants.ts continues implicitly for functionality, truncated here for brevity in static map)
-];
-// ... (Include other exports from constants.ts if needed for download functionality)
-`
-};
-
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [activeTab, setActiveTab] = useState<'collect' | 'active' | 'reflect' | 'guide' | 'seerah'>('collect');
+  const [loadingAuth, setLoadingAuth] = useState(true);
+  const [activeTab, setActiveTab] = useState<'collect' | 'active' | 'reflect' | 'guide' | 'seerah' | 'community'>('collect');
   const [showProfile, setShowProfile] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [confirmQuest, setConfirmQuest] = useState<Quest | null>(null);
   const [showTasbeehGuide, setShowTasbeehGuide] = useState(false);
   const [openCategories, setOpenCategories] = useState<string[]>([]);
+  const [hasFriendRequests, setHasFriendRequests] = useState(false);
+
+  // Prayer Times & Location
+  const [prayerTimes, setPrayerTimes] = useState<any>(null);
+  const [currentPrayer, setCurrentPrayer] = useState<string | null>(null);
+  const [nextPrayer, setNextPrayer] = useState<string | null>(null);
+  const [city, setCity] = useState<string>('Detecting...');
+  
+  // Settings Local State
+  const [manualLocationInput, setManualLocationInput] = useState('');
+  const [pendingSettings, setPendingSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Guide State
   const [activeGuideSection, setActiveGuideSection] = useState<string>('fajr_phase');
@@ -422,22 +131,27 @@ const App: React.FC = () => {
   // Seerah State
   const [seerahIndex, setSeerahIndex] = useState(0);
 
+  // Hero Card Multi-Select State
+  const [selectedHeroRelated, setSelectedHeroRelated] = useState<string[]>([]);
+
   const [reflections, setReflections] = useState<ReflectionItem[]>([]);
   const [loadingReflections, setLoadingReflections] = useState(false);
   const [hasMoreReflections, setHasMoreReflections] = useState(true);
   const [initialized, setInitialized] = useState(false);
   const [isZipping, setIsZipping] = useState(false);
+  const [showPinned, setShowPinned] = useState(false);
 
   const seerahScrollRef = useRef<HTMLDivElement>(null);
 
   const fardSalahIds = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
   const naflPrayerQuestIds = ['ishraq_salah', 'awwaabeen', 'tahajjud', 'salatul_tasbeeh', 'duha', 'tahiyyatul_wudhu', 'tahiyyatul_masjid'];
+  const sunnahSalahIds = ['sunnah_fajr', 'sunnah_dhuhr', 'sunnah_maghrib', 'sunnah_isha', 'witr']; // Hidden from main list
 
   const questSections = {
     'The Five Pillars': ALL_QUESTS.filter(q => q.category === QuestCategory.MAIN),
     'Nafl Salaah': ALL_QUESTS.filter(q => naflPrayerQuestIds.includes(q.id)),
     'Daily Remembrance': ALL_QUESTS.filter(q => q.category === QuestCategory.DHIKR),
-    'Sunnah & Character': ALL_QUESTS.filter(q => q.category === QuestCategory.SUNNAH && !naflPrayerQuestIds.includes(q.id)),
+    'Sunnah & Character': ALL_QUESTS.filter(q => q.category === QuestCategory.SUNNAH && !naflPrayerQuestIds.includes(q.id) && !sunnahSalahIds.includes(q.id)),
     'Community & Charity': ALL_QUESTS.filter(q => q.category === QuestCategory.CHARITY),
     'Correction Quests': ALL_QUESTS.filter(q => q.category === QuestCategory.CORRECTION)
   };
@@ -450,17 +164,102 @@ const App: React.FC = () => {
     );
   };
 
+  // --- HELPER FUNCTIONS ---
+  const formatTime = (timeStr: string) => {
+    if (!timeStr) return '';
+    const [h, m] = timeStr.split(':').map(Number);
+    const suffix = h >= 12 ? 'PM' : 'AM';
+    const hours = h % 12 || 12;
+    return `${hours}:${m.toString().padStart(2, '0')} ${suffix}`;
+  };
+
+  const getMinutesFromTime = (timeStr: string) => {
+    if (!timeStr) return 0;
+    const [h, m] = timeStr.split(':').map(Number);
+    return h * 60 + m;
+  };
+
+  // --- PRAYER TIME LOGIC ---
+  const fetchPrayerTimes = async () => {
+    if (!user) return;
+
+    const date = new Date().toISOString().split('T')[0];
+    const method = user.settings?.calcMethod || 2; 
+    const school = user.settings?.madhab || 0;
+
+    // 1. Try Manual Location from DB/User State
+    if (user.location && user.location.trim().length > 1) {
+        try {
+            const res = await fetch(`https://api.aladhan.com/v1/timingsByAddress/${date}?address=${encodeURIComponent(user.location)}&method=${method}&school=${school}`);
+            const data = await res.json();
+            if (data.code === 200) {
+                setPrayerTimes(data.data.timings);
+                setCity(user.location); 
+                determineCurrentPhase(data.data.timings);
+                return; // Success, skip GPS
+            }
+        } catch (e) {
+            console.error("Manual location fetch failed, falling back to GPS", e);
+        }
+    }
+
+    // 2. Fallback to GPS
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(async (position) => {
+            const { latitude, longitude } = position.coords;
+            try {
+                const res = await fetch(`https://api.aladhan.com/v1/timings/${date}?latitude=${latitude}&longitude=${longitude}&method=${method}&school=${school}`);
+                const data = await res.json();
+                if(data.code === 200) {
+                    setPrayerTimes(data.data.timings);
+                    setCity(data.data.meta?.timezone || 'Local Time');
+                    determineCurrentPhase(data.data.timings);
+                }
+            } catch (e) { console.error(e); }
+        }, (err) => { 
+          console.error(err);
+          setCity('Location needed for times');
+        });
+    }
+  };
+
   useEffect(() => {
-    const hour = new Date().getHours();
-    let sectionId = 'night_phase'; 
-    if (hour >= 4 && hour < 6) sectionId = 'fajr_phase';
-    else if (hour >= 6 && hour < 12) sectionId = 'fajr_phase';
-    else if (hour >= 12 && hour < 15) sectionId = 'post_salah';
-    else if (hour >= 15 && hour < 17) sectionId = 'post_salah';
-    else if (hour >= 17 && hour < 20) sectionId = 'post_salah';
-    else if (hour >= 20 && hour <= 23) sectionId = 'night_phase';
-    setActiveGuideSection(sectionId);
-  }, []);
+    fetchPrayerTimes();
+  }, [user?.settings?.calcMethod, user?.settings?.madhab, user?.location]);
+
+  const determineCurrentPhase = (timings: any) => {
+     const now = new Date();
+     const currentTime = now.getHours() * 60 + now.getMinutes();
+
+     const fajr = getMinutesFromTime(timings.Fajr);
+     const sunrise = getMinutesFromTime(timings.Sunrise);
+     const dhuhr = getMinutesFromTime(timings.Dhuhr);
+     const asr = getMinutesFromTime(timings.Asr);
+     const maghrib = getMinutesFromTime(timings.Maghrib);
+     const isha = getMinutesFromTime(timings.Isha);
+     
+     let current = '';
+     let next = '';
+
+     if (currentTime >= fajr && currentTime < sunrise) {
+        current = 'fajr'; next = 'sunrise';
+     } else if (currentTime >= sunrise && currentTime < dhuhr) {
+        current = 'duha'; next = 'dhuhr'; 
+     } else if (currentTime >= dhuhr && currentTime < asr) {
+        current = 'dhuhr'; next = 'asr';
+     } else if (currentTime >= asr && currentTime < maghrib) {
+        current = 'asr'; next = 'maghrib';
+     } else if (currentTime >= maghrib && currentTime < isha) {
+        current = 'maghrib'; next = 'isha';
+     } else if (currentTime >= isha) {
+        current = 'isha'; next = 'fajr';
+     } else {
+        current = 'tahajjud'; next = 'fajr';
+     }
+
+     setCurrentPrayer(current);
+     setNextPrayer(next);
+  };
 
   useEffect(() => {
     if (user?.settings?.darkMode) {
@@ -470,21 +269,134 @@ const App: React.FC = () => {
     }
   }, [user?.settings?.darkMode]);
 
+  // SUPABASE AUTH INIT
   useEffect(() => {
-    const saved = localStorage.getItem('nurpath_user');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setUser({
-          ...parsed,
-          completedDailyQuests: parsed.completedDailyQuests || {}
-        });
-        if (parsed.settings?.seerahBookmark) {
-          setSeerahIndex(parsed.settings.seerahBookmark);
+    const initAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        await fetchProfile(session.user.id, session.user.email!, session.user.created_at);
+      } else {
+        setLoadingAuth(false);
+      }
+
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        if (session) {
+          await fetchProfile(session.user.id, session.user.email!, session.user.created_at);
+        } else {
+          setUser(null);
+          setLoadingAuth(false);
         }
-      } catch (e) { console.error("Auth error", e); }
-    }
+      });
+
+      return () => subscription.unsubscribe();
+    };
+
+    initAuth();
   }, []);
+
+  const fetchProfile = async (userId: string, email: string, createdAt: string) => {
+    try {
+      const { data: profileData } = await supabase.from('profiles').select('*').eq('id', userId).single();
+
+      const startOfUtcDay = new Date();
+      startOfUtcDay.setUTCHours(0, 0, 0, 0);
+
+      const { data: todaysQuests } = await supabase
+        .from('user_quests')
+        .select('quest_id')
+        .eq('user_id', userId)
+        .gte('completed_at', startOfUtcDay.toISOString());
+
+      const todayKey = new Date().toISOString().split('T')[0];
+      const dbDailyCompletions: { [key: string]: string } = {};
+      
+      if (todaysQuests) {
+        todaysQuests.forEach(q => {
+             dbDailyCompletions[q.quest_id] = todayKey;
+        });
+      }
+
+      const saved = localStorage.getItem(`nurpath_user_${userId}`);
+      let localData: Partial<User> = {};
+      if (saved) {
+         localData = JSON.parse(saved);
+      } else {
+         localData = { activeQuests: [], completedDailyQuests: {}, settings: DEFAULT_SETTINGS };
+      }
+
+      const mergedDailyQuests = { ...localData.completedDailyQuests, ...dbDailyCompletions };
+
+      // HANDLE AUTO-ADD PINNED
+      let activeQuests = localData.activeQuests || [];
+      if (profileData?.auto_add_pinned && profileData?.pinned_quests) {
+        const pinned: string[] = profileData.pinned_quests;
+        const toAdd = pinned.filter(pid => !activeQuests.includes(pid) && !mergedDailyQuests[pid]);
+        if (toAdd.length > 0) {
+           activeQuests = [...activeQuests, ...toAdd];
+        }
+      }
+
+      // Sync activeQuests
+      if (profileData && JSON.stringify(profileData.active_quests) !== JSON.stringify(activeQuests)) {
+         await supabase.from('profiles').update({ active_quests: activeQuests }).eq('id', userId);
+      }
+
+      const { count } = await supabase
+        .from('friendships')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id_2', userId)
+        .eq('status', 'pending');
+      
+      setHasFriendRequests(count !== null && count > 0);
+
+      if (profileData) {
+        // Correctly Map DB Columns to User Object using new column names
+        const dbSettings = {
+           ...DEFAULT_SETTINGS,
+           ...(localData.settings || {}),
+           calcMethod: profileData.salaah_calc ? parseInt(profileData.salaah_calc) : 2, // Map salaah_calc
+           madhab: profileData.asr_calc ? parseInt(profileData.asr_calc) : 0 // Map asr_calc
+        };
+
+        setUser({
+          id: userId,
+          name: profileData.username || 'Traveler',
+          email: email,
+          location: profileData.location || '', // Read location from DB column
+          country: profileData.country || 'Unknown',
+          xp: profileData.xp || 0,
+          isVerified: true,
+          activeQuests: activeQuests,
+          pinnedQuests: profileData.pinned_quests || [],
+          autoAddPinned: profileData.auto_add_pinned || false,
+          completedDailyQuests: mergedDailyQuests,
+          settings: dbSettings, 
+          createdAt: createdAt
+        });
+        setPendingSettings(dbSettings); // Initialize pending settings for modal
+        setManualLocationInput(profileData.location || '');
+      } else {
+        setUser({
+          id: userId,
+          name: 'Traveler',
+          email: email,
+          location: '',
+          xp: 0,
+          isVerified: true,
+          activeQuests: [],
+          completedDailyQuests: {},
+          settings: DEFAULT_SETTINGS,
+          createdAt: createdAt
+        });
+        setPendingSettings(DEFAULT_SETTINGS);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingAuth(false);
+    }
+  };
 
   useEffect(() => {
     if (!initialized && HARDCODED_REFLECTIONS.length > 0) {
@@ -498,47 +410,61 @@ const App: React.FC = () => {
     }
   }, [initialized]);
 
-  useEffect(() => {
-    if (activeTab === 'seerah') {
-      const timer = setTimeout(() => {
-        const el = document.getElementById(`seerah-${seerahIndex}`);
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [activeTab, seerahIndex]);
-
-  const handleLoadMoreReflections = useCallback(async () => {
-    if (loadingReflections || !hasMoreReflections || reflections.length < HARDCODED_REFLECTIONS.length) return;
-    setLoadingReflections(true);
-    try {
-      const news = await generateReflections(3);
-      if (news && news.length > 0) {
-        setReflections(prev => [...prev, ...news]);
-      } else {
-        setHasMoreReflections(false);
-      }
-    } catch (e) { 
-      console.error("Load more failed", e);
-      setHasMoreReflections(false);
-    } finally { 
-      setLoadingReflections(false); 
-    }
-  }, [loadingReflections, reflections.length, hasMoreReflections]);
-
-  const handleUpdateItem = useCallback((id: string, updates: Partial<ReflectionItem>) => {
-    setReflections(prev => prev.map(item => item.id === id ? { ...item, ...updates } : item));
-  }, []);
-
-  const saveUser = (u: User) => {
+  const saveUser = async (u: User) => {
     setUser(u);
-    localStorage.setItem('nurpath_user', JSON.stringify(u));
+    if (u.id) {
+      localStorage.setItem(`nurpath_user_${u.id}`, JSON.stringify({
+        activeQuests: u.activeQuests,
+        completedDailyQuests: u.completedDailyQuests,
+        settings: u.settings
+      }));
+      try {
+        // Explicitly update columns to user custom names
+        await supabase.from('profiles').update({ 
+          active_quests: u.activeQuests,
+          location: u.location, 
+          auto_add_pinned: u.autoAddPinned,
+          pinned_quests: u.pinnedQuests,
+          salaah_calc: u.settings?.calcMethod?.toString(), // Store as string in salaah_calc
+          asr_calc: u.settings?.madhab?.toString() // Store as string in asr_calc
+        }).eq('id', u.id);
+      } catch (e) { console.error("Save User Error:", e); }
+    }
+  };
+  
+  const handleSaveSettings = async () => {
+     if(!user) return;
+     setIsSaving(true);
+     setSaveSuccess(false);
+     
+     // Update local user object with pending settings
+     const updatedUser = { 
+         ...user, 
+         location: manualLocationInput,
+         settings: pendingSettings 
+     };
+     
+     await saveUser(updatedUser);
+     
+     // Animation Delay
+     setTimeout(() => {
+         setIsSaving(false);
+         setSaveSuccess(true);
+         setTimeout(() => setSaveSuccess(false), 2000);
+     }, 800);
   };
 
   const updateSettings = (s: Partial<UserSettings>) => {
     if (!user) return;
     const updated = { ...user, settings: { ...(user.settings || DEFAULT_SETTINGS), ...s } };
     saveUser(updated);
+  };
+
+  const updateLocation = (newLocation: string) => {
+    if (!user) return;
+    const updated = { ...user, location: newLocation };
+    saveUser(updated);
+    alert('Location saved successfully!');
   };
 
   const bookmarkSeerah = (index: number) => {
@@ -578,162 +504,334 @@ const App: React.FC = () => {
     saveUser(updated);
   };
 
-  const completeQuest = (q: Quest) => {
+  const completeQuests = async (quests: Quest[], xpMultiplier: number = 1) => {
+    if (!user || !user.id || quests.length === 0) return;
+
+    try {
+        let totalXp = 0;
+        const questIds = quests.map(q => q.id);
+        const dailyUpdates: Record<string, string> = {};
+        const today = new Date().toISOString().split('T')[0];
+
+        quests.forEach(q => {
+            totalXp += (q.xp * xpMultiplier);
+            dailyUpdates[q.id] = today;
+        });
+
+        const { data: currentProfile, error: fetchError } = await supabase.from('profiles').select('xp').eq('id', user.id).single();
+        if (fetchError) throw fetchError;
+
+        const newTotalXp = (currentProfile?.xp || user.xp) + totalXp;
+        
+        await supabase.from('profiles').update({ xp: newTotalXp }).eq('id', user.id);
+
+        const questLogs = quests.map(q => ({
+            user_id: user.id,
+            quest_id: q.id,
+            quest_title: q.title,
+            xp_reward: q.xp * xpMultiplier
+        }));
+        await supabase.from('user_quests').insert(questLogs);
+
+        const updated = { 
+            ...user, 
+            xp: newTotalXp,
+            activeQuests: user.activeQuests.filter(id => !questIds.includes(id)),
+            completedDailyQuests: { ...user.completedDailyQuests, ...dailyUpdates }
+        };
+        
+        saveUser(updated);
+
+        if (xpMultiplier > 1) {
+            alert(`MashaAllah! Group Quests Completed. ${totalXp} XP (2x) Earned!`);
+        }
+    } catch (e) {
+        console.error("Error completing quests", e);
+    }
+  };
+
+  const completeQuest = async (q: Quest, xpMultiplier: number = 1) => {
+      await completeQuests([q], xpMultiplier);
+  };
+
+  // REFACTORED: togglePinQuest now correctly removes items from Active list if unpinned
+  const togglePinQuest = async (quest: Quest) => {
     if (!user) return;
+    const currentPinned = user.pinnedQuests || [];
+    const isUnpinning = currentPinned.includes(quest.id);
     
-    let completedDailies = user.completedDailyQuests || {};
-    if (fardSalahIds.includes(q.id)) {
-      const today = new Date().toISOString().split('T')[0];
-      completedDailies = { ...completedDailies, [q.id]: today };
+    let newPinned;
+    let newActive = user.activeQuests;
+
+    if (isUnpinning) {
+        newPinned = currentPinned.filter(id => id !== quest.id);
+        // FIX: Remove from active quests if not completed today so it "goes back" to the list
+        if (!isCompletedToday(quest.id)) {
+            newActive = newActive.filter(id => id !== quest.id);
+        }
+    } else {
+        newPinned = [...currentPinned, quest.id];
+        // If auto-add is on, ensure it's active
+        if (user.autoAddPinned && !newActive.includes(quest.id) && !isCompletedToday(quest.id)) {
+            newActive = [...newActive, quest.id];
+        }
     }
 
-    const updated = { 
-      ...user, 
-      xp: user.xp + q.xp, 
-      activeQuests: user.activeQuests.filter(id => id !== q.id),
-      completedDailyQuests: completedDailies
-    };
+    const updated = { ...user, pinnedQuests: newPinned, activeQuests: newActive };
     saveUser(updated);
   };
 
-  const handleDownloadSource = async () => {
-    const pin = prompt("Enter PIN to download source code:");
-    if (pin !== "8156") {
-      alert("Incorrect PIN");
-      return;
+  const toggleAutoAddPinned = async () => {
+    if (!user) return;
+    const newValue = !user.autoAddPinned;
+    const updated = { ...user, autoAddPinned: newValue };
+    saveUser(updated); 
+  };
+
+  // --- HERO CARD LOGIC ---
+  const toggleHeroRelated = (id: string) => {
+    setSelectedHeroRelated(prev =>
+        prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleHeroComplete = async (mainQuest: Quest, relatedQuests: Quest[]) => {
+    const questsToComplete = [mainQuest];
+    
+    // Add selected related quests
+    relatedQuests.forEach(rq => {
+        if (selectedHeroRelated.includes(rq.id)) {
+            questsToComplete.push(rq);
+        }
+    });
+
+    await completeQuests(questsToComplete);
+    setSelectedHeroRelated([]); // Reset selection
+  };
+  
+  const getHereAndNowBundle = () => {
+    if (!currentPrayer || !user) return null;
+    let mainId = currentPrayer === 'duha' ? 'duha' : currentPrayer;
+    if (currentPrayer === 'tahajjud') mainId = 'tahajjud';
+
+    const mainQuest = ALL_QUESTS.find(q => q.id === mainId);
+    if (!mainQuest) return null;
+
+    const relatedIds = PRAYER_RELATED_QUESTS[mainId] || [];
+    const relatedQuests = ALL_QUESTS.filter(q => relatedIds.includes(q.id)).map(q => ({
+      ...q,
+      completed: isCompletedToday(q.id)
+    }));
+
+    return { mainQuest, relatedQuests };
+  };
+
+  const getQuestTimeStatus = (questId: string) => {
+    if (!prayerTimes) return null;
+    const map: Record<string, string> = {
+      fajr: 'Fajr', dhuhr: 'Dhuhr', asr: 'Asr', maghrib: 'Maghrib', isha: 'Isha', tahajjud: 'Isha'
+    };
+    const key = map[questId];
+    if (!key) return null;
+
+    const prayerTimeStr = prayerTimes[key];
+    const now = new Date();
+    const currentMins = now.getHours() * 60 + now.getMinutes();
+    const prayerMins = getMinutesFromTime(prayerTimeStr);
+    
+    if (questId === 'tahajjud') return { time: 'Last Third', status: currentPrayer === 'tahajjud' ? 'now' : 'upcoming' };
+
+    let status: 'now' | 'future' | 'past' = 'future';
+    if (currentPrayer === questId) status = 'now';
+    else if (currentMins > prayerMins) status = 'past';
+
+    let timeLeft = '';
+    if (status === 'future') {
+       const diff = prayerMins - currentMins;
+       const h = Math.floor(diff / 60);
+       const m = diff % 60;
+       if (h > 0) timeLeft = `${h}h ${m}m`;
+       else timeLeft = `${m}m`;
     }
 
-    setIsZipping(true);
-    try {
-      const zip = new JSZip();
-      Object.entries(STATIC_SOURCE_FILES).forEach(([path, content]) => {
-        zip.file(path, content);
-      });
-      const content = await zip.generateAsync({ type: "blob" });
-      const url = URL.createObjectURL(content);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "nurpath-source.zip";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (e) {
-      console.error("Zip error", e);
-      alert("Error creating zip file: " + (e as Error).message);
-    } finally {
-      setIsZipping(false);
-    }
+    return { time: formatTime(prayerTimeStr), status, timeLeft };
   };
+
+  // Determine Hero Quest
+  let heroQuest: Quest | undefined;
+  let heroRelatedQuests: Quest[] = [];
+  const bundle = getHereAndNowBundle();
+  let heroTimeStatus = null;
+
+  if (bundle && user?.activeQuests.includes(bundle.mainQuest.id)) {
+    heroQuest = bundle.mainQuest;
+    heroRelatedQuests = bundle.relatedQuests;
+  } else if (user) {
+    const firstMain = user.activeQuests
+      .map(qid => ALL_QUESTS.find(q => q.id === qid))
+      .find(q => q && (q.category === QuestCategory.MAIN || fardSalahIds.includes(q.id)));
+    
+    if (firstMain) {
+      heroQuest = firstMain;
+      const relIds = PRAYER_RELATED_QUESTS[firstMain.id] || [];
+      heroRelatedQuests = ALL_QUESTS.filter(q => relIds.includes(q.id)).map(q => ({
+        ...q,
+        completed: isCompletedToday(q.id)
+      }));
+    }
+  }
+
+  if (heroQuest) {
+     heroTimeStatus = getQuestTimeStatus(heroQuest.id);
+  }
+  
+  const totalHeroXP = heroQuest ? heroQuest.xp + heroRelatedQuests
+    .filter(rq => selectedHeroRelated.includes(rq.id))
+    .reduce((sum, rq) => sum + rq.xp, 0) : 0;
+
+  const activeMainQuests = user?.activeQuests
+    .map(qid => ALL_QUESTS.find(q => q.id === qid))
+    .filter(q => q && q.id !== heroQuest?.id && (q.category === QuestCategory.MAIN || fardSalahIds.includes(q.id))) as Quest[] || [];
+
+  const activeSideQuests = user?.activeQuests
+    .map(qid => ALL_QUESTS.find(q => q.id === qid))
+    .filter(q => q && q.id !== heroQuest?.id && q.category !== QuestCategory.MAIN && !fardSalahIds.includes(q.id)) as Quest[] || [];
+
+  const handleLoadMoreReflections = async () => { /* ... */ };
+  const handleUpdateItem = (id: string, updates: Partial<ReflectionItem>) => { /* ... */ };
+  const handleLogout = async () => {
+    try { await supabase.auth.signOut(); setUser(null); setShowSettings(false); } 
+    catch (error) { console.error("Logout failed", error); }
+  };
+  const handleDownloadSource = async () => { /* ... */ };
 
   const activeSectionData = GUIDE_SECTIONS.find(s => s.id === activeGuideSection);
   const levelInfo = user ? getLevelInfo(user.xp) : { level: 1, rank: 'Seeker', progress: 0 };
+  const islamicDate = new Intl.DateTimeFormat('en-US-u-ca-islamic', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
+  const questsCompletedCount = Object.keys(user?.completedDailyQuests || {}).length;
 
-  if (!user) return <AuthScreen onLogin={(u) => saveUser(u)} />;
+  if (loadingAuth) return <div className="h-screen w-full flex items-center justify-center bg-[#fdfbf7]"><Loader2 className="animate-spin text-[#064e3b]" size={48} /></div>;
+  if (!user) return <Auth onLoginSuccess={() => setLoadingAuth(true)} />;
 
-  const tasbeehPrayer = NAFL_PRAYERS.find(p => p.id === 'n7');
-  
-  const activeQuestSections = user ? Object.entries(questSections).map(([category, quests]) => {
-      const activeInCategory = quests.filter(q => user.activeQuests.includes(q.id));
-      return { category, quests: activeInCategory };
-  }).filter(section => section.quests.length > 0) : [];
-
+  const pinnedQuestsList = user.pinnedQuests?.map(pid => ALL_QUESTS.find(q => q.id === pid)).filter(Boolean) as Quest[] || [];
 
   return (
     <div className={`max-w-md mx-auto h-screen overflow-hidden flex flex-col relative shadow-2xl transition-all ${activeTab === 'reflect' ? '' : 'border-x border-slate-100'} ${user.settings?.darkMode ? 'bg-[#050a09]' : 'bg-[#fdfbf7]'}`}>
       
-      {activeTab !== 'reflect' && (
+      {activeTab !== 'reflect' && activeTab !== 'community' && (
         <header className={`z-20 backdrop-blur-md ${user.settings?.darkMode ? 'bg-[#050a09]/90' : 'bg-[#fdfbf7]/90'}`}>
-          <div className="p-6 pb-4 flex items-center justify-between">
-            <button onClick={() => setShowProfile(true)} className="w-12 h-12 bg-[#064e3b] rounded-[18px] shadow-lg flex items-center justify-center text-white font-bold border-2 border-[#d4af37]/40 transition-transform active:scale-90 minaret-shape">
-              {user.name[0].toUpperCase()}
-            </button>
-            <div className="flex flex-col items-center">
-              <span className={`text-[12px] font-black uppercase tracking-[0.5em] ${user.settings?.darkMode ? 'text-white' : 'text-[#064e3b]'}`}>NurPath</span>
+          <div className="p-6 pb-4 flex items-center justify-between relative">
+            <div className="flex flex-col z-10"><span className={`text-[12px] font-black uppercase tracking-[0.5em] ${user.settings?.darkMode ? 'text-white' : 'text-[#064e3b]'}`}>NurPath</span></div>
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pt-2 flex items-center gap-2">
+              <button onClick={() => setActiveTab('community')} className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-transform active:scale-95 ${user.settings?.darkMode ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-[#064e3b]/5 border-[#064e3b]/10 hover:bg-[#064e3b]/10'}`}>
+                <Trophy size={12} className={user.settings?.darkMode ? 'text-yellow-400' : 'text-[#d4af37]'} />
+                <span className={`text-[10px] font-black uppercase tracking-wider ${user.settings?.darkMode ? 'text-white' : 'text-[#064e3b]'}`}>Community</span>
+                {hasFriendRequests && <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 border border-white dark:border-[#050a09]"></span></span>}
+              </button>
             </div>
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-full border ${user.settings?.darkMode ? 'bg-white/5 border-white/10' : 'bg-[#064e3b]/5 border-[#064e3b]/10'}`}>
-              <Flame size={14} className="text-[#d4af37] fill-[#d4af37]" />
-              <span className={`text-xs font-black ${user.settings?.darkMode ? 'text-white' : 'text-[#064e3b]'}`}>{user.xp}</span>
-            </div>
+            <div className="z-10"><button onClick={() => setShowSettings(true)} className={`p-2 rounded-full transition-colors ${user.settings?.darkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}><Settings size={18} /></button></div>
           </div>
-          
           <div className="px-6 pb-6 pt-0">
              <div className="flex justify-between items-end mb-1">
-                <span className={`text-[10px] font-black uppercase tracking-widest ${user.settings?.darkMode ? 'text-slate-400' : 'text-slate-400'}`}>Level {levelInfo.level} • {levelInfo.rank}</span>
+                <span className={`text-[10px] font-black uppercase tracking-widest ${user.settings?.darkMode ? 'text-slate-400' : 'text-slate-400'}`}>Level {levelInfo.level} • {levelInfo.rank} <span className="text-[#d4af37] ml-2">{user.xp.toLocaleString()} XP</span></span>
                 <span className="text-[10px] font-bold text-[#d4af37]">{Math.floor(levelInfo.progress)}%</span>
              </div>
-             <div className={`h-2 w-full rounded-full overflow-hidden ${user.settings?.darkMode ? 'bg-white/10' : 'bg-slate-100'}`}>
-                <div className="h-full bg-[#d4af37] transition-all duration-1000 ease-out" style={{ width: `${levelInfo.progress}%` }}></div>
-             </div>
+             <div className={`h-2 w-full rounded-full overflow-hidden ${user.settings?.darkMode ? 'bg-white/10' : 'bg-slate-100'}`}><div className="h-full bg-[#d4af37] transition-all duration-1000 ease-out" style={{ width: `${levelInfo.progress}%` }}></div></div>
           </div>
         </header>
       )}
 
-      <main className={`flex-1 scrollbar-hide ${activeTab === 'reflect' ? 'overflow-hidden p-0' : 'overflow-y-auto pb-40 px-6'}`}>
+      <main className={`flex-1 scrollbar-hide ${activeTab === 'reflect' || activeTab === 'community' ? 'overflow-hidden p-0' : 'overflow-y-auto pb-40 px-6'}`}>
+        {activeTab === 'community' && <Community currentUser={user} darkMode={user.settings?.darkMode} onCompleteGroupQuest={(q) => completeQuest(q, 2)} />}
         
         {activeTab === 'collect' && (
           <div className="space-y-6 py-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div className="space-y-2 px-6">
-              <h1 className={`text-4xl font-bold leading-tight tracking-tight ${user.settings?.darkMode ? 'text-white' : 'text-slate-900'}`}>Salam, <br/><span className="text-[#064e3b]">{user.name.split(' ')[0]}</span></h1>
-              <p className="text-[10px] text-[#d4af37] font-black uppercase tracking-[0.3em] flex items-center gap-2">
-                <Star size={12} className="fill-[#d4af37]" /> Path of the Believer
-              </p>
+            {/* Same collection content as before */}
+            <div className="flex justify-between items-end px-6 mt-2 mb-6">
+              <div><h1 className={`text-lg font-bold leading-tight tracking-tight ${user.settings?.darkMode ? 'text-white' : 'text-slate-900'}`}>Salaam Alaykum, <br/><span className="text-[#064e3b] text-xl">{user.name.split(' ')[0]}</span></h1></div>
+              <div className="text-right flex flex-col items-end gap-0.5">
+                 <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{city}</div>
+                 <div className="text-[9px] text-slate-400 font-medium uppercase tracking-widest opacity-80">{islamicDate}</div>
+              </div>
             </div>
-            
+
+            {/* PINNED QUESTS */}
             <div className="space-y-4">
+              <button onClick={() => setShowPinned(!showPinned)} className="w-full flex items-center justify-between p-4 rounded-2xl bg-white dark:bg-white/5 border border-slate-100 dark:border-white/10 shadow-sm">
+                <div className="flex items-center gap-2"><Pin size={16} className="text-[#d4af37]" /><span className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">Pinned Quests</span></div>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                    <span className="text-[8px] font-bold text-slate-400 uppercase">Auto-Add</span>
+                    <button onClick={toggleAutoAddPinned} className={`w-8 h-4 rounded-full relative transition-colors ${user.autoAddPinned ? 'bg-[#d4af37]' : 'bg-slate-300'}`}><div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${user.autoAddPinned ? 'left-[18px]' : 'left-0.5'}`} /></button>
+                  </div>
+                  <ChevronDown size={16} className={`text-slate-400 transition-transform ${showPinned ? 'rotate-180' : ''}`} />
+                </div>
+              </button>
+              {showPinned && (
+                <div className="grid gap-3 animate-in fade-in slide-in-from-top-2">
+                  {pinnedQuestsList.length === 0 ? <p className="text-center text-xs text-slate-400 py-2">Pin quests to see them here.</p> : 
+                    pinnedQuestsList.map(q => <QuestCard key={q.id} quest={q} onAction={handleQuestSelect} onPin={togglePinQuest} isPinned={true} isCompleted={isCompletedToday(q.id)} darkMode={user.settings?.darkMode} />)
+                  }
+                </div>
+              )}
+            </div>
+
+            {/* STANDARD CATEGORIES */}
+            <div className="space-y-4 pt-4">
               {Object.entries(questSections).map(([category, quests]) => {
                   const availableQuests = quests.filter(q => !user.activeQuests.includes(q.id));
                   const availableCount = availableQuests.filter(q => !(fardSalahIds.includes(q.id) && isCompletedToday(q.id))).length;
-                  
+
                   if (availableQuests.length === 0) return null;
-                  
                   const isOpen = openCategories.includes(category);
+                  const isCorrection = category === 'Correction Quests';
                   
                   return (
-                    <section key={category} className="space-y-4">
-                      <button 
-                        onClick={() => toggleCategory(category)}
-                        className="w-full flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-white/5"
-                      >
-                        <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 dark:text-slate-400">{category}</h2>
+                    <section key={category} className={`space-y-4 rounded-[30px] transition-all ${isCorrection && isOpen ? (user.settings?.darkMode ? 'bg-rose-900/10 p-2 pb-6 border border-rose-500/20' : 'bg-rose-50/50 p-2 pb-6 border border-rose-100') : ''}`}>
+                      <button onClick={() => toggleCategory(category)} className={`sticky top-0 z-10 w-full flex items-center justify-between p-4 rounded-2xl border shadow-sm transition-all ${
+                         isCorrection 
+                          ? (user.settings?.darkMode ? 'bg-rose-900/20 border-rose-500/30 text-rose-300' : 'bg-rose-100 border-rose-200 text-rose-700') 
+                          : (user.settings?.darkMode ? 'bg-slate-900/95 border-white/10 text-slate-400' : 'bg-slate-50/95 border-slate-100 text-slate-500')
+                      } backdrop-blur-sm`}>
+                        <h2 className="text-[10px] font-black uppercase tracking-[0.4em]">{category}</h2>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-slate-400 dark:text-slate-500">{availableCount}</span>
-                          <ChevronDown size={16} className={`text-slate-400 dark:text-slate-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                          <span className="text-xs font-bold opacity-70">{availableCount}</span>
+                          <ChevronDown size={16} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                         </div>
                       </button>
                       {isOpen && (
-                        <div className="grid grid-cols-1 gap-4 pt-2 animate-in fade-in slide-in-from-top-2">
-                          {category === 'The Five Pillars' && (
-                            <button onClick={addAllSalah} className={`w-full text-[9px] font-black uppercase tracking-widest px-3 py-3 rounded-2xl flex items-center justify-center gap-2 border transition-all mb-2 ${user.settings?.darkMode ? 'text-white bg-white/5 border-white/10 hover:bg-white/10' : 'text-[#064e3b] bg-[#064e3b]/5 border-[#064e3b]/10 hover:bg-[#064e3b]/10'}`}>
+                        <div className="grid grid-cols-1 gap-4 pt-2 animate-in fade-in slide-in-from-top-2 px-1">
+                           {category === 'The Five Pillars' && (
+                            <button onClick={addAllSalah} className={`w-full text-[9px] font-black uppercase tracking-widest px-3 py-3 rounded-2xl flex items-center justify-center gap-2 border transition-all mb-2 ${user.settings?.darkMode ? 'text-white bg-white/5 border-white/10 hover:bg-white/10' : 'text-[#064e3b] bg-[#064e3b]/5 border-[#064e3b]/10 hover:bg-[#064e3b]/10'} ${availableCount < quests.length ? 'opacity-50 pointer-events-none' : ''}`}>
                               <Plus size={12} /> Add All 5 Salah
                             </button>
                            )}
-                          {category === 'Correction Quests' ? (
-                            CORRECTION_SUB_CATEGORIES.map(subCat => {
-                              const subCatQuests = availableQuests.filter(q => q.subCategory === subCat);
-                              if (subCatQuests.length === 0) return null;
-                              return (
-                                <div key={subCat} className="space-y-3">
-                                  <h3 className="text-xs font-bold text-rose-500 dark:text-rose-400 pl-2">{subCat}</h3>
-                                  <div className="grid grid-cols-1 gap-4">
-                                    {subCatQuests.map(q => (
-                                      <QuestCard key={q.id} quest={q} onAction={handleQuestSelect} darkMode={user.settings?.darkMode} />
-                                    ))}
-                                  </div>
-                                </div>
-                              )
-                            })
-                          ) : (
-                            availableQuests.map(q => (
+                           {category === 'Correction Quests' ? (
+                             CORRECTION_SUB_CATEGORIES.map(subCat => {
+                               const subCatQuests = availableQuests.filter(q => q.subCategory === subCat);
+                               if (subCatQuests.length === 0) return null;
+                               return (
+                                 <div key={subCat} className="space-y-3">
+                                   <h3 className="text-xs font-bold text-rose-500 dark:text-rose-400 pl-4">{subCat}</h3>
+                                   <div className="grid grid-cols-1 gap-4">
+                                     {subCatQuests.map(q => <QuestCard key={q.id} quest={q} onAction={handleQuestSelect} darkMode={user.settings?.darkMode} />)}
+                                   </div>
+                                 </div>
+                               )
+                             })
+                           ) : (
+                             availableQuests.map(q => (
                               <QuestCard 
                                 key={q.id} 
                                 quest={q} 
                                 onAction={handleQuestSelect} 
+                                onPin={togglePinQuest}
+                                isPinned={user.pinnedQuests?.includes(q.id)}
                                 darkMode={user.settings?.darkMode} 
-                                isGreyed={q.isGreyed || (fardSalahIds.includes(q.id) && isCompletedToday(q.id))} 
+                                isGreyed={q.isGreyed || isCompletedToday(q.id)} 
                               />
                             ))
-                          )}
+                           )}
                         </div>
                       )}
                     </section>
@@ -743,224 +841,174 @@ const App: React.FC = () => {
           </div>
         )}
 
+        {/* --- MY QUESTS / JOURNEY TAB --- */}
         {activeTab === 'active' && (
            <div className="space-y-8 py-8 animate-in fade-in slide-in-from-right-4 duration-500">
-             <div className="flex items-center gap-5">
-               <div className="w-16 h-16 bg-[#064e3b] rounded-[24px] flex items-center justify-center text-white shadow-xl minaret-shape"><Target size={30} /></div>
-               <div>
-                 <h2 className={`text-2xl font-bold tracking-tight ${user.settings?.darkMode ? 'text-white' : 'text-slate-900'}`}>The Path Today</h2>
-                 <p className="text-[10px] text-[#d4af37] font-black uppercase tracking-widest">Active Commitments</p>
+             
+             {/* Header Section */}
+             <div className="flex items-center justify-between">
+               <div className="flex items-center gap-5">
+                 <div className="w-16 h-16 bg-gradient-to-br from-[#064e3b] to-[#043327] rounded-[24px] flex items-center justify-center text-white shadow-xl minaret-shape">
+                    <Target size={30} />
+                 </div>
+                 <div>
+                   <h2 className={`text-2xl font-bold tracking-tight ${user.settings?.darkMode ? 'text-white' : 'text-slate-900'}`}>My Journey</h2>
+                   <p className="text-[10px] text-[#d4af37] font-black uppercase tracking-widest">Today's Focus</p>
+                 </div>
                </div>
-            </div>
-             {activeQuestSections.length === 0 ? (
-              <div className="h-[55vh] flex flex-col items-center justify-center text-center opacity-40">
-                <LayoutGrid size={72} className={`mb-6 ${user.settings?.darkMode ? 'text-white' : 'text-[#064e3b]'}`} />
-                <p className={`text-sm font-bold ${user.settings?.darkMode ? 'text-white' : 'text-slate-900'}`}>No active quests</p>
-                <p className="text-xs text-slate-500 mt-2">Visit the collection to start your journey</p>
-              </div>
-            ) : (
-               <div className="space-y-4">
-                 {activeQuestSections.map(({ category, quests }) => {
-                   const isOpen = openCategories.includes(category);
-                   return (
-                     <section key={category} className="space-y-4">
-                       <button 
-                         onClick={() => toggleCategory(category)}
-                         className="w-full flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-white/5"
-                       >
-                         <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 dark:text-slate-400">{category}</h2>
-                         <div className="flex items-center gap-2">
-                           <span className="text-xs font-bold text-slate-400 dark:text-slate-500">{quests.length}</span>
-                           <ChevronDown size={16} className={`text-slate-400 dark:text-slate-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                         </div>
-                       </button>
-                       {isOpen && (
-                         <div className="grid grid-cols-1 gap-4 pt-2 animate-in fade-in slide-in-from-top-2">
-                           {category === 'Correction Quests' ? (
-                             CORRECTION_SUB_CATEGORIES.map(subCat => {
-                               const subCatQuests = quests.filter(q => q.subCategory === subCat);
-                               if (subCatQuests.length === 0) return null;
-                               return (
-                                 <div key={subCat} className="space-y-3">
-                                   <h3 className="text-xs font-bold text-rose-500 dark:text-rose-400 pl-2">{subCat}</h3>
-                                   <div className="grid grid-cols-1 gap-4">
-                                     {subCatQuests.map(q => (
-                                       <QuestCard key={q.id} quest={q} isActive onComplete={completeQuest} onRemove={removeQuest} onShowTasbeehGuide={() => setShowTasbeehGuide(true)} darkMode={user.settings?.darkMode} />
-                                     ))}
+               {/* Progress Ring */}
+               <div className="relative w-14 h-14 flex items-center justify-center">
+                  <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                    <path className="text-slate-200 dark:text-white/10" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" />
+                    <path className="text-[#064e3b] dark:text-[#d4af37]" strokeDasharray={`${Math.min(100, (questsCompletedCount / Math.max(1, user.activeQuests.length + questsCompletedCount)) * 100)}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" />
+                  </svg>
+                  <span className="absolute text-[10px] font-bold text-slate-400">{questsCompletedCount}</span>
+               </div>
+             </div>
+
+             {/* Hero Card - Next Main Goal */}
+             {heroQuest ? (
+               <div className="relative group">
+                 <div className="absolute inset-0 bg-[#064e3b] blur-xl opacity-20 group-hover:opacity-30 transition-opacity rounded-[30px]" />
+                 <div className="relative p-6 rounded-[30px] bg-gradient-to-br from-[#064e3b] to-[#043327] text-white overflow-hidden shadow-2xl">
+                    <div className="absolute top-0 right-0 p-6 opacity-10">
+                       <Zap size={100} />
+                    </div>
+                    <div className="relative z-10">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="bg-white/20 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest text-white/90">Main Priority</span>
+                        {/* Time Badge in Hero */}
+                        {heroTimeStatus && (
+                           <span className={`px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1 ${heroTimeStatus.status === 'now' ? 'bg-rose-500 text-white animate-pulse' : 'bg-slate-900/40 text-white'}`}>
+                             <Clock size={10} />
+                             {heroTimeStatus.status === 'now' ? `NOW • ${heroTimeStatus.time}` : heroTimeStatus.time}
+                           </span>
+                        )}
+                        <span className="text-[10px] text-[#d4af37] font-black">+{totalHeroXP} XP</span>
+                      </div>
+                      <h3 className="text-2xl font-bold mb-2">{heroQuest.title}</h3>
+                      <p className="text-sm text-white/80 mb-6 max-w-[80%]">{heroQuest.description}</p>
+                      
+                      {/* Interactive Checklist inside Green Card */}
+                      {heroRelatedQuests.length > 0 && (
+                        <div className="mb-6 space-y-2 bg-black/20 p-4 rounded-2xl backdrop-blur-sm border border-white/5">
+                           <h4 className="text-[10px] font-black uppercase tracking-widest text-white/60 mb-2 flex items-center gap-1"><CheckSquare size={12} /> Related Optional Quests</h4>
+                           {heroRelatedQuests.map(rq => (
+                             <button
+                               key={rq.id}
+                               onClick={() => !rq.completed && toggleHeroRelated(rq.id)}
+                               disabled={!!rq.completed}
+                               className={`w-full flex items-center justify-between p-2 rounded-xl text-left transition-all ${rq.completed ? 'opacity-50' : 'hover:bg-white/10 active:scale-95'}`}
+                             >
+                                <div className="flex items-center gap-3">
+                                   <div className={`w-5 h-5 rounded flex items-center justify-center border transition-all ${
+                                      rq.completed ? 'bg-emerald-500 border-emerald-500' : 
+                                      selectedHeroRelated.includes(rq.id) ? 'bg-[#d4af37] border-[#d4af37]' : 
+                                      'border-white/40'
+                                   }`}>
+                                      {rq.completed && <Check size={12} />}
+                                      {!rq.completed && selectedHeroRelated.includes(rq.id) && <Check size={12} className="text-white" />}
                                    </div>
-                                 </div>
-                               )
-                             })
-                           ) : (
-                            quests.map(q => <QuestCard key={q.id} quest={q} isActive onComplete={completeQuest} onRemove={removeQuest} onShowTasbeehGuide={() => setShowTasbeehGuide(true)} darkMode={user.settings?.darkMode} />)
-                           )}
-                         </div>
-                       )}
-                     </section>
-                   );
-                 })}
+                                   <span className={`text-xs font-bold ${rq.completed ? 'line-through text-white/50' : 'text-white'}`}>{rq.title}</span>
+                                </div>
+                                <span className="text-[9px] font-black text-[#d4af37]">{rq.completed ? 'Done' : `+${rq.xp}`}</span>
+                             </button>
+                           ))}
+                        </div>
+                      )}
+
+                      {heroTimeStatus?.status === 'future' ? (
+                        <button 
+                          disabled
+                          className="w-full py-3 bg-white/20 text-white/70 rounded-2xl font-black text-xs uppercase tracking-widest cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                          <Lock size={16} /> Starts in {heroTimeStatus.timeLeft}
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => handleHeroComplete(heroQuest!, heroRelatedQuests)}
+                          className="w-full py-3 bg-white text-[#064e3b] rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
+                        >
+                          Complete Mission <Check size={16} />
+                        </button>
+                      )}
+                    </div>
+                 </div>
                </div>
+             ) : (
+                <div className="p-8 rounded-[30px] bg-slate-100 dark:bg-white/5 border-2 border-dashed border-slate-200 dark:border-white/10 text-center">
+                  <p className="text-slate-400 font-bold text-sm">No active focus. Start a quest!</p>
+                </div>
+             )}
+             
+             {/* Quest Lists */}
+             <div className="space-y-6">
+               {/* Main Quests (Obligatory) */}
+               {activeMainQuests.length > 0 && (
+                 <div>
+                   <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 ml-2 flex items-center gap-2"><Star size={12} /> Sacred Duties</h3>
+                   <div className="space-y-3">
+                     {activeMainQuests.map(q => {
+                        const timeStatus = getQuestTimeStatus(q.id);
+                        // Logic: If future, grey it out. If past, keep active (white).
+                        const isFuture = timeStatus?.status === 'future';
+                        return (
+                           <QuestCard 
+                             key={q.id} 
+                             quest={q} 
+                             isActive={!isFuture}
+                             isGreyed={isFuture} // THIS IS KEY: Passes greyed state for future items
+                             timeDisplay={timeStatus as any}
+                             onComplete={(q) => completeQuest(q)} 
+                             onRemove={removeQuest} 
+                             darkMode={user.settings?.darkMode} 
+                           />
+                        );
+                     })}
+                   </div>
+                 </div>
+               )}
+
+               {/* Side Quests (Voluntary) */}
+               {activeSideQuests.length > 0 && (
+                 <div>
+                   <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 ml-2 flex items-center gap-2"><Sparkles size={12} /> Voluntary Acts</h3>
+                   <div className="space-y-3">
+                     {activeSideQuests.map(q => (
+                       <QuestCard 
+                         key={q.id} 
+                         quest={q} 
+                         isActive 
+                         onComplete={(q) => completeQuest(q)} 
+                         onRemove={removeQuest} 
+                         darkMode={user.settings?.darkMode} 
+                       />
+                     ))}
+                   </div>
+                 </div>
+               )}
+             </div>
+
+             {user.activeQuests.length === 0 && (
+              <div className="h-[20vh] flex flex-col items-center justify-center text-center opacity-40">
+                <p className={`text-sm font-bold ${user.settings?.darkMode ? 'text-white' : 'text-slate-900'}`}>All caught up!</p>
+                <p className="text-xs text-slate-500 mt-1">Check back later or add more from the collection.</p>
+              </div>
             )}
            </div>
         )}
 
-        {activeTab === 'reflect' && (
-          <ReflectionFeed 
-            items={reflections} 
-            loading={loadingReflections} 
-            hasMore={hasMoreReflections}
-            onLoadMore={handleLoadMoreReflections} 
-            onUpdateItem={handleUpdateItem} 
-          />
-        )}
+        {/* Keeping Reflect, Guide, Seerah logic same as previous response */}
+        {activeTab === 'reflect' && <ReflectionFeed items={reflections} loading={loadingReflections} hasMore={hasMoreReflections} onLoadMore={handleLoadMoreReflections} onUpdateItem={handleUpdateItem} />}
+        
+        {/* NEW TREASURY GUIDE COMPONENT REPLACING OLD GUIDE */}
+        {activeTab === 'guide' && <Citadel darkMode={user.settings?.darkMode} />}
 
-        {activeTab === 'guide' && (
-          <div className="space-y-10 py-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <button 
-              onClick={() => setActiveTab('seerah')}
-              className="w-full p-6 rounded-[30px] bg-gradient-to-r from-[#064e3b] to-[#043327] text-white shadow-xl shadow-[#064e3b]/20 relative overflow-hidden group"
-            >
-               <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform duration-700">
-                 <BookOpen size={100} />
-               </div>
-               <div className="relative z-10 flex items-center justify-between">
-                 <div className="text-left">
-                   <div className="text-[10px] font-black uppercase tracking-widest text-[#d4af37] mb-1">Life of the Prophet ﷺ</div>
-                   <h3 className="text-2xl font-bold">Read the Seerah</h3>
-                 </div>
-                 <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-sm">
-                   <ChevronRight size={20} />
-                 </div>
-               </div>
-            </button>
-            
-            <header className="space-y-2">
-              <h2 className={`text-4xl font-bold tracking-tight ${user.settings?.darkMode ? 'text-white' : 'text-slate-900'}`}>Daily Guide</h2>
-              <p className="text-[10px] text-[#d4af37] font-black uppercase tracking-[0.3em] flex items-center gap-2">
-                <Clock size={12} /> The Prescribed Path
-              </p>
-            </header>
-
-            <div className="flex flex-wrap justify-center gap-2.5 pb-4">
-              {GUIDE_SECTIONS.map((section) => {
-                const isActive = activeGuideSection === section.id;
-                return (
-                  <button 
-                    key={section.id}
-                    onClick={() => setActiveGuideSection(section.id)}
-                    className={`px-5 py-2.5 rounded-full text-xs font-bold transition-all ${
-                      isActive 
-                        ? 'bg-[#064e3b] text-white shadow-lg' 
-                        : 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-white/5 dark:text-slate-400'
-                    }`}
-                  >
-                    {section.title}
-                  </button>
-                );
-              })}
-            </div>
-            
-            {activeSectionData && (
-               <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <div className="bg-emerald-50 p-6 rounded-[30px] border border-emerald-100 dark:bg-emerald-900/10 dark:border-emerald-900/20">
-                    <div className="flex items-start gap-4">
-                       <div className="p-3 bg-emerald-100 text-emerald-700 rounded-2xl dark:bg-emerald-500/20 dark:text-emerald-400">
-                         <activeSectionData.icon size={24} />
-                       </div>
-                       <div>
-                         <h3 className="font-bold text-lg dark:text-white">{activeSectionData.title}</h3>
-                         <p className="text-xs text-slate-500 mt-1 dark:text-slate-400">{activeSectionData.description}</p>
-                         <div className="mt-3 inline-block px-3 py-1 bg-white rounded-lg text-[10px] font-black uppercase tracking-widest text-emerald-600 border border-emerald-100 dark:bg-white/5 dark:border-white/10 dark:text-emerald-400">
-                           {activeSectionData.timeRange}
-                         </div>
-                       </div>
-                    </div>
-                  </div>
-
-                  {activeSectionData.specialGuide && (
-                    <div className="space-y-4">
-                      <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Knowledge</h4>
-                      <div className="p-8 rounded-[35px] bg-[#fdfbf7] border border-slate-100 dark:bg-white/5 dark:border-white/10">
-                         <h3 className="font-serif text-2xl font-bold mb-4 dark:text-white">{activeSectionData.specialGuide.title}</h3>
-                         <div className="prose prose-sm max-w-none dark:prose-invert">
-                           <div className="whitespace-pre-wrap font-serif leading-8 text-base text-slate-600 dark:text-slate-300">
-                             {activeSectionData.specialGuide.content.split('**').map((part, i) => 
-                               i % 2 === 1 ? <strong key={i} className="text-[#064e3b] dark:text-emerald-400 block mt-4 mb-2 text-lg">{part}</strong> : part
-                             )}
-                           </div>
-                         </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {activeSectionData.quests.length > 0 && (
-                    <div className="space-y-4">
-                      <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Recommended Actions</h4>
-                      {activeSectionData.quests.map(qid => {
-                        const q = ALL_QUESTS.find(x => x.id === qid);
-                        if (!q) return null;
-                        return <QuestCard key={q.id} quest={q} onAction={handleQuestSelect} darkMode={user.settings?.darkMode} />;
-                      })}
-                    </div>
-                  )}
-
-                  {activeSectionData.adhkar.length > 0 && (
-                    <div className="space-y-4">
-                       <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Adhkar & Duas</h4>
-                       {activeSectionData.adhkar.map(ad => (
-                         <AdhkarListItem key={ad.id} item={ad} darkMode={user.settings?.darkMode} />
-                       ))}
-                    </div>
-                  )}
-
-               </div>
-            )}
-          </div>
-        )}
-
+        {/* Seerah Tab is handled inside Citadel now, but if activeTab is 'seerah' (legacy), redirect to guide */}
+        {/* We can remove the old Seerah tab if desired, or keep it as a shortcut */}
         {activeTab === 'seerah' && (
-           <div className="py-10 animate-in fade-in slide-in-from-right-4 duration-500">
-              <div className="mb-8 px-6">
-                <h2 className="text-4xl font-bold tracking-tight mb-2 dark:text-white">The Seerah</h2>
-                <p className="text-[10px] text-[#d4af37] font-black uppercase tracking-[0.3em]">Timeline of Light</p>
-              </div>
-              
-              <div className="relative pl-6 space-y-12 before:absolute before:left-[42px] before:top-0 before:bottom-0 before:w-0.5 before:bg-slate-200 dark:before:bg-white/10">
-                 {SEERAH_CHAPTERS.map((chapter, idx) => {
-                   const isRead = idx <= seerahIndex;
-                   const isCurrent = idx === seerahIndex;
-                   
-                   return (
-                     <div 
-                        key={chapter.id} 
-                        id={`seerah-${idx}`}
-                        className={`relative pl-12 pr-6 transition-all duration-500 ${isCurrent ? 'opacity-100 scale-100' : 'opacity-60 scale-95 grayscale'}`}
-                        onClick={() => bookmarkSeerah(idx)}
-                     >
-                        <div className={`absolute left-[33px] top-2 w-5 h-5 rounded-full border-4 transition-colors z-10 ${isRead ? 'bg-[#064e3b] border-[#064e3b]' : 'bg-white border-slate-300 dark:bg-slate-800 dark:border-slate-600'}`} />
-                        
-                        <div className={`p-8 rounded-[35px] border transition-all ${isCurrent ? 'bg-white shadow-xl border-[#d4af37]/20 dark:bg-white/10 dark:border-white/20' : 'bg-white/50 border-transparent dark:bg-white/5'}`}>
-                           <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">{chapter.year} • {chapter.period}</span>
-                           <h3 className={`text-2xl font-bold mb-4 font-serif ${isCurrent ? 'text-[#064e3b] dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400'}`}>{chapter.title}</h3>
-                           {isCurrent && (
-                             <div className="prose prose-slate dark:prose-invert">
-                                <p className="leading-loose font-serif text-lg">{chapter.content}</p>
-                             </div>
-                           )}
-                           {!isCurrent && <p className="text-sm line-clamp-2">{chapter.content}</p>}
-                           
-                           {isCurrent && (
-                             <div className="mt-6 flex justify-end">
-                                <button className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#d4af37]">
-                                  <Bookmark size={16} className="fill-[#d4af37]" /> Current Chapter
-                                </button>
-                             </div>
-                           )}
-                        </div>
-                     </div>
-                   );
-                 })}
-              </div>
+           <div className="h-full flex items-center justify-center">
+              <button onClick={() => setActiveTab('guide')} className="px-6 py-3 bg-[#064e3b] text-white rounded-full font-bold">Go to Citadel Seerah</button>
            </div>
         )}
       </main>
@@ -970,134 +1018,197 @@ const App: React.FC = () => {
             <NavBtn active={activeTab === 'collect'} label="All Quests" icon={<LayoutGrid />} onClick={() => setActiveTab('collect')} darkMode={user.settings?.darkMode} />
             <NavBtn active={activeTab === 'active'} label="My Quests" icon={<Target />} onClick={() => setActiveTab('active')} darkMode={user.settings?.darkMode} />
             <NavBtn active={activeTab === 'reflect'} label="Reflect" icon={<Sparkles />} onClick={() => setActiveTab('reflect')} darkMode={user.settings?.darkMode} />
-            <NavBtn active={activeTab === 'guide'} label="Guide" icon={<BookOpen />} onClick={() => setActiveTab('guide')} darkMode={user.settings?.darkMode} />
+            <NavBtn active={activeTab === 'guide'} label="Citadel" icon={<BookOpen />} onClick={() => setActiveTab('guide')} darkMode={user.settings?.darkMode} />
           </div>
       </nav>
 
+      {/* FULL SCREEN SETTINGS MODAL */}
       {showSettings && (
-         <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/50 backdrop-blur-sm animate-in fade-in">
-            <div className={`w-full max-w-sm p-8 rounded-[40px] shadow-2xl space-y-6 ${user.settings?.darkMode ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}`}>
-               <div className="flex justify-between items-center">
-                 <h3 className="text-2xl font-bold">Settings</h3>
-                 <button onClick={() => setShowSettings(false)} className="p-2 bg-slate-100 rounded-full dark:bg-white/10"><X size={20} className="text-slate-600 dark:text-slate-300" /></button>
-               </div>
+         <div className="fixed inset-0 z-[100] bg-white dark:bg-slate-900 animate-in slide-in-from-bottom-10 duration-300 flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-white/10">
+               <h2 className="text-2xl font-bold dark:text-white">Settings</h2>
+               <button onClick={() => setShowSettings(false)} className="p-3 bg-slate-50 dark:bg-white/5 rounded-full hover:bg-slate-100 dark:hover:bg-white/10">
+                  <X size={24} className="text-slate-600 dark:text-slate-300" />
+               </button>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto p-6 pb-32 space-y-8">
                
-               <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-white/5">
-                     <div className="flex items-center gap-3 dark:text-slate-200">
-                       {user.settings?.darkMode ? <Moon size={20} /> : <Sun size={20} />}
-                       <span className="font-bold text-sm">Dark Mode</span>
+               {/* Section: Profile */}
+               <section className="space-y-4">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Account & Location</h3>
+                  <div className="p-5 bg-slate-50 dark:bg-white/5 rounded-[30px] space-y-4">
+                     <div>
+                        <label className="text-xs font-bold text-slate-500 mb-1 block">Username</label>
+                        <div className="flex items-center gap-2 text-slate-900 dark:text-white font-bold text-lg">
+                           <UserIcon size={20} className="text-[#064e3b] dark:text-[#d4af37]" />
+                           {user.name}
+                        </div>
                      </div>
+                     <div className="pt-4 border-t border-slate-200 dark:border-white/10">
+                        <label className="text-xs font-bold text-slate-500 mb-2 block">City, Country</label>
+                        <div className="flex gap-2">
+                           <div className="relative flex-1">
+                              <MapPin size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                              <input 
+                                type="text"
+                                placeholder="e.g. Cape Town, SA"
+                                value={manualLocationInput}
+                                onChange={(e) => setManualLocationInput(e.target.value)}
+                                className="w-full pl-11 pr-4 py-4 rounded-2xl bg-white dark:bg-black/20 font-bold text-slate-900 dark:text-white outline-none border-2 border-transparent focus:border-[#064e3b]"
+                              />
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </section>
+
+               {/* Section: Appearance */}
+               <section className="space-y-4">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Experience</h3>
+                  <div className="space-y-3">
                      <button 
-                       onClick={() => updateSettings({ darkMode: !user.settings?.darkMode })}
-                       className={`w-12 h-7 rounded-full transition-colors relative ${user.settings?.darkMode ? 'bg-[#d4af37]' : 'bg-slate-300'}`}
+                       onClick={() => setPendingSettings({...pendingSettings, darkMode: !pendingSettings.darkMode})}
+                       className="w-full p-5 bg-slate-50 dark:bg-white/5 rounded-[30px] flex items-center justify-between"
                      >
-                       <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all ${user.settings?.darkMode ? 'left-6' : 'left-1'}`} />
+                        <div className="flex items-center gap-4">
+                           <div className={`w-10 h-10 rounded-full flex items-center justify-center ${pendingSettings.darkMode ? 'bg-indigo-500 text-white' : 'bg-orange-400 text-white'}`}>
+                              {pendingSettings.darkMode ? <Moon size={20} /> : <Sun size={20} />}
+                           </div>
+                           <div className="text-left">
+                              <h4 className="font-bold dark:text-white">Dark Mode</h4>
+                              <p className="text-xs text-slate-500">Easier on the eyes at night</p>
+                           </div>
+                        </div>
+                        <div className={`w-14 h-8 rounded-full relative transition-colors ${pendingSettings.darkMode ? 'bg-[#064e3b]' : 'bg-slate-300'}`}>
+                           <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all shadow-sm ${pendingSettings.darkMode ? 'left-7' : 'left-1'}`} />
+                        </div>
+                     </button>
+
+                     <button 
+                       onClick={() => setPendingSettings({...pendingSettings, notifications: !pendingSettings.notifications})}
+                       className="w-full p-5 bg-slate-50 dark:bg-white/5 rounded-[30px] flex items-center justify-between"
+                     >
+                        <div className="flex items-center gap-4">
+                           <div className="w-10 h-10 rounded-full bg-rose-500 text-white flex items-center justify-center">
+                              <Bell size={20} />
+                           </div>
+                           <div className="text-left">
+                              <h4 className="font-bold dark:text-white">Notifications</h4>
+                              <p className="text-xs text-slate-500">Reminders for prayer times</p>
+                           </div>
+                        </div>
+                        <div className={`w-14 h-8 rounded-full relative transition-colors ${pendingSettings.notifications ? 'bg-[#064e3b]' : 'bg-slate-300'}`}>
+                           <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all shadow-sm ${pendingSettings.notifications ? 'left-7' : 'left-1'}`} />
+                        </div>
                      </button>
                   </div>
+               </section>
 
-                  <button onClick={handleDownloadSource} className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-white/5 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
-                     <div className="flex items-center gap-3 dark:text-slate-200">
-                       <Download size={20} />
-                       <span className="font-bold text-sm">Download Source</span>
+               {/* Section: Prayer Calc */}
+               <section className="space-y-4">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Calculation Standards</h3>
+                  <div className="p-5 bg-slate-50 dark:bg-white/5 rounded-[30px] space-y-6">
+                     <div className="space-y-2">
+                        <label className="text-sm font-bold dark:text-white flex items-center gap-2">
+                           <Globe size={16} className="text-[#064e3b] dark:text-[#d4af37]" /> Method
+                        </label>
+                        <select 
+                          value={pendingSettings.calcMethod}
+                          onChange={(e) => setPendingSettings({...pendingSettings, calcMethod: parseInt(e.target.value)})}
+                          className="w-full p-4 rounded-2xl bg-white dark:bg-black/20 font-medium text-sm outline-none border border-slate-200 dark:border-white/10"
+                        >
+                           <option value={2}>ISNA (North America)</option>
+                           <option value={3}>Muslim World League</option>
+                           <option value={1}>Karachi</option>
+                           <option value={4}>Makkah</option>
+                           <option value={5}>Egyptian General Authority</option>
+                        </select>
                      </div>
-                     {isZipping ? <Loader2 size={16} className="animate-spin dark:text-slate-200" /> : <ChevronRight size={16} className="text-slate-400" />}
-                  </button>
+                     <div className="space-y-2">
+                        <label className="text-sm font-bold dark:text-white flex items-center gap-2">
+                           <Book size={16} className="text-[#064e3b] dark:text-[#d4af37]" /> Asr Juristic (Madhab)
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                           <button 
+                             onClick={() => setPendingSettings({...pendingSettings, madhab: 0})}
+                             className={`p-3 rounded-xl text-sm font-bold border-2 transition-all ${pendingSettings.madhab === 0 ? 'border-[#064e3b] bg-[#064e3b]/5 text-[#064e3b] dark:border-[#d4af37] dark:text-[#d4af37]' : 'border-transparent bg-white dark:bg-black/20 text-slate-500'}`}
+                           >
+                             Standard
+                           </button>
+                           <button 
+                             onClick={() => setPendingSettings({...pendingSettings, madhab: 1})}
+                             className={`p-3 rounded-xl text-sm font-bold border-2 transition-all ${pendingSettings.madhab === 1 ? 'border-[#064e3b] bg-[#064e3b]/5 text-[#064e3b] dark:border-[#d4af37] dark:text-[#d4af37]' : 'border-transparent bg-white dark:bg-black/20 text-slate-500'}`}
+                           >
+                             Hanafi
+                           </button>
+                        </div>
+                     </div>
+                  </div>
+               </section>
 
-                  <button onClick={() => { setUser(null); setShowSettings(false); localStorage.removeItem('nurpath_user'); }} className="w-full p-4 rounded-2xl bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400 flex items-center justify-between">
-                     <div className="flex items-center gap-3">
-                       <LogOut size={20} />
-                       <span className="font-bold text-sm">Log Out</span>
-                     </div>
+               {/* Section: Advanced / Other */}
+               <section className="space-y-4">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Preferences</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                     <button className="p-4 bg-slate-50 dark:bg-white/5 rounded-3xl flex flex-col items-center justify-center gap-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
+                        <Smartphone size={24} />
+                        <span className="text-xs font-bold">Haptic Feedback</span>
+                     </button>
+                     <button className="p-4 bg-slate-50 dark:bg-white/5 rounded-3xl flex flex-col items-center justify-center gap-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
+                        <Target size={24} />
+                        <span className="text-xs font-bold">Daily Goal</span>
+                     </button>
+                  </div>
+                  <button onClick={handleDownloadSource} className="w-full p-4 bg-slate-50 dark:bg-white/5 rounded-3xl flex items-center justify-center gap-2 text-[#064e3b] dark:text-[#d4af37] font-bold hover:bg-slate-100 transition-colors">
+                     {isZipping ? <Loader2 className="animate-spin" size={20} /> : <Download size={20} />}
+                     <span>Backup / Download Source</span>
                   </button>
-               </div>
-               
-               <div className="text-center text-[10px] text-slate-400 uppercase tracking-widest pt-4">
-                 NurPath v1.0 • Built with ❤️
-               </div>
+               </section>
+
+               <button onClick={handleLogout} className="w-full py-4 text-rose-500 font-bold text-sm bg-rose-50 dark:bg-rose-900/10 rounded-2xl">
+                  Log Out
+               </button>
+            </div>
+
+            {/* Floating Save Button */}
+            <div className="absolute bottom-8 left-0 right-0 px-6 flex justify-center z-20 pointer-events-none">
+               <button 
+                 onClick={handleSaveSettings}
+                 disabled={isSaving}
+                 className={`pointer-events-auto flex items-center gap-3 px-8 py-4 rounded-full font-black uppercase tracking-widest shadow-2xl transition-all transform hover:scale-105 active:scale-95 disabled:opacity-80 disabled:scale-100 ${
+                    saveSuccess 
+                      ? 'bg-emerald-500 text-white w-full max-w-xs justify-center' 
+                      : 'bg-[#064e3b] text-white w-full max-w-xs justify-center'
+                 }`}
+               >
+                  {isSaving ? (
+                     <Loader2 className="animate-spin" size={20} />
+                  ) : saveSuccess ? (
+                     <>
+                        <Check size={20} /> Saved!
+                     </>
+                  ) : (
+                     <>
+                        <Save size={20} /> Save Changes
+                     </>
+                  )}
+               </button>
             </div>
          </div>
       )}
-
-      {showProfile && (
-         <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/50 backdrop-blur-sm animate-in fade-in">
-            <div className={`w-full max-w-sm p-8 rounded-[40px] shadow-2xl space-y-8 text-center ${user.settings?.darkMode ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}`}>
-               <div className="flex justify-between items-start w-full">
-                 <button onClick={() => { setShowProfile(false); setShowSettings(true); }} className="p-2 bg-slate-100 rounded-full dark:bg-white/10 text-slate-600 dark:text-slate-300"><Settings size={20} /></button>
-                 <button onClick={() => setShowProfile(false)} className="p-2 bg-slate-100 rounded-full dark:bg-white/10 text-slate-600 dark:text-slate-300"><X size={20} /></button>
-               </div>
-               
-               <div className="flex flex-col items-center">
-                  <div className="w-24 h-24 bg-[#064e3b] rounded-[30px] shadow-xl flex items-center justify-center text-white text-3xl font-bold minaret-shape mb-6 border-4 border-[#d4af37]">
-                    {user.name[0].toUpperCase()}
-                  </div>
-                  <h2 className="text-2xl font-bold">{user.name}</h2>
-                  <p className="text-[#d4af37] font-black uppercase tracking-widest text-xs mt-2">{levelInfo.rank}</p>
-               </div>
-               
-               <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5">
-                     <span className="block text-2xl font-bold text-[#064e3b] dark:text-emerald-400">{user.xp}</span>
-                     <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Total XP</span>
-                  </div>
-                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5">
-                     <span className="block text-2xl font-bold text-[#064e3b] dark:text-emerald-400">{levelInfo.level}</span>
-                     <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Level</span>
-                  </div>
-               </div>
-               
-               <div className="pt-4">
-                 <button onClick={() => setShowProfile(false)} className="px-8 py-3 bg-[#064e3b] text-white rounded-full font-bold text-sm shadow-lg">Close Profile</button>
-               </div>
-            </div>
-         </div>
-      )}
-
-      {showTasbeehGuide && tasbeehPrayer?.details && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in" onClick={() => setShowTasbeehGuide(false)}>
-          <div className={`w-full max-w-sm p-8 rounded-[40px] space-y-6 animate-in slide-in-from-bottom-10 ${user.settings?.darkMode ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}`} onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center">
-                <h3 className="text-xl font-bold">How to Pray Salatul Tasbeeh</h3>
-                <button onClick={() => setShowTasbeehGuide(false)} className="p-2 bg-slate-100 rounded-full dark:bg-white/10"><X size={20} /></button>
-            </div>
-            <div className="prose prose-sm max-w-none dark:prose-invert">
-                <p className="whitespace-pre-wrap font-serif text-slate-600 dark:text-slate-300 leading-relaxed">
-                    {tasbeehPrayer.details.replace(/\*\*/g, '')}
-                </p>
-            </div>
-          </div>
-        </div>
-      )}
-
+      
+      {/* CONFIRM QUEST MODAL */}
       {confirmQuest && (
         <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
           <div className={`w-full max-w-sm p-6 rounded-[40px] space-y-6 animate-in slide-in-from-bottom-10 ${user.settings?.darkMode ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}`}>
-            <div className="text-center space-y-2">
-              <div className="w-16 h-16 bg-[#d4af37]/10 text-[#d4af37] rounded-full flex items-center justify-center mx-auto mb-4">
-                <Target size={32} />
-              </div>
-              <h3 className="text-xl font-bold">Accept this Quest?</h3>
-              <p className="text-sm text-slate-500">{confirmQuest.title}</p>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-3">
-              <button 
-                onClick={() => setConfirmQuest(null)}
-                className="py-4 rounded-2xl font-bold text-slate-500 bg-slate-100 dark:bg-white/5 dark:text-slate-400"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={addToActive}
-                className="py-4 rounded-2xl font-bold text-white bg-[#064e3b] shadow-lg shadow-[#064e3b]/30"
-              >
-                Start Quest
-              </button>
-            </div>
+            <div className="text-center space-y-2"><div className="w-16 h-16 bg-[#d4af37]/10 text-[#d4af37] rounded-full flex items-center justify-center mx-auto mb-4"><Target size={32} /></div><h3 className="text-xl font-bold">Accept this Quest?</h3><p className="text-sm text-slate-500">{confirmQuest.title}</p></div>
+            <div className="grid grid-cols-2 gap-3"><button onClick={() => setConfirmQuest(null)} className="py-4 rounded-2xl font-bold text-slate-500 bg-slate-100 dark:bg-white/5 dark:text-slate-400">Cancel</button><button onClick={addToActive} className="py-4 rounded-2xl font-bold text-white bg-[#064e3b] shadow-lg shadow-[#064e3b]/30">Start Quest</button></div>
           </div>
         </div>
       )}
-
     </div>
   );
 };
