@@ -275,6 +275,7 @@ const App: React.FC = () => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session) {
+        // We await the profile fetch, which now handles its own loading state
         await fetchProfile(session.user.id, session.user.email!, session.user.created_at);
       } else {
         setLoadingAuth(false);
@@ -297,8 +298,16 @@ const App: React.FC = () => {
 
   const fetchProfile = async (userId: string, email: string, createdAt: string) => {
     try {
-      const { data: profileData } = await supabase.from('profiles').select('*').eq('id', userId).single();
+      // 1. Fetch Profile Data
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
+      if (profileError) console.warn("Profile fetch error:", profileError);
+
+      // 2. Fetch Today's Quest Completions
       const startOfUtcDay = new Date();
       startOfUtcDay.setUTCHours(0, 0, 0, 0);
 
@@ -313,20 +322,69 @@ const App: React.FC = () => {
       
       if (todaysQuests) {
         todaysQuests.forEach(q => {
-             dbDailyCompletions[q.quest_id] = todayKey;
+          dbDailyCompletions[q.quest_id] = todayKey;
         });
       }
 
+      // 3. Sync with LocalStorage
       const saved = localStorage.getItem(`nurpath_user_${userId}`);
       let localData: Partial<User> = {};
       if (saved) {
-         localData = JSON.parse(saved);
+        localData = JSON.parse(saved);
       } else {
-         localData = { activeQuests: [], completedDailyQuests: {}, settings: DEFAULT_SETTINGS };
+        localData = { activeQuests: [], completedDailyQuests: {}, settings: DEFAULT_SETTINGS };
       }
 
+      // 4. Merge Data
       const mergedDailyQuests = { ...localData.completedDailyQuests, ...dbDailyCompletions };
+      const activeQuests = profileData?.active_quests || localData.activeQuests || [];
 
+      // 5. Final User State Update
+      if (profileData) {
+        setUser({
+          id: userId,
+          name: profileData.username || 'Traveler',
+          email: email,
+          location: profileData.location || '',
+          country: profileData.country || 'Unknown',
+          xp: profileData.xp || 0,
+          isVerified: true,
+          activeQuests: activeQuests,
+          pinnedQuests: profileData.pinned_quests || [],
+          autoAddPinned: profileData.auto_add_pinned || false,
+          completedDailyQuests: mergedDailyQuests,
+          settings: {
+            ...DEFAULT_SETTINGS,
+            ...(localData.settings || {}),
+            calcMethod: profileData.salaah_calc ? parseInt(profileData.salaah_calc) : 2,
+            madhab: profileData.asr_calc ? parseInt(profileData.asr_calc) : 0
+          }, 
+          createdAt: createdAt
+        });
+      } else {
+        // Fallback for new users without a DB row yet
+        setUser({
+          id: userId,
+          name: 'Traveler',
+          email: email,
+          location: '',
+          xp: 0,
+          isVerified: true,
+          activeQuests: activeQuests,
+          completedDailyQuests: mergedDailyQuests,
+          settings: DEFAULT_SETTINGS,
+          createdAt: createdAt
+        });
+      }
+
+    } catch (e) {
+      console.error("Critical error in fetchProfile:", e);
+    } finally {
+      // THIS KILLS THE HANGING CIRCLE
+      // It runs whether the try block succeeds or the catch block fires.
+      setLoadingAuth(false);
+    }
+  };
       // HANDLE AUTO-ADD PINNED
       let activeQuests = localData.activeQuests || [];
       if (profileData?.auto_add_pinned && profileData?.pinned_quests) {
