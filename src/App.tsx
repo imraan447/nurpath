@@ -269,51 +269,36 @@ const App: React.FC = () => {
     }
   }, [user?.settings?.darkMode]);
 
-// --- 1. SUPABASE AUTH INIT ---
+// SUPABASE AUTH INIT
   useEffect(() => {
     const initAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session) {
-          // Pass session details to fetchProfile
-          await fetchProfile(session.user.id, session.user.email!, session.user.created_at);
-        } else {
-          setLoadingAuth(false);
-        }
-
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-          if (session) {
-            await fetchProfile(session.user.id, session.user.email!, session.user.created_at);
-          } else {
-            setUser(null);
-            setLoadingAuth(false);
-          }
-        });
-
-        return () => subscription.unsubscribe();
-      } catch (e) {
-        console.error("Auth initialization error:", e);
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        await fetchProfile(session.user.id, session.user.email!, session.user.created_at);
+      } else {
         setLoadingAuth(false);
       }
+
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        if (session) {
+          await fetchProfile(session.user.id, session.user.email!, session.user.created_at);
+        } else {
+          setUser(null);
+          setLoadingAuth(false);
+        }
+      });
+
+      return () => subscription.unsubscribe();
     };
 
     initAuth();
   }, []);
 
-  // --- 2. FETCH PROFILE (Now with the 'async' keyword fix) ---
   const fetchProfile = async (userId: string, email: string, createdAt: string) => {
     try {
-      // Fetch the main profile data
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+      const { data: profileData } = await supabase.from('profiles').select('*').eq('id', userId).single();
 
-      if (profileError) console.warn("Profile fetch error:", profileError.message);
-
-      // Fetch today's quest completions
       const startOfUtcDay = new Date();
       startOfUtcDay.setUTCHours(0, 0, 0, 0);
 
@@ -324,7 +309,7 @@ const App: React.FC = () => {
         .gte('completed_at', startOfUtcDay.toISOString());
 
       const todayKey = new Date().toISOString().split('T')[0];
-      const dbDailyCompletions: Record<string, string> = {};
+      const dbDailyCompletions: { [key: string]: string } = {};
       
       if (todaysQuests) {
         todaysQuests.forEach(q => {
@@ -332,54 +317,15 @@ const App: React.FC = () => {
         });
       }
 
-      // Sync with LocalStorage
       const saved = localStorage.getItem(`nurpath_user_${userId}`);
-      let localData = saved ? JSON.parse(saved) : { activeQuests: [], completedDailyQuests: {}, settings: DEFAULT_SETTINGS };
-
-      const mergedDailyQuests = { ...(localData.completedDailyQuests || {}), ...dbDailyCompletions };
-
-      // Handle Auto-Add Pinned Quests
-      let activeQuests = localData.activeQuests || [];
-      if (profileData?.auto_add_pinned && profileData?.pinned_quests) {
-        const pinned: string[] = profileData.pinned_quests;
-        const toAdd = pinned.filter(pid => !activeQuests.includes(pid) && !mergedDailyQuests[pid]);
-        if (toAdd.length > 0) activeQuests = [...activeQuests, ...toAdd];
+      let localData: Partial<User> = {};
+      if (saved) {
+         localData = JSON.parse(saved);
+      } else {
+         localData = { activeQuests: [], completedDailyQuests: {}, settings: DEFAULT_SETTINGS };
       }
 
-      // SYNC ACTIVE QUESTS (The line that caused your build error)
-      if (profileData && JSON.stringify(profileData.active_quests) !== JSON.stringify(activeQuests)) {
-         await supabase.from('profiles').update({ active_quests: activeQuests }).eq('id', userId);
-      }
-
-      // Update Final User State
-      setUser({
-        id: userId,
-        name: profileData?.username || 'Traveler',
-        email: email,
-        location: profileData?.location || '',
-        country: profileData?.country || 'Unknown',
-        xp: profileData?.xp || 0,
-        isVerified: true,
-        activeQuests: activeQuests,
-        pinnedQuests: profileData?.pinned_quests || [],
-        autoAddPinned: profileData?.auto_add_pinned || false,
-        completedDailyQuests: mergedDailyQuests,
-        settings: {
-          ...DEFAULT_SETTINGS,
-          ...(localData.settings || {}),
-          calcMethod: profileData?.salaah_calc ? parseInt(profileData.salaah_calc) : 2,
-          madhab: profileData?.asr_calc ? parseInt(profileData.asr_calc) : 0
-        }, 
-        createdAt: createdAt
-      });
-
-    } catch (e) {
-      console.error("Critical error in fetchProfile:", e);
-    } finally {
-      // THIS KILLS THE HANGING CIRCLE
-      setLoadingAuth(false);
-    }
-  };
+      const mergedDailyQuests = { ...localData.completedDailyQuests, ...dbDailyCompletions };
       // HANDLE AUTO-ADD PINNED
       let activeQuests = localData.activeQuests || [];
       if (profileData?.auto_add_pinned && profileData?.pinned_quests) {
