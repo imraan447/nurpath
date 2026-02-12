@@ -112,13 +112,11 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
       <div className="w-full max-w-md relative z-10 animate-in fade-in zoom-in-95 duration-700">
         
         {/* Logo Section */}
-        <div className="flex justify-center mb-8">
-            <img 
-              src="/images/nurpath_logo.png" 
-              alt="NurPath Logo" 
-              className="w-48 h-auto object-contain"
-            />
-        </div>
+<img 
+  src="/images/nurpath_logo.png" 
+  alt="NurPath" 
+  className="w-48 h-auto mx-auto mb-6 object-contain"
+/>
 
         {/* Card */}
         <div className="bg-white/80 backdrop-blur-xl rounded-[40px] shadow-2xl p-8 border border-white/50">
