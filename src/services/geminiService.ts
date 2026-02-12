@@ -1,7 +1,11 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { ReflectionItem } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+if (!apiKey) {
+  console.error("Missing Gemini API Key");
+}
+const ai = new GoogleGenAI({ apiKey: apiKey || '' });
 
 export async function generateReflections(count: number = 3): Promise<ReflectionItem[]> {
   try {
@@ -40,7 +44,7 @@ export async function generateReflections(count: number = 3): Promise<Reflection
 
     const text = response.text;
     if (!text) return [];
-    
+
     const results = JSON.parse(text);
     return results.map((item: any) => ({
       ...item,
