@@ -269,45 +269,51 @@ const App: React.FC = () => {
     }
   }, [user?.settings?.darkMode]);
 
-  // SUPABASE AUTH INIT
+// --- 1. SUPABASE AUTH INIT ---
   useEffect(() => {
     const initAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session) {
-        // We await the profile fetch, which now handles its own loading state
-        await fetchProfile(session.user.id, session.user.email!, session.user.created_at);
-      } else {
-        setLoadingAuth(false);
-      }
-
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
         if (session) {
+          // Pass session details to fetchProfile
           await fetchProfile(session.user.id, session.user.email!, session.user.created_at);
         } else {
-          setUser(null);
           setLoadingAuth(false);
         }
-      });
 
-      return () => subscription.unsubscribe();
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+          if (session) {
+            await fetchProfile(session.user.id, session.user.email!, session.user.created_at);
+          } else {
+            setUser(null);
+            setLoadingAuth(false);
+          }
+        });
+
+        return () => subscription.unsubscribe();
+      } catch (e) {
+        console.error("Auth initialization error:", e);
+        setLoadingAuth(false);
+      }
     };
 
     initAuth();
   }, []);
 
+  // --- 2. FETCH PROFILE (Now with the 'async' keyword fix) ---
   const fetchProfile = async (userId: string, email: string, createdAt: string) => {
     try {
-      // 1. Fetch Profile Data
+      // Fetch the main profile data
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
 
-      if (profileError) console.warn("Profile fetch error:", profileError);
+      if (profileError) console.warn("Profile fetch error:", profileError.message);
 
-      // 2. Fetch Today's Quest Completions
+      // Fetch today's quest completions
       const startOfUtcDay = new Date();
       startOfUtcDay.setUTCHours(0, 0, 0, 0);
 
@@ -318,70 +324,59 @@ const App: React.FC = () => {
         .gte('completed_at', startOfUtcDay.toISOString());
 
       const todayKey = new Date().toISOString().split('T')[0];
-      const dbDailyCompletions: { [key: string]: string } = {};
+      const dbDailyCompletions: Record<string, string> = {};
       
       if (todaysQuests) {
         todaysQuests.forEach(q => {
-          dbDailyCompletions[q.quest_id] = todayKey;
+             dbDailyCompletions[q.quest_id] = todayKey;
         });
       }
 
-      // 3. Sync with LocalStorage
+      // Sync with LocalStorage
       const saved = localStorage.getItem(`nurpath_user_${userId}`);
-      let localData: Partial<User> = {};
-      if (saved) {
-        localData = JSON.parse(saved);
-      } else {
-        localData = { activeQuests: [], completedDailyQuests: {}, settings: DEFAULT_SETTINGS };
+      let localData = saved ? JSON.parse(saved) : { activeQuests: [], completedDailyQuests: {}, settings: DEFAULT_SETTINGS };
+
+      const mergedDailyQuests = { ...(localData.completedDailyQuests || {}), ...dbDailyCompletions };
+
+      // Handle Auto-Add Pinned Quests
+      let activeQuests = localData.activeQuests || [];
+      if (profileData?.auto_add_pinned && profileData?.pinned_quests) {
+        const pinned: string[] = profileData.pinned_quests;
+        const toAdd = pinned.filter(pid => !activeQuests.includes(pid) && !mergedDailyQuests[pid]);
+        if (toAdd.length > 0) activeQuests = [...activeQuests, ...toAdd];
       }
 
-      // 4. Merge Data
-      const mergedDailyQuests = { ...localData.completedDailyQuests, ...dbDailyCompletions };
-      const activeQuests = profileData?.active_quests || localData.activeQuests || [];
-
-      // 5. Final User State Update
-      if (profileData) {
-        setUser({
-          id: userId,
-          name: profileData.username || 'Traveler',
-          email: email,
-          location: profileData.location || '',
-          country: profileData.country || 'Unknown',
-          xp: profileData.xp || 0,
-          isVerified: true,
-          activeQuests: activeQuests,
-          pinnedQuests: profileData.pinned_quests || [],
-          autoAddPinned: profileData.auto_add_pinned || false,
-          completedDailyQuests: mergedDailyQuests,
-          settings: {
-            ...DEFAULT_SETTINGS,
-            ...(localData.settings || {}),
-            calcMethod: profileData.salaah_calc ? parseInt(profileData.salaah_calc) : 2,
-            madhab: profileData.asr_calc ? parseInt(profileData.asr_calc) : 0
-          }, 
-          createdAt: createdAt
-        });
-      } else {
-        // Fallback for new users without a DB row yet
-        setUser({
-          id: userId,
-          name: 'Traveler',
-          email: email,
-          location: '',
-          xp: 0,
-          isVerified: true,
-          activeQuests: activeQuests,
-          completedDailyQuests: mergedDailyQuests,
-          settings: DEFAULT_SETTINGS,
-          createdAt: createdAt
-        });
+      // SYNC ACTIVE QUESTS (The line that caused your build error)
+      if (profileData && JSON.stringify(profileData.active_quests) !== JSON.stringify(activeQuests)) {
+         await supabase.from('profiles').update({ active_quests: activeQuests }).eq('id', userId);
       }
+
+      // Update Final User State
+      setUser({
+        id: userId,
+        name: profileData?.username || 'Traveler',
+        email: email,
+        location: profileData?.location || '',
+        country: profileData?.country || 'Unknown',
+        xp: profileData?.xp || 0,
+        isVerified: true,
+        activeQuests: activeQuests,
+        pinnedQuests: profileData?.pinned_quests || [],
+        autoAddPinned: profileData?.auto_add_pinned || false,
+        completedDailyQuests: mergedDailyQuests,
+        settings: {
+          ...DEFAULT_SETTINGS,
+          ...(localData.settings || {}),
+          calcMethod: profileData?.salaah_calc ? parseInt(profileData.salaah_calc) : 2,
+          madhab: profileData?.asr_calc ? parseInt(profileData.asr_calc) : 0
+        }, 
+        createdAt: createdAt
+      });
 
     } catch (e) {
       console.error("Critical error in fetchProfile:", e);
     } finally {
       // THIS KILLS THE HANGING CIRCLE
-      // It runs whether the try block succeeds or the catch block fires.
       setLoadingAuth(false);
     }
   };
