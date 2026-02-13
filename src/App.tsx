@@ -93,13 +93,13 @@ const getLevelInfo = (xp: number) => {
 const NavBtn = ({ active, label, icon, onClick, darkMode }: { active: boolean; label: string; icon: React.ReactElement<any>; onClick: () => void; darkMode?: boolean }) => (
   <button
     onClick={onClick}
-    className={`flex flex-col items-center gap-1.5 px-6 py-3 rounded-[30px] transition-all relative ${active
+    className={`flex-1 flex flex-col items-center gap-1 min-w-0 py-2 sm:py-3 rounded-[30px] transition-all relative ${active
       ? (darkMode ? 'bg-white/10 text-white' : 'bg-[#064e3b] text-white shadow-lg')
       : 'text-slate-400 hover:text-slate-600'
       }`}
   >
     {React.cloneElement(icon, { size: 20 })}
-    <span className="text-[8px] font-black uppercase tracking-widest">{label}</span>
+    <span className="text-[8px] font-black uppercase tracking-widest truncate w-full text-center px-1">{label}</span>
   </button>
 );
 
@@ -326,17 +326,25 @@ const App: React.FC = () => {
           madhab: 0
         };
 
-        // Attempt 1: Full Profile Insert
+        // Attempt 1: Safe Insert (Do not overwrite existing XP)
         let { data: inserted, error: insertError } = await supabase
           .from('profiles')
-          .upsert(fullProfile)
+          .upsert(fullProfile, { onConflict: 'id', ignoreDuplicates: true })
           .select()
           .single();
+
+        // If ignoreDuplicates is true and row exists, inserted might be null. 
+        // We should fetch again if we didn't insert.
+        if (!inserted && !insertError) {
+          const retryFetch = await supabase.from('profiles').select('*').eq('id', userId).single();
+          inserted = retryFetch.data;
+        }
 
         // Attempt 2: If conflict (duplicate username), try with suffix
         if (insertError && (insertError.code === '23505' || insertError.message.includes('unique'))) {
           console.log("Username collision, retrying with suffix...");
           fullProfile.username = `${baseUsername}_${Math.floor(Math.random() * 9999)}`;
+          // Here we can force upsert because the username is new
           const retry = await supabase.from('profiles').upsert(fullProfile).select().single();
           inserted = retry.data;
           insertError = retry.error;
@@ -776,9 +784,19 @@ const App: React.FC = () => {
     .filter(rq => selectedHeroRelated.includes(rq.id))
     .reduce((sum, rq) => sum + rq.xp, 0) : 0;
 
-  const activeMainQuests = user?.activeQuests
+  const activeMainQuests = (user?.activeQuests
     .map(qid => ALL_QUESTS.find(q => q.id === qid))
-    .filter(q => q && q.id !== heroQuest?.id && (q.category === QuestCategory.MAIN || fardSalahIds.includes(q.id))) as Quest[] || [];
+    .filter(q => q && q.id !== heroQuest?.id && (q.category === QuestCategory.MAIN || fardSalahIds.includes(q.id))) as Quest[] || [])
+    .sort((a, b) => {
+      // Sort Salaah specifically by fardSalahIds order
+      const indexA = fardSalahIds.indexOf(a.id);
+      const indexB = fardSalahIds.indexOf(b.id);
+      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+      // Put Salaah first before other main quests
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      return 0;
+    });
 
   const activeSideQuests = user?.activeQuests
     .map(qid => ALL_QUESTS.find(q => q.id === qid))
@@ -1130,7 +1148,7 @@ const App: React.FC = () => {
       </main>
 
       <nav className={`fixed bottom-0 left-0 right-0 max-w-md mx-auto p-6 z-50 transition-all`}>
-        <div className={`rounded-[40px] p-2 flex items-center justify-around shadow-2xl border ${user.settings?.darkMode ? 'bg-[#050a09]/90 border-white/10 backdrop-blur-xl' : 'bg-white/95 border-[#064e3b]/5 backdrop-blur-md'}`}>
+        <div className={`rounded-[40px] p-2 flex items-center justify-between shadow-2xl border ${user.settings?.darkMode ? 'bg-[#050a09]/90 border-white/10 backdrop-blur-xl' : 'bg-white/95 border-[#064e3b]/5 backdrop-blur-md'}`}>
           <NavBtn active={activeTab === 'collect'} label="All Quests" icon={<LayoutGrid />} onClick={() => setActiveTab('collect')} darkMode={user.settings?.darkMode} />
           <NavBtn active={activeTab === 'active'} label="My Quests" icon={<Target />} onClick={() => setActiveTab('active')} darkMode={user.settings?.darkMode} />
           <NavBtn active={activeTab === 'reflect'} label="Reflect" icon={<Sparkles />} onClick={() => setActiveTab('reflect')} darkMode={user.settings?.darkMode} />
