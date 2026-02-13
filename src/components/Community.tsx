@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { User, Group, GroupMember, Friend, FriendRequest, Quest, GroupQuest, GroupInvite, GroupQuestItem, Dua } from '../types';
 import { ALL_QUESTS } from '../constants';
-import { Users, UserPlus, Search, Trophy, Crown, Globe, MapPin, Loader2, Plus, Check, X, Shield, Star, Sparkles, ChevronRight, ChevronDown, Heart, Send, Trash2, LogOut, Settings, Mail } from 'lucide-react';
+import { Users, UserPlus, Search, Trophy, Crown, Globe, MapPin, Loader2, Plus, Check, X, Shield, Star, Sparkles, ChevronRight, ChevronDown, Heart, Send, Trash2, LogOut, Settings, Mail, Pin, CheckCircle2, Clock, Lock } from 'lucide-react';
 import QuestCard from './QuestCard';
 import Leaderboard from './Leaderboard';
 
@@ -13,9 +13,10 @@ interface CommunityProps {
   onClose: () => void;
   hasFriendRequests?: boolean;
   hasGroupInvites?: boolean;
+  onTrackQuest?: (quest: Quest) => void;
 }
 
-const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onCompleteGroupQuest, onClose, hasFriendRequests, hasGroupInvites }) => {
+const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onCompleteGroupQuest, onClose, hasFriendRequests, hasGroupInvites, onTrackQuest }) => {
   const [tab, setTab] = useState<'duas' | 'leaderboard' | 'friends' | 'groups'>('duas');
   const [loading, setLoading] = useState(false);
 
@@ -24,6 +25,7 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
   const [searchResults, setSearchResults] = useState<Friend[]>([]);
   const [friends, setFriends] = useState<Friend[]>([]);
   const [requests, setRequests] = useState<FriendRequest[]>([]);
+  const [sentRequestIds, setSentRequestIds] = useState<string[]>([]);
 
   // Groups State
   const [groups, setGroups] = useState<Group[]>([]);
@@ -32,13 +34,15 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [groupSearchQuery, setGroupSearchQuery] = useState('');
   const [groupTab, setGroupTab] = useState<'leaderboard' | 'quests'>('quests');
-  const [groupInvites, setGroupInvites] = useState<GroupInvite[]>([]);
+  const [newGroupQuestTitle, setNewGroupQuestTitle] = useState('');
+  const [newGroupQuestDeadline, setNewGroupQuestDeadline] = useState('');
   const [groupQuests, setGroupQuests] = useState<GroupQuestItem[]>([]);
-  const [newQuestTitle, setNewQuestTitle] = useState('');
-  const [showAddQuest, setShowAddQuest] = useState(false);
+  const [groupQuestCompletions, setGroupQuestCompletions] = useState<{ [questId: string]: number }>({});
   const [inviteFriendSearch, setInviteFriendSearch] = useState('');
   const [showInvitePanel, setShowInvitePanel] = useState(false);
   const [myRole, setMyRole] = useState<'admin' | 'member'>('member');
+  const [groupInvites, setGroupInvites] = useState<GroupInvite[]>([]);
+  const [groupOutgoingInvites, setGroupOutgoingInvites] = useState<string[]>([]);
 
   // Duas State
   const [duas, setDuas] = useState<Dua[]>([]);
@@ -51,6 +55,18 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
     else if (tab === 'groups') { fetchGroups(); fetchGroupInvites(); }
     else if (tab === 'duas') fetchDuas();
   }, [tab, currentUser.id]);
+
+  useEffect(() => {
+    if (activeGroup) {
+      const fetchOutgoing = async () => {
+        const { data } = await supabase.from('group_invites').select('invited_user').eq('group_id', activeGroup.id).eq('status', 'pending');
+        setGroupOutgoingInvites(data?.map(i => i.invited_user) || []);
+      };
+      fetchOutgoing();
+    } else {
+      setGroupOutgoingInvites([]);
+    }
+  }, [activeGroup?.id]);
 
   // ==================== DUAS LOGIC ====================
 
@@ -209,6 +225,14 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
       } else {
         setFriends([]);
       }
+
+      // Fetch outgoing pending requests
+      const { data: sent } = await supabase
+        .from('friendships')
+        .select('user_id_2')
+        .eq('user_id_1', currentUser.id)
+        .eq('status', 'pending');
+      setSentRequestIds(sent?.map(s => s.user_id_2) || []);
     } catch (e) {
       console.error(e);
     } finally {
@@ -321,6 +345,26 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
     }
   };
 
+  const sendGroupInvite = async (friendId: string) => {
+    if (!activeGroup) return;
+    try {
+      const { error } = await supabase.from('group_invites').insert({
+        group_id: activeGroup.id,
+        invited_user: friendId,
+        invited_by: currentUser.id
+      });
+      if (error) {
+        if (error.code === '23505') alert('Already invited!');
+        else throw error;
+      } else {
+        alert('Invite sent!');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Failed to send invite.');
+    }
+  };
+
   const openGroup = async (group: Group) => {
     setLoading(true);
     try {
@@ -348,10 +392,31 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
       setMyRole(me?.role || 'member');
 
       // Fetch group custom quests
-      const { data: gQuests } = await supabase.from('group_quests').select('*').eq('group_id', group.id);
-      setGroupQuests(gQuests || []);
+      const { data: quests } = await supabase
+        .from('group_quests')
+        .select('*')
+        .eq('group_id', group.id)
+        .order('created_at', { ascending: false });
 
-      setGroupTab('quests');
+      if (quests && quests.length > 0) {
+        setGroupQuests(quests);
+        // Fetch completions for these quests
+        const qIds = quests.map(q => q.id);
+        const { data: completions } = await supabase.from('group_quest_completions').select('group_quest_id').in('group_quest_id', qIds);
+
+        const counts: { [id: string]: number } = {};
+        if (completions) {
+          completions.forEach(c => {
+            counts[c.group_quest_id] = (counts[c.group_quest_id] || 0) + 1;
+          });
+        }
+        setGroupQuestCompletions(counts);
+      } else {
+        setGroupQuests([]);
+        setGroupQuestCompletions({});
+      }
+
+      setGroupTab('leaderboard');
     } catch (e) {
       console.error(e);
     } finally {
@@ -359,33 +424,35 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
     }
   };
 
-  const sendGroupInvite = async (friendId: string) => {
-    if (!activeGroup) return;
-    try {
-      const { error } = await supabase.from('group_invites').insert({
-        group_id: activeGroup.id,
-        invited_by: currentUser.id,
-        invited_user: friendId
-      });
-      if (error) throw error;
-      alert('Invite sent!');
-    } catch (e: any) {
-      alert('Error (maybe already invited?)');
-    }
-  };
 
-  const createGroupQuest = async () => {
-    if (!activeGroup || !newQuestTitle.trim()) return;
+
+  const addGroupQuest = async () => {
+    if (!newGroupQuestTitle.trim() || !activeGroup) return;
+    if ((activeGroup.members?.length || 0) < 2) {
+      alert('You need at least 2 group members to create a challenge.');
+      return;
+    }
     try {
-      const { data, error } = await supabase.from('group_quests').insert({
+      const { error } = await supabase.from('group_quests').insert({
         group_id: activeGroup.id,
-        title: newQuestTitle.trim(),
-        created_by: currentUser.id
-      }).select().single();
+        title: newGroupQuestTitle.trim(),
+        created_by: currentUser.id,
+        xp: 50,
+        deadline: newGroupQuestDeadline || null
+      });
+
       if (error) throw error;
-      setGroupQuests(prev => [...prev, data]);
-      setNewQuestTitle('');
-      setShowAddQuest(false);
+      setNewGroupQuestTitle('');
+      setNewGroupQuestDeadline('');
+
+      // Refresh quests
+      const { data: quests } = await supabase
+        .from('group_quests')
+        .select('*')
+        .eq('group_id', activeGroup.id)
+        .order('created_at', { ascending: false });
+
+      setGroupQuests(quests || []);
     } catch (e) {
       console.error(e);
     }
@@ -504,7 +571,7 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
+      <div className="flex-1 overflow-y-auto p-6 pb-24 scrollbar-hide">
 
         {/* ==================== DUAS TAB ==================== */}
         {tab === 'duas' && (
@@ -627,9 +694,21 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
                         <p className="text-[10px] text-slate-400">{res.country}</p>
                       </div>
                     </div>
-                    <button onClick={() => sendFriendRequest(res.id)} className="p-2 bg-[#064e3b]/10 text-[#064e3b] rounded-full hover:bg-[#064e3b] hover:text-white transition-colors">
-                      <UserPlus size={18} />
-                    </button>
+                    {(() => {
+                      const isFriend = friends.some(f => f.id === res.id);
+                      const isPendingOutgoing = sentRequestIds.includes(res.id);
+                      const isPendingIncoming = requests.some(r => r.sender?.id === res.id);
+
+                      if (isFriend) return <span className="text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-white/10 px-2 py-1 rounded-lg">Friend</span>;
+                      if (isPendingIncoming) return <span className="text-[10px] font-bold text-[#d4af37] bg-[#d4af37]/10 px-2 py-1 rounded-lg">Pending Request</span>;
+                      if (isPendingOutgoing) return <button disabled className="p-2 bg-slate-100 text-slate-400 rounded-full cursor-not-allowed"><Clock size={18} /></button>;
+
+                      return (
+                        <button onClick={() => sendFriendRequest(res.id)} className="p-2 bg-[#064e3b]/10 text-[#064e3b] rounded-full hover:bg-[#064e3b] hover:text-white transition-colors">
+                          <UserPlus size={18} />
+                        </button>
+                      );
+                    })()}
                   </div>
                 ))}
               </div>
@@ -818,7 +897,11 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
                         <div className="w-8 h-8 rounded-full bg-[#064e3b]/10 text-[#064e3b] flex items-center justify-center text-xs font-bold">{f.username[0].toUpperCase()}</div>
                         <span className={`text-sm font-medium ${darkMode ? 'text-white' : ''}`}>{f.username}</span>
                       </div>
-                      <button onClick={() => sendGroupInvite(f.id)} className="p-2 bg-[#064e3b] text-white rounded-full text-xs"><Send size={12} /></button>
+                      {groupOutgoingInvites.includes(f.id) ? (
+                        <span className="text-[10px] font-bold text-[#d4af37] bg-[#d4af37]/10 px-2 py-1 rounded-lg">Invited</span>
+                      ) : (
+                        <button onClick={() => sendGroupInvite(f.id)} className="p-2 bg-[#064e3b] text-white rounded-full text-xs"><Send size={12} /></button>
+                      )}
                     </div>
                   ))
                 )}
@@ -862,129 +945,139 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
               </div>
             )}
 
-            {/* GROUP QUESTS */}
+            {/* GROUP CHALLENGES */}
             {groupTab === 'quests' && (
-              <div className="space-y-4">
-                {/* Admin: Add Quest */}
+              <div className="space-y-6">
+                {/* Admin: Create Challenge */}
                 {myRole === 'admin' && (
-                  <div>
-                    {showAddQuest ? (
-                      <div className={`p-4 rounded-2xl space-y-3 ${darkMode ? 'bg-white/5' : 'bg-white shadow-sm'}`}>
-                        <input
-                          type="text"
-                          placeholder="Quest title (e.g. Read 1 page of Quran)"
-                          className={`w-full p-3 rounded-xl text-sm outline-none ${darkMode ? 'bg-black/20 text-white' : 'bg-slate-50'}`}
-                          value={newQuestTitle}
-                          onChange={e => setNewQuestTitle(e.target.value)}
-                          maxLength={100}
-                        />
-                        <div className="flex gap-2">
-                          <button onClick={createGroupQuest} className="flex-1 py-2.5 bg-[#064e3b] text-white rounded-xl font-bold text-xs uppercase tracking-widest">Create (50 XP)</button>
-                          <button onClick={() => { setShowAddQuest(false); setNewQuestTitle(''); }} className={`px-4 py-2.5 rounded-xl text-xs font-bold ${darkMode ? 'bg-white/5 text-white/60' : 'bg-slate-100 text-slate-500'}`}>Cancel</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <button onClick={() => setShowAddQuest(true)} className={`w-full py-3 border-2 border-dashed rounded-2xl flex items-center justify-center gap-2 text-xs font-bold transition-colors ${darkMode ? 'border-white/10 text-slate-400 hover:bg-white/5' : 'border-slate-200 text-slate-400 hover:bg-slate-50'}`}>
-                        <Plus size={16} /> Add Group Quest
+                  <div className={`p-4 rounded-2xl space-y-3 ${darkMode ? 'bg-white/5' : 'bg-slate-100'}`}>
+                    <h3 className="text-xs font-bold uppercase tracking-wider opacity-60">Create Group Challenge</h3>
+                    <div className="flex flex-col gap-2">
+                      <input
+                        type="text"
+                        placeholder="Challenge Title (e.g. Read Surah Kahf)"
+                        className={`w-full p-3 rounded-xl text-sm outline-none ${darkMode ? 'bg-black/20 text-white placeholder-white/30' : 'bg-white text-slate-900'}`}
+                        value={newGroupQuestTitle}
+                        onChange={e => setNewGroupQuestTitle(e.target.value)}
+                        maxLength={100}
+                      />
+                      <input
+                        type="date"
+                        value={newGroupQuestDeadline}
+                        onChange={(e) => setNewGroupQuestDeadline(e.target.value)}
+                        className={`w-full p-3 rounded-xl outline-none text-sm ${darkMode ? 'bg-black/20 text-white' : 'bg-white text-slate-900'}`}
+                      />
+                      <button
+                        onClick={addGroupQuest}
+                        disabled={!newGroupQuestTitle.trim()}
+                        className="w-full py-3 bg-[#d4af37] text-white rounded-xl font-bold text-xs uppercase tracking-widest disabled:opacity-50"
+                      >
+                        Create Challenge (50 XP)
                       </button>
-                    )}
+                    </div>
                   </div>
                 )}
 
-                {/* Custom Group Quests */}
-                {groupQuests.length > 0 && (
-                  <div className="space-y-2">
-                    <h4 className={`text-[10px] font-black uppercase tracking-widest pl-2 ${darkMode ? 'text-[#d4af37]' : 'text-[#92780c]'}`}>Group Commitments</h4>
-                    {groupQuests.map(gq => {
-                      const completed = isQuestCompletedToday(`gq_${gq.id}`);
-                      return (
-                        <div key={gq.id} className={`p-4 rounded-2xl border flex items-center justify-between transition-all ${completed ? 'opacity-40' : ''} ${darkMode ? 'bg-white/5 border-white/5' : 'bg-white border-slate-100 shadow-sm'}`}>
-                          <div className="flex items-center gap-3">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${completed ? 'bg-emerald-500/20 text-emerald-500' : (darkMode ? 'bg-[#d4af37]/10 text-[#d4af37]' : 'bg-[#d4af37]/10 text-[#d4af37]')}`}>
-                              {completed ? <Check size={16} /> : <Star size={16} />}
+                {/* Group Challenge List */}
+                <div className="space-y-3">
+                  {groupQuests.length > 0 && <h4 className={`text-[10px] font-black uppercase tracking-widest pl-2 ${darkMode ? 'text-indigo-300' : 'text-indigo-700'}`}>Active Challenges</h4>}
+                  {groupQuests.map(quest => {
+                    const trackingId = `gq_${quest.id}`;
+                    const isTracking = currentUser.activeQuests?.includes(trackingId);
+                    const completedCount = groupQuestCompletions[quest.id] || 0;
+                    const totalMembers = activeGroup.members?.length || 0;
+                    const isLocked = completedCount < totalMembers;
+                    const iUserCompleted = currentUser.completedDailyQuests?.[trackingId] || false;
+                    const isFullyComplete = !isLocked; // All members completed
+
+                    return (
+                      <div key={quest.id} className={`p-4 rounded-2xl border flex flex-col gap-3 transition-all duration-200 ${isFullyComplete ? 'opacity-50' : ''} ${darkMode ? 'bg-white/5 border-white/5' : 'bg-white border-slate-100 shadow-sm'}`}>
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${darkMode ? 'bg-indigo-500/20 text-indigo-300' : 'bg-indigo-100 text-indigo-700'}`}>Group Challenge</span>
+                              {quest.deadline && <span className="text-[9px] font-bold text-rose-400 flex items-center gap-1"><Clock size={10} /> Ends {new Date(quest.deadline).toLocaleDateString()}</span>}
                             </div>
-                            <div>
-                              <p className={`text-sm font-bold ${darkMode ? 'text-white' : ''}`}>{gq.title}</p>
-                              <p className="text-[10px] text-slate-400">50 XP • Complete in My Quests</p>
-                            </div>
+                            <h4 className={`font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>{quest.title}</h4>
                           </div>
-                          {myRole === 'admin' && (
-                            <button onClick={() => deleteGroupQuest(gq.id)} className="p-1.5 rounded-lg hover:bg-rose-500/10 text-slate-400 hover:text-rose-500 transition-colors">
-                              <Trash2 size={14} />
-                            </button>
+
+                          {/* Actions */}
+                          <div className="flex items-center gap-2">
+                            {!isFullyComplete ? (
+                              <button
+                                onClick={() => onTrackQuest?.({
+                                  id: trackingId,
+                                  title: quest.title,
+                                  description: `Group Challenge • ${quest.xp} XP`,
+                                  category: 'COMMUNITY',
+                                  xp: quest.xp,
+                                  isGroupQuest: true,
+                                  groupId: quest.group_id,
+                                  deadline: quest.deadline
+                                } as any)}
+                                className={`p-2 rounded-xl transition-all duration-200 ${isTracking
+                                  ? 'bg-emerald-500/15 text-emerald-500'
+                                  : darkMode ? 'bg-white/10 text-slate-400 hover:bg-white/20 hover:text-white' : 'bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-600'}`}
+                                title={isTracking ? "Untrack from My Quests" : "Track in My Quests"}
+                              >
+                                {isTracking ? <CheckCircle2 size={18} /> : <Pin size={18} />}
+                              </button>
+                            ) : (
+                              <span className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500">
+                                <CheckCircle2 size={18} />
+                              </span>
+                            )}
+
+                            {/* Admin Delete */}
+                            {myRole === 'admin' && (
+                              <button onClick={async () => {
+                                if (confirm('Delete this challenge?')) {
+                                  try {
+                                    // Delete completions first, then the quest
+                                    await supabase.from('group_quest_completions').delete().eq('group_quest_id', quest.id);
+                                    const { error } = await supabase.from('group_quests').delete().eq('id', quest.id);
+                                    if (error) throw error;
+                                    setGroupQuests(prev => prev.filter(q => q.id !== quest.id));
+                                  } catch (e) {
+                                    console.error('Delete failed:', e);
+                                    alert('Could not delete challenge. Please try again.');
+                                  }
+                                }
+                              }} className="p-2 rounded-xl hover:bg-rose-500/10 text-slate-400 hover:text-rose-500 transition-all duration-200">
+                                <Trash2 size={16} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Progress Bar */}
+                        <div className="text-xs opacity-70">
+                          <div className="flex justify-between mb-1 text-[9px] font-bold uppercase tracking-wider">
+                            <span>Group Progress</span>
+                            <span>{completedCount}/{totalMembers} Members Completed</span>
+                          </div>
+                          <div className={`h-1.5 w-full rounded-full overflow-hidden ${darkMode ? 'bg-white/10' : 'bg-slate-200'}`}>
+                            <div className={`h-full transition-all duration-500 ${isLocked ? 'bg-slate-400' : 'bg-indigo-500'}`} style={{ width: `${(completedCount / totalMembers) * 100}%` }}></div>
+                          </div>
+                          {isLocked ? (
+                            <div className="flex items-center gap-1 mt-1 text-slate-400 italic text-[10px]">
+                              <Lock size={10} /> XP locked until all members complete
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1 mt-1 text-emerald-500 font-bold text-[10px]">
+                              <CheckCircle2 size={10} /> Challenge Complete! XP Unlocked
+                            </div>
                           )}
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
+                      </div>
+                    )
+                  })}
+                </div>
 
-                {/* Shared Standard Quests (from ALL_QUESTS that members have in common) */}
-                {(() => {
-                  if (!activeGroup.members) return null;
-                  const myQuests = currentUser.activeQuests || [];
-                  const sharedQuests: { quest: Quest; sharedBy: string[] }[] = [];
-
-                  myQuests.forEach(questId => {
-                    const others = activeGroup.members!.filter(m => m.id !== currentUser.id && m.active_quests?.includes(questId));
-                    if (others.length > 0) {
-                      const questDef = ALL_QUESTS.find(q => q.id === questId);
-                      if (questDef && !questDef.isPackage) {
-                        sharedQuests.push({ quest: questDef, sharedBy: others.map(o => o.username) });
-                      }
-                    }
-                  });
-
-                  if (sharedQuests.length === 0) return null;
-
-                  return (
-                    <div className="space-y-2">
-                      <h4 className={`text-[10px] font-black uppercase tracking-widest pl-2 ${darkMode ? 'text-emerald-400' : 'text-[#064e3b]'}`}>Shared Active Quests</h4>
-                      {sharedQuests.map(({ quest, sharedBy }) => {
-                        const completed = isQuestCompletedToday(quest.id);
-                        return (
-                          <div key={quest.id} className={`p-4 rounded-2xl border transition-all ${completed ? 'opacity-40' : ''} ${darkMode ? 'bg-white/5 border-white/5' : 'bg-white border-slate-100 shadow-sm'}`}>
-                            <div className="flex items-center gap-3">
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${completed ? 'bg-emerald-500/20 text-emerald-500' : (darkMode ? 'bg-[#064e3b]/30 text-emerald-400' : 'bg-[#064e3b]/10 text-[#064e3b]')}`}>
-                                {completed ? <Check size={16} /> : <Sparkles size={16} />}
-                              </div>
-                              <div className="flex-1">
-                                <p className={`text-sm font-bold ${darkMode ? 'text-white' : ''}`}>{quest.title}</p>
-                                <p className="text-[10px] text-slate-400">
-                                  Also doing: <span className={`font-bold ${darkMode ? 'text-emerald-400' : 'text-[#064e3b]'}`}>{sharedBy.join(', ')}</span>
-                                </p>
-                              </div>
-                              {completed && <span className="text-[10px] font-bold text-emerald-500">Done ✓</span>}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })()}
-
-                {groupQuests.length === 0 && (() => {
-                  const myQuests = currentUser.activeQuests || [];
-                  let hasShared = false;
-                  myQuests.forEach(questId => {
-                    const others = activeGroup?.members?.filter(m => m.id !== currentUser.id && m.active_quests?.includes(questId));
-                    if (others && others.length > 0) hasShared = true;
-                  });
-                  if (hasShared) return null;
-                  return (
-                    <div className={`p-6 rounded-3xl text-center border border-dashed ${darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'}`}>
-                      <p className="text-xs text-slate-400 leading-relaxed">
-                        No group quests yet.<br />
-                        {myRole === 'admin' ? 'Create a quest above to get started!' : 'Ask an admin to create quests.'}
-                      </p>
-                    </div>
-                  );
-                })()}
               </div>
             )}
           </div>
         )}
-
       </div>
     </div>
   );

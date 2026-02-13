@@ -109,6 +109,7 @@ const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
   const [activeTab, setActiveTab] = useState<'collect' | 'active' | 'reflect' | 'guide' | 'seerah' | 'community'>('collect');
+  const previousTabRef = useRef<'collect' | 'active' | 'reflect' | 'guide' | 'seerah'>('collect');
   const [showProfile, setShowProfile] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [confirmQuest, setConfirmQuest] = useState<Quest | null>(null);
@@ -116,6 +117,9 @@ const App: React.FC = () => {
   const [openCategories, setOpenCategories] = useState<string[]>([]);
   const [hasFriendRequests, setHasFriendRequests] = useState(false);
   const [hasGroupInvites, setHasGroupInvites] = useState(false);
+  const [groupQuests, setGroupQuests] = useState<GroupQuest[]>([]);
+  const [trackedGroupQuests, setTrackedGroupQuests] = useState<GroupQuest[]>([]);
+  const [groupCompletions, setGroupCompletions] = useState<{ [id: string]: boolean }>({});
 
   // Prayer Times & Location
   const [prayerTimes, setPrayerTimes] = useState<any>(null);
@@ -419,8 +423,14 @@ const App: React.FC = () => {
 
       const mergedDailyQuests = { ...localData.completedDailyQuests, ...dbDailyCompletions };
 
+      // DB is source of truth for activeQuests, merge any localStorage-only additions
+      const dbActiveQuests: string[] = profileData?.active_quests || [];
+      const localActiveQuests: string[] = localData.activeQuests || [];
+      // Combine: DB first, then any local additions not already in DB
+      const localAdditions = localActiveQuests.filter(id => !dbActiveQuests.includes(id));
+      let activeQuests = [...dbActiveQuests, ...localAdditions];
+
       // HANDLE AUTO-ADD PINNED
-      let activeQuests = localData.activeQuests || [];
       if (profileData?.auto_add_pinned && profileData?.pinned_quests) {
         const pinned: string[] = profileData.pinned_quests;
         const toAdd = pinned.filter(pid => {
@@ -432,7 +442,7 @@ const App: React.FC = () => {
         }
       }
 
-      // Sync activeQuests
+      // Sync activeQuests back to DB if changed
       if (profileData && JSON.stringify(profileData.active_quests) !== JSON.stringify(activeQuests)) {
         try {
           await supabase.from('profiles').update({ active_quests: activeQuests }).eq('id', userId);
@@ -455,6 +465,100 @@ const App: React.FC = () => {
         .eq('invited_user', userId)
         .eq('status', 'pending');
       setHasGroupInvites(inviteCount !== null && inviteCount > 0);
+
+      // GROUP CHALLENGES FETCH
+      const { data: myMemberships } = await supabase.from('group_members').select('group_id').eq('user_id', userId);
+      const myGroupIds = myMemberships?.map(m => m.group_id) || [];
+
+      if (myGroupIds.length > 0) {
+        const { data: gQuests } = await supabase.from('group_quests').select('*').in('group_id', myGroupIds);
+
+        if (gQuests && gQuests.length > 0) {
+          const gQuestIds = gQuests.map(g => g.id);
+
+          // Get completions for these quests (mine + total count)
+          const { data: completions } = await supabase.from('group_quest_completions').select('group_quest_id, user_id, is_claimed').in('group_quest_id', gQuestIds);
+
+          // Get total members per group
+          const { data: groupCounts } = await supabase.from('group_members').select('group_id');
+          const groupMemberCounts: { [gid: string]: number } = {};
+          if (groupCounts) {
+            groupCounts.forEach(m => {
+              groupMemberCounts[m.group_id] = (groupMemberCounts[m.group_id] || 0) + 1;
+            });
+          }
+
+          const myCompletionsMap: { [id: string]: boolean } = {};
+          const enrichedGroupQuests: GroupQuest[] = gQuests.map(gq => {
+            const totalMembers = groupMemberCounts[gq.group_id] || 1;
+            const questCompletions = completions?.filter(c => c.group_quest_id === gq.id) || [];
+            const completionCount = questCompletions.length;
+            const iCompleted = questCompletions.some(c => c.user_id === userId);
+
+            if (iCompleted) myCompletionsMap[`gq_${gq.id}`] = true;
+
+            const isLocked = iCompleted && completionCount < totalMembers;
+
+            return {
+              id: `gq_${gq.id}`, // Prefix to avoid collisions
+              title: gq.title,
+              description: `Group Challenge • Ends ${gq.deadline ? new Date(gq.deadline).toLocaleDateString() : 'Never'}`,
+              category: QuestCategory.COMMUNITY,
+              xp: gq.xp,
+              isGroupQuest: true,
+              groupId: gq.group_id,
+              deadline: gq.deadline,
+              completionCount,
+              totalMembers,
+              isLocked,
+              sharedBy: [] // Frontend only field, populated by tracking others
+            } as GroupQuest;
+          });
+          setGroupQuests(enrichedGroupQuests);
+          setGroupCompletions(myCompletionsMap);
+        } else {
+          setGroupQuests([]);
+        }
+      } else {
+        setGroupQuests([]);
+      }
+
+      // FETCH TRACKED GROUP QUESTS (For My Quests Tab)
+      const trackedGqIds = activeQuests.filter(id => id.startsWith('gq_')).map(id => id.replace('gq_', ''));
+      if (trackedGqIds.length > 0) {
+        const { data: tGQuests } = await supabase.from('group_quests').select('*, group:groups(name)').in('id', trackedGqIds);
+
+        if (tGQuests && tGQuests.length > 0) {
+          // Fetch completions for these
+          const { data: tCompletions } = await supabase.from('group_quest_completions').select('group_quest_id, user_id').in('group_quest_id', trackedGqIds);
+
+          // Map to GroupQuest
+          const enrichedTracked = tGQuests.map(gq => {
+            const completions = tCompletions?.filter(c => c.group_quest_id === gq.id) || [];
+            const iCompleted = completions.some(c => c.user_id === userId);
+
+            return {
+              id: `gq_${gq.id}`,
+              title: gq.title,
+              description: `${gq.group?.name || 'Group'} • ${gq.xp} XP`,
+              category: QuestCategory.COMMUNITY,
+              xp: gq.xp,
+              isGroupQuest: true,
+              groupId: gq.group_id,
+              groupName: gq.group?.name,
+              deadline: gq.deadline,
+              completionCount: completions.length,
+              isLocked: false, // Tracked quests in My Quests are completable by user
+              completed: iCompleted
+            } as GroupQuest;
+          });
+          setTrackedGroupQuests(enrichedTracked);
+        } else {
+          setTrackedGroupQuests([]);
+        }
+      } else {
+        setTrackedGroupQuests([]);
+      }
 
       if (profileData) {
         // Correctly Map DB Columns to User Object using standard names
@@ -666,6 +770,17 @@ const App: React.FC = () => {
       }));
       await supabase.from('user_quests').insert(questLogs);
 
+      // Handle Group Quest Completions
+      const groupQuests = quests.filter(q => (q as any).isGroupQuest);
+      if (groupQuests.length > 0) {
+        const groupCompletions = groupQuests.map(q => ({
+          user_id: user.id,
+          group_quest_id: q.id.replace('gq_', ''), // Remove prefix for DB
+          is_claimed: true
+        }));
+        await supabase.from('group_quest_completions').upsert(groupCompletions, { onConflict: 'group_quest_id,user_id' });
+      }
+
       const updated = {
         ...user,
         xp: newTotalXp,
@@ -674,6 +789,11 @@ const App: React.FC = () => {
       };
 
       saveUser(updated);
+
+      // Immediately update trackedGroupQuests UI (remove completed from list)
+      if (groupQuests.length > 0) {
+        setTrackedGroupQuests(prev => prev.filter(tq => !questIds.includes(tq.id)));
+      }
 
       if (xpMultiplier > 1) {
         alert(`MashaAllah! Group Quests Completed. ${totalXp} XP (2x) Earned!`);
@@ -710,6 +830,19 @@ const App: React.FC = () => {
     }
 
     const updated = { ...user, pinnedQuests: newPinned, activeQuests: newActive };
+    saveUser(updated);
+  };
+
+  const handleTrackGroupQuest = async (quest: Quest) => {
+    if (!user) return;
+    const id = quest.id;
+    const isActive = user.activeQuests.includes(id);
+
+    let newActive;
+    if (isActive) newActive = user.activeQuests.filter(q => q !== id);
+    else newActive = [...user.activeQuests, id];
+
+    const updated = { ...user, activeQuests: newActive };
     saveUser(updated);
   };
 
@@ -932,7 +1065,7 @@ const App: React.FC = () => {
           <div className="p-6 pb-4 flex items-center justify-between relative">
             <div className="flex flex-col z-10"><span className={`text-[12px] font-black uppercase tracking-[0.5em] ${user.settings?.darkMode ? 'text-white' : 'text-[#064e3b]'}`}>NurPath</span></div>
             <div className="flex items-center gap-2 z-10">
-              <button onClick={() => setActiveTab('community')} className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all active:scale-95 shadow-md ${user.settings?.darkMode ? 'bg-gradient-to-r from-cyan-600 to-teal-500 hover:from-cyan-500 hover:to-teal-400' : 'bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400'}`}>
+              <button onClick={() => { previousTabRef.current = activeTab as any; setActiveTab('community'); }} className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all active:scale-95 shadow-md ${user.settings?.darkMode ? 'bg-gradient-to-r from-cyan-600 to-teal-500 hover:from-cyan-500 hover:to-teal-400' : 'bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400'}`}>
                 <HeartHandshake size={13} className="text-white" />
                 <span className="text-[10px] font-black uppercase tracking-wider text-white">Ummah</span>
                 {(hasFriendRequests || hasGroupInvites) && <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 border border-white dark:border-[#050a09]"></span></span>}
@@ -951,7 +1084,7 @@ const App: React.FC = () => {
       )}
 
       <main className={`flex-1 scrollbar-hide ${activeTab === 'reflect' || activeTab === 'community' || activeTab === 'guide' ? 'overflow-hidden p-0' : 'overflow-y-auto pb-40 px-6'}`}>
-        {activeTab === 'community' && <Community currentUser={user} darkMode={user.settings?.darkMode} onCompleteGroupQuest={(q) => completeQuest(q, 2)} onClose={() => setActiveTab('collect')} hasFriendRequests={hasFriendRequests} hasGroupInvites={hasGroupInvites} />}
+        {activeTab === 'community' && <Community currentUser={user} darkMode={user.settings?.darkMode} onCompleteGroupQuest={(q) => completeQuest(q, 2)} onClose={() => setActiveTab(previousTabRef.current)} hasFriendRequests={hasFriendRequests} hasGroupInvites={hasGroupInvites} onTrackQuest={handleTrackGroupQuest} />}
 
         {activeTab === 'collect' && (
           <div className="space-y-6 py-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -1194,6 +1327,14 @@ const App: React.FC = () => {
                   const isFriday = today.getDay() === 5;
                   if (!isFriday) return null;
 
+                  // Hide after Maghrib on Friday
+                  if (prayerTimes?.Maghrib) {
+                    const now = new Date();
+                    const currentMins = now.getHours() * 60 + now.getMinutes();
+                    const maghribMins = getMinutesFromTime(prayerTimes.Maghrib);
+                    if (currentMins >= maghribMins) return null;
+                  }
+
                   const completedCount = JUMUAH_CHECKLIST.filter(item => isCompletedToday(item.id)).length;
 
                   return (
@@ -1330,6 +1471,28 @@ const App: React.FC = () => {
                       </div>
                     </div>
                   )}
+
+                  {/* Tracked Group Challenges */}
+                  {trackedGroupQuests.length > 0 && (
+                    <div>
+                      <h3 className="text-xs font-black uppercase tracking-widest text-[#d4af37] mb-3 ml-2 flex items-center gap-2"><Shield size={12} /> Group Challenges</h3>
+                      <div className="space-y-3">
+                        {trackedGroupQuests.map(q => (
+                          <QuestCard
+                            key={q.id}
+                            quest={q}
+                            isActive
+                            onComplete={(q) => completeQuest(q)}
+                            onRemove={removeQuest}
+                            onPin={togglePinQuest}
+                            isPinned={true}
+                            darkMode={user.settings?.darkMode}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                 </div>
 
                 {user.activeQuests.length === 0 && (
