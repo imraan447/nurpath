@@ -422,7 +422,10 @@ const App: React.FC = () => {
       let activeQuests = localData.activeQuests || [];
       if (profileData?.auto_add_pinned && profileData?.pinned_quests) {
         const pinned: string[] = profileData.pinned_quests;
-        const toAdd = pinned.filter(pid => !activeQuests.includes(pid) && !mergedDailyQuests[pid]);
+        const toAdd = pinned.filter(pid => {
+          const quest = ALL_QUESTS.find(q => q.id === pid);
+          return quest && !quest.isPackage && !activeQuests.includes(pid) && !mergedDailyQuests[pid];
+        });
         if (toAdd.length > 0) {
           activeQuests = [...activeQuests, ...toAdd];
         }
