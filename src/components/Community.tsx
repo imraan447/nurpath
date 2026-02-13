@@ -10,9 +10,12 @@ interface CommunityProps {
   currentUser: User;
   darkMode?: boolean;
   onCompleteGroupQuest: (quest: Quest) => void;
+  onClose: () => void;
+  hasFriendRequests?: boolean;
+  hasGroupInvites?: boolean;
 }
 
-const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onCompleteGroupQuest }) => {
+const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onCompleteGroupQuest, onClose, hasFriendRequests, hasGroupInvites }) => {
   const [tab, setTab] = useState<'duas' | 'leaderboard' | 'friends' | 'groups'>('duas');
   const [loading, setLoading] = useState(false);
 
@@ -41,6 +44,7 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
   const [duas, setDuas] = useState<Dua[]>([]);
   const [newDuaText, setNewDuaText] = useState('');
   const [duaLoading, setDuaLoading] = useState(false);
+  const [myDuaCountToday, setMyDuaCountToday] = useState(0);
 
   useEffect(() => {
     if (tab === 'friends') fetchFriendsAndRequests();
@@ -53,9 +57,12 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
   const fetchDuas = async () => {
     setDuaLoading(true);
     try {
+      // Only fetch duas from last 60 days
+      const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
       const { data: duasData } = await supabase
         .from('duas')
         .select('*')
+        .gte('created_at', sixtyDaysAgo)
         .order('created_at', { ascending: false })
         .limit(50);
 
@@ -79,6 +86,15 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
       }));
 
       setDuas(enriched);
+
+      // Count my duas in last 24h for rate limiting
+      const twentyFourAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { count: myCount } = await supabase
+        .from('duas')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', currentUser.id)
+        .gte('created_at', twentyFourAgo);
+      setMyDuaCountToday(myCount || 0);
     } catch (e) {
       console.error(e);
     } finally {
@@ -88,10 +104,15 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
 
   const postDua = async () => {
     if (!newDuaText.trim() || newDuaText.length > 500) return;
+    if (myDuaCountToday >= 2) {
+      alert('You can only post 2 duas every 24 hours.');
+      return;
+    }
     try {
       const { error } = await supabase.from('duas').insert({ user_id: currentUser.id, text: newDuaText.trim() });
       if (error) throw error;
       setNewDuaText('');
+      setMyDuaCountToday(prev => prev + 1);
       fetchDuas();
     } catch (e) {
       console.error(e);
@@ -454,21 +475,32 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
     <div className={`h-full flex flex-col ${darkMode ? 'bg-[#050a09]' : 'bg-[#fdfbf7]'}`}>
       {/* Header */}
       <div className={`p-6 pb-2 border-b ${darkMode ? 'border-white/5' : 'border-slate-100'}`}>
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 bg-[#064e3b] rounded-2xl flex items-center justify-center shadow-lg text-white minaret-shape">
-            <Users size={24} />
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-[#064e3b] rounded-2xl flex items-center justify-center shadow-lg text-white minaret-shape">
+              <Users size={24} />
+            </div>
+            <div>
+              <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>Ummah</h2>
+              <p className="text-[10px] text-[#d4af37] font-black uppercase tracking-widest">Connect & Compete</p>
+            </div>
           </div>
-          <div>
-            <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>Community</h2>
-            <p className="text-[10px] text-[#d4af37] font-black uppercase tracking-widest">Connect & Compete</p>
-          </div>
+          <button onClick={onClose} className={`p-2.5 rounded-full transition-colors ${darkMode ? 'bg-white/10 text-white/60 hover:bg-white/20 hover:text-white' : 'bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-600'}`}>
+            <X size={20} />
+          </button>
         </div>
 
         <div className={`flex p-1 rounded-2xl ${darkMode ? 'bg-white/5' : 'bg-slate-100'}`}>
           <button onClick={() => setTab('duas')} className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all ${tab === 'duas' ? `bg-white ${darkMode ? 'bg-white/10 text-white' : 'shadow-md text-[#064e3b]'}` : 'text-slate-400'}`}>Duas</button>
           <button onClick={() => setTab('leaderboard')} className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all ${tab === 'leaderboard' ? `bg-white ${darkMode ? 'bg-white/10 text-white' : 'shadow-md text-[#064e3b]'}` : 'text-slate-400'}`}>Leaderboard</button>
-          <button onClick={() => setTab('friends')} className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all ${tab === 'friends' ? `bg-white ${darkMode ? 'bg-white/10 text-white' : 'shadow-md text-[#064e3b]'}` : 'text-slate-400'}`}>Friends</button>
-          <button onClick={() => setTab('groups')} className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all ${tab === 'groups' ? `bg-white ${darkMode ? 'bg-white/10 text-white' : 'shadow-md text-[#064e3b]'}` : 'text-slate-400'}`}>Groups</button>
+          <button onClick={() => setTab('friends')} className={`relative flex-1 py-3 rounded-xl text-xs font-bold transition-all ${tab === 'friends' ? `bg-white ${darkMode ? 'bg-white/10 text-white' : 'shadow-md text-[#064e3b]'}` : 'text-slate-400'}`}>
+            Friends
+            {hasFriendRequests && <span className="absolute top-1 right-2 w-2 h-2 bg-rose-500 rounded-full"></span>}
+          </button>
+          <button onClick={() => setTab('groups')} className={`relative flex-1 py-3 rounded-xl text-xs font-bold transition-all ${tab === 'groups' ? `bg-white ${darkMode ? 'bg-white/10 text-white' : 'shadow-md text-[#064e3b]'}` : 'text-slate-400'}`}>
+            Groups
+            {hasGroupInvites && <span className="absolute top-1 right-2 w-2 h-2 bg-rose-500 rounded-full"></span>}
+          </button>
         </div>
       </div>
 
@@ -534,10 +566,10 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
                       onClick={() => !dua.has_said_ameen && sayAmeen(dua.id)}
                       disabled={dua.has_said_ameen || dua.user_id === currentUser.id}
                       className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all active:scale-95 ${dua.has_said_ameen
-                          ? 'bg-[#d4af37]/20 text-[#d4af37] cursor-default'
-                          : dua.user_id === currentUser.id
-                            ? 'bg-slate-100 text-slate-300 cursor-default dark:bg-white/5 dark:text-white/20'
-                            : `border-2 ${darkMode ? 'border-[#d4af37]/30 text-[#d4af37] hover:bg-[#d4af37]/10' : 'border-[#d4af37]/20 text-[#92780c] hover:bg-[#d4af37]/10'}`
+                        ? 'bg-[#d4af37]/20 text-[#d4af37] cursor-default'
+                        : dua.user_id === currentUser.id
+                          ? 'bg-slate-100 text-slate-300 cursor-default dark:bg-white/5 dark:text-white/20'
+                          : `border-2 ${darkMode ? 'border-[#d4af37]/30 text-[#d4af37] hover:bg-[#d4af37]/10' : 'border-[#d4af37]/20 text-[#92780c] hover:bg-[#d4af37]/10'}`
                         }`}
                     >
                       {dua.has_said_ameen ? '✓ Ameen' : '🤲 Ameen'}

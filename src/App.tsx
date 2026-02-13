@@ -115,6 +115,7 @@ const App: React.FC = () => {
   const [showTasbeehGuide, setShowTasbeehGuide] = useState(false);
   const [openCategories, setOpenCategories] = useState<string[]>([]);
   const [hasFriendRequests, setHasFriendRequests] = useState(false);
+  const [hasGroupInvites, setHasGroupInvites] = useState(false);
 
   // Prayer Times & Location
   const [prayerTimes, setPrayerTimes] = useState<any>(null);
@@ -447,6 +448,13 @@ const App: React.FC = () => {
         .eq('status', 'pending');
 
       setHasFriendRequests(count !== null && count > 0);
+
+      const { count: inviteCount } = await supabase
+        .from('group_invites')
+        .select('*', { count: 'exact', head: true })
+        .eq('invited_user', userId)
+        .eq('status', 'pending');
+      setHasGroupInvites(inviteCount !== null && inviteCount > 0);
 
       if (profileData) {
         // Correctly Map DB Columns to User Object using standard names
@@ -925,9 +933,9 @@ const App: React.FC = () => {
             <div className="flex flex-col z-10"><span className={`text-[12px] font-black uppercase tracking-[0.5em] ${user.settings?.darkMode ? 'text-white' : 'text-[#064e3b]'}`}>NurPath</span></div>
             <div className="flex items-center gap-2 z-10">
               <button onClick={() => setActiveTab('community')} className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all active:scale-95 shadow-md ${user.settings?.darkMode ? 'bg-gradient-to-r from-cyan-600 to-teal-500 hover:from-cyan-500 hover:to-teal-400' : 'bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400'}`}>
-                <Globe size={13} className="text-white" />
+                <HeartHandshake size={13} className="text-white" />
                 <span className="text-[10px] font-black uppercase tracking-wider text-white">Ummah</span>
-                {hasFriendRequests && <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 border border-white dark:border-[#050a09]"></span></span>}
+                {(hasFriendRequests || hasGroupInvites) && <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 border border-white dark:border-[#050a09]"></span></span>}
               </button>
               <button onClick={() => setShowSettings(true)} className={`p-2 rounded-full transition-colors ${user.settings?.darkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}><Settings size={18} /></button>
             </div>
@@ -943,7 +951,7 @@ const App: React.FC = () => {
       )}
 
       <main className={`flex-1 scrollbar-hide ${activeTab === 'reflect' || activeTab === 'community' || activeTab === 'guide' ? 'overflow-hidden p-0' : 'overflow-y-auto pb-40 px-6'}`}>
-        {activeTab === 'community' && <Community currentUser={user} darkMode={user.settings?.darkMode} onCompleteGroupQuest={(q) => completeQuest(q, 2)} />}
+        {activeTab === 'community' && <Community currentUser={user} darkMode={user.settings?.darkMode} onCompleteGroupQuest={(q) => completeQuest(q, 2)} onClose={() => setActiveTab('collect')} hasFriendRequests={hasFriendRequests} hasGroupInvites={hasGroupInvites} />}
 
         {activeTab === 'collect' && (
           <div className="space-y-6 py-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
