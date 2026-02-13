@@ -24,7 +24,7 @@ export interface UserSettings {
   darkMode: boolean;
   notifications: boolean;
   fontSize: 'small' | 'medium' | 'large';
-  seerahBookmark?: number; 
+  seerahBookmark?: number;
   calcMethod?: number; // 2 for ISNA, 1 for MWL etc
   madhab?: number; // 0 for Shafi/Standard, 1 for Hanafi
 }
@@ -42,15 +42,20 @@ export interface User {
   autoAddPinned?: boolean;
   settings?: UserSettings;
   completedDailyQuests?: { [questId: string]: string }; // e.g. { 'fajr': '2023-10-27' }
+  readReflections?: string[]; // IDs of reflections read
   createdAt?: string;
 }
 
 export interface ReflectionItem {
   id: string;
-  type: 'hadith' | 'verse' | 'nature' | 'animal' | 'wonder' | 'story' | 'quote' | 'question' | 'prophecy';
+  type: 'hadith' | 'verse' | 'nature' | 'animal' | 'wonder' | 'story' | 'quote' | 'question' | 'prophecy' | 'theology' | 'history';
   content: string; // The Hook/Title
   summary?: string; // Short teaser (always present)
   source?: string;
+  author?: string; // Human author name or "AI Generated"
+  isAiGenerated?: boolean;
+  readTime?: string; // e.g. "3 min read"
+  tags?: string[];
   mediaUrl?: string;
   praise: 'Subhanallah' | 'Alhamdulillah' | 'Allahu Akbar' | 'MashaAllah' | 'Astaghfirullah' | 'Ya Allah' | 'La ilaha illa anta';
   details?: string; // The full 500-1000 word essay (loaded on demand)
@@ -155,7 +160,7 @@ export interface Group {
   name: string;
   created_by: string;
   created_at: string;
-  members?: Friend[]; 
+  members?: Friend[];
 }
 
 export interface GroupQuest extends Quest {

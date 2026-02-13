@@ -1,8 +1,9 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { ReflectionItem } from '../types';
-import { ChevronDown, BookOpen, Loader2, Sparkles, Star, AlignLeft } from 'lucide-react';
+import { ChevronDown, BookOpen, Loader2, Sparkles, Star, AlignLeft, Bot, User, Clock, Tag } from 'lucide-react';
 import { generateReflectionDeepDive } from '../services/geminiService';
+import { CURATED_REFLECTIONS } from '../data/reflections';
 
 interface ReflectionFeedProps {
   items: ReflectionItem[];
@@ -10,21 +11,32 @@ interface ReflectionFeedProps {
   hasMore: boolean;
   onLoadMore: () => void;
   onUpdateItem: (id: string, updates: Partial<ReflectionItem>) => void;
+  onMarkAsRead: (id: string) => void;
 }
 
-const ReflectionFeed: React.FC<ReflectionFeedProps> = ({ items, loading, hasMore, onLoadMore, onUpdateItem }) => {
+const ReflectionFeed: React.FC<ReflectionFeedProps> = ({ items, loading, hasMore, onLoadMore, onUpdateItem, onMarkAsRead }) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [generatingDetails, setGeneratingDetails] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const readTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clear timer on unmount
+  useEffect(() => {
+    return () => {
+      if (readTimerRef.current) clearTimeout(readTimerRef.current);
+    };
+  }, []);
 
   // Monitor visible index to trigger load-more
   useEffect(() => {
+    if (!containerRef.current) return;
+
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           const index = parseInt(entry.target.getAttribute('data-index') || '0');
           // Only trigger if we are near the end AND we are allowed to load more
-          if (index >= items.length - 2 && !loading && hasMore) {
+          if (items && index >= items.length - 2 && !loading && hasMore) {
             onLoadMore();
           }
         }
@@ -34,7 +46,7 @@ const ReflectionFeed: React.FC<ReflectionFeedProps> = ({ items, loading, hasMore
       root: containerRef.current
     });
 
-    const cardElements = document.querySelectorAll('.reflection-card');
+    const cardElements = containerRef.current.querySelectorAll('.reflection-card');
     cardElements.forEach(el => observer.observe(el));
 
     return () => observer.disconnect();
@@ -42,7 +54,14 @@ const ReflectionFeed: React.FC<ReflectionFeedProps> = ({ items, loading, hasMore
 
   const handleExpand = async (item: ReflectionItem) => {
     setExpandedId(item.id);
-    
+
+    // Start 30s timer to mark as read
+    if (readTimerRef.current) clearTimeout(readTimerRef.current);
+    readTimerRef.current = setTimeout(() => {
+      console.log(`Marking ${item.id} as read after 30s`);
+      onMarkAsRead(item.id);
+    }, 30000);
+
     // If we already have the full essay, don't re-generate
     if (item.details && item.details.length > 200) {
       return;
@@ -60,62 +79,93 @@ const ReflectionFeed: React.FC<ReflectionFeedProps> = ({ items, loading, hasMore
     }
   };
 
+  const handleClose = () => {
+    setExpandedId(null);
+    if (readTimerRef.current) {
+      clearTimeout(readTimerRef.current);
+      readTimerRef.current = null;
+    }
+  };
+
   const expandedItem = items.find(i => i.id === expandedId);
 
   return (
-    <div 
+    <div
       ref={containerRef}
       className="h-screen w-full bg-[#fdfbf7] snap-y snap-mandatory overflow-y-scroll scrollbar-hide"
     >
       {items.map((item, index) => {
         const hasMedia = !!item.mediaUrl;
         return (
-          <div 
-            key={`${item.id}-${index}`} 
+          <div
+            key={`${item.id}-${index}`}
             data-index={index}
-            className="reflection-card snap-start h-screen w-full relative flex flex-col items-center justify-center p-10 text-center"
+            className="reflection-card snap-start h-screen w-full relative flex flex-col items-center justify-center p-6 sm:p-10 text-center"
           >
             {hasMedia ? (
               <div className="absolute inset-0 z-0">
-                <img src={item.mediaUrl} className="w-full h-full object-cover brightness-[0.25]" alt="" />
-                <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/90" />
+                <img src={item.mediaUrl} className="w-full h-full object-cover brightness-[0.3]" alt="" />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80" />
               </div>
             ) : (
-              <div className="absolute inset-0 z-0 bg-gradient-to-tr from-[#064e3b]/10 to-white arabian-pattern opacity-40" />
+              <div className="absolute inset-0 z-0 bg-gradient-to-tr from-[#064e3b]/5 to-transparent" />
             )}
 
-            <div className="relative z-10 max-w-lg space-y-10 animate-in fade-in zoom-in-95 duration-1000">
-              <span className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.5em] border ${
-                hasMedia ? 'bg-white/10 backdrop-blur-md text-white border-white/20' : 'bg-[#064e3b] text-white border-[#064e3b]'
-              }`}>
-                {item.type}
-              </span>
+            <div className="relative z-10 max-w-lg space-y-6 md:space-y-8 flex flex-col items-center">
 
-              <h2 className={`text-4xl font-extrabold leading-tight tracking-tight ${
-                hasMedia ? 'text-white' : 'text-slate-900'
-              } ${['verse', 'hadith'].includes(item.type) ? 'quran-font italic' : ''}`}>
+              {/* META BADGES */}
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.2em] border flex items-center gap-1 ${hasMedia ? 'bg-black/40 text-white border-white/20' : 'bg-[#064e3b] text-white border-[#064e3b]'
+                  }`}>
+                  {item.type}
+                </span>
+
+                {item.readTime && (
+                  <span className={`px-3 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest flex items-center gap-1 ${hasMedia ? 'text-white/70 bg-black/20' : 'text-slate-400 bg-slate-100'
+                    }`}>
+                    <Clock size={10} /> {item.readTime}
+                  </span>
+                )}
+              </div>
+
+              {/* MAIN CONTENT */}
+              <h2 className={`text-3xl md:text-5xl font-extrabold leading-tight tracking-tight ${hasMedia ? 'text-white' : 'text-slate-900'
+                } ${['verse', 'hadith'].includes(item.type) ? 'quran-font italic' : ''}`}>
                 {item.content}
               </h2>
 
               {item.summary && (
-                <p className={`text-sm font-medium leading-relaxed opacity-80 max-w-md mx-auto ${hasMedia ? 'text-white' : 'text-slate-600'}`}>
+                <p className={`text-sm md:text-base font-medium leading-relaxed opacity-90 max-w-md mx-auto ${hasMedia ? 'text-slate-100' : 'text-slate-600'}`}>
                   {item.summary}
                 </p>
               )}
 
-              <p className="text-sm font-black uppercase tracking-[0.4em] text-[#d4af37]">
+              <p className="text-xs font-black uppercase tracking-[0.4em] text-[#d4af37]">
                 {item.praise}
               </p>
 
-              <button 
+              <button
                 onClick={() => handleExpand(item)}
-                className={`flex items-center gap-4 mx-auto px-12 py-6 rounded-[40px] transition-all active:scale-95 shadow-2xl ${
-                  hasMedia ? 'bg-[#d4af37] text-white shadow-[#d4af37]/40' : 'bg-[#064e3b] text-white'
-                }`}
+                className={`group flex items-center gap-3 mx-auto px-10 py-5 rounded-[40px] transition-all active:scale-95 shadow-2xl hover:shadow-3xl ${hasMedia ? 'bg-[#d4af37] text-white shadow-[#d4af37]/20' : 'bg-[#064e3b] text-white'
+                  }`}
               >
-                <BookOpen size={24} />
-                <span className="text-[10px] font-black uppercase tracking-[0.3em]">Deep Revelation</span>
+                <BookOpen size={20} className="group-hover:scale-110 transition-transform" />
+                <span className="text-[10px] font-black uppercase tracking-[0.3em]">Read Article</span>
               </button>
+
+              {/* AUTHOR / FOOTER */}
+              <div className={`pt-4 flex items-center gap-4 ${hasMedia ? 'text-white/60' : 'text-slate-400'}`}>
+                {item.isAiGenerated ? (
+                  <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-bold opacity-70" title="Generated by AI, verified by NurPath">
+                    <Bot size={12} /> AI Assisted Reflection
+                  </div>
+                ) : item.author ? (
+                  <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-bold opacity-70">
+                    <User size={12} /> {item.author}
+                  </div>
+                ) : null}
+              </div>
+
             </div>
           </div>
         );
@@ -123,34 +173,55 @@ const ReflectionFeed: React.FC<ReflectionFeedProps> = ({ items, loading, hasMore
 
       {/* EXPANDED MODAL */}
       {expandedItem && (
-        <div className="fixed inset-0 z-[200] bg-[#fdfbf7] animate-in slide-in-from-bottom-10 duration-500">
-           {/* Header */}
-           <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center bg-[#fdfbf7]/95 backdrop-blur-md z-20 border-b border-slate-100">
-              <button onClick={() => setExpandedId(null)} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#064e3b] bg-[#064e3b]/5 px-6 py-3 rounded-full hover:bg-[#064e3b]/10 transition-colors">
-                <ChevronDown size={18} /> Close
-              </button>
-              <div className="flex items-center gap-2 text-[#d4af37]">
-                 <Sparkles size={16} />
-                 <span className="text-[10px] font-black uppercase tracking-widest">Spiritual Depth</span>
-              </div>
-           </div>
+        <div className="fixed inset-0 z-[200] bg-[#fdfbf7] transition-all duration-300">
+          {/* Header */}
+          <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center bg-[#fdfbf7]/95 backdrop-blur-sm z-20 border-b border-slate-100">
+            <button onClick={handleClose} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#064e3b] bg-[#064e3b]/5 px-6 py-3 rounded-full hover:bg-[#064e3b]/10 transition-colors">
+              <ChevronDown size={18} /> Close
+            </button>
+            <div className="flex items-center gap-2 text-[#d4af37]">
+              <Sparkles size={16} />
+              <span className="text-[10px] font-black uppercase tracking-widest">{expandedItem.praise}</span>
+            </div>
+          </div>
 
-           {/* Content */}
-           <div className="h-full overflow-y-auto p-8 pt-32 scrollbar-hide">
-              <div className="max-w-2xl mx-auto space-y-12 pb-40">
-                <div className="space-y-6">
+          {/* Content */}
+          <div className="h-full overflow-y-auto p-6 pt-32 pb-40 scrollbar-hide">
+            <div className="max-w-2xl mx-auto space-y-8 md:space-y-12">
+
+              {/* Article Header */}
+              <div className="space-y-6 text-center">
+                <div className="flex justify-center gap-2">
                   <span className="inline-block px-4 py-2 rounded-lg bg-slate-100 text-slate-500 text-[10px] font-black uppercase tracking-widest">
                     {expandedItem.type}
                   </span>
-                  <h3 className="text-4xl md:text-5xl font-extrabold text-slate-900 leading-tight tracking-tighter">
-                    {expandedItem.content}
-                  </h3>
-                  {expandedItem.source && (
-                    <div className="border-l-4 border-[#d4af37] pl-6 py-2">
-                       <p className="text-sm font-bold text-[#064e3b] uppercase tracking-widest">{expandedItem.source}</p>
-                    </div>
-                  )}
+                  {expandedItem.tags?.map(tag => (
+                    <span key={tag} className="inline-block px-3 py-2 rounded-lg bg-[#064e3b]/5 text-[#064e3b] text-[10px] font-bold uppercase tracking-widest">
+                      #{tag}
+                    </span>
+                  ))}
                 </div>
+
+                <h3 className="text-3xl md:text-5xl font-extrabold text-slate-900 leading-tight tracking-tighter">
+                  {expandedItem.content}
+                </h3>
+
+                <div className="flex items-center justify-center gap-4 text-xs font-bold text-slate-400 uppercase tracking-widest border-y border-slate-100 py-4">
+                  {expandedItem.author && <span>By {expandedItem.author}</span>}
+                  <span>•</span>
+                  {expandedItem.readTime && <span>{expandedItem.readTime}</span>}
+                  {expandedItem.isAiGenerated && <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded">AI Generated</span>}
+                </div>
+              </div>
+
+              {/* Article Body */}
+              <div className="prose prose-lg prose-slate max-w-none">
+                {/* Quote Block if source exists */}
+                {expandedItem.source && (
+                  <blockquote className="border-l-4 border-[#d4af37] pl-6 py-2 my-8 bg-[#d4af37]/5 rounded-r-xl italic text-xl text-slate-700 font-serif">
+                    "{expandedItem.source}"
+                  </blockquote>
+                )}
 
                 {/* Loading State or Content */}
                 {generatingDetails ? (
@@ -165,20 +236,20 @@ const ReflectionFeed: React.FC<ReflectionFeedProps> = ({ items, loading, hasMore
                     <span className="text-[10px] font-black uppercase tracking-widest text-[#064e3b]">Contemplating...</span>
                   </div>
                 ) : (
-                  <div className="prose prose-lg prose-slate max-w-none">
-                     <div className="text-xl text-slate-700 leading-loose whitespace-pre-wrap font-serif">
-                       {expandedItem.details || expandedItem.summary}
-                     </div>
-                     <div className="flex justify-center pt-16 opacity-30">
-                       <Star size={24} className="text-[#d4af37]" />
-                     </div>
+                  <div className="text-lg md:text-xl text-slate-700 leading-loose whitespace-pre-wrap font-serif">
+                    {expandedItem.details || expandedItem.summary}
                   </div>
                 )}
+
+                <div className="flex justify-center pt-16 opacity-30">
+                  <Star size={24} className="text-[#d4af37]" />
+                </div>
               </div>
-           </div>
+            </div>
+          </div>
         </div>
       )}
-      
+
       {/* Scroll Sentinel / Bottom Loader */}
       {hasMore ? (
         <div className="snap-start h-screen w-full flex flex-col items-center justify-center bg-[#fdfbf7] gap-4">
@@ -192,10 +263,10 @@ const ReflectionFeed: React.FC<ReflectionFeedProps> = ({ items, loading, hasMore
         </div>
       ) : (
         <div className="snap-start h-screen w-full flex flex-col items-center justify-center bg-[#fdfbf7] gap-4 opacity-50">
-            <Star size={24} className="text-slate-300" />
-            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-300">
-                End of Reflections
-            </span>
+          <Star size={24} className="text-slate-300" />
+          <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-300">
+            End of Reflections
+          </span>
         </div>
       )}
     </div>
