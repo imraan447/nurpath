@@ -583,7 +583,7 @@ const App: React.FC = () => {
     const uncompletedSalah = fardSalahIds.filter(id => !isCompletedToday(id));
     const updated = { ...user, activeQuests: [...new Set([...user.activeQuests, ...uncompletedSalah])] };
     saveUser(updated);
-    setActiveTab('active'); // Auto-switch to active view to show changes
+    alert('Added all 5 prayers to your journey!');
   };
 
   const addToActive = () => {
@@ -591,7 +591,7 @@ const App: React.FC = () => {
     const updated = { ...user, activeQuests: [...new Set([...user.activeQuests, confirmQuest.id])] };
     saveUser(updated);
     setConfirmQuest(null);
-    setActiveTab('active'); // Auto-switch to active view to show changes
+    // Stay on current tab to allow adding more
   };
 
   const removeQuest = (quest: Quest) => {
@@ -830,7 +830,15 @@ const App: React.FC = () => {
   if (loadingAuth) return <div className="h-screen w-full flex items-center justify-center bg-[#fdfbf7]"><Loader2 className="animate-spin text-[#064e3b]" size={48} /></div>;
   if (!user) return <Auth onLoginSuccess={() => { }} />;
 
-  const pinnedQuestsList = user.pinnedQuests?.map(pid => ALL_QUESTS.find(q => q.id === pid)).filter(Boolean) as Quest[] || [];
+  const pinnedQuestsList = (user.pinnedQuests?.map(pid => ALL_QUESTS.find(q => q.id === pid)).filter(Boolean) as Quest[] || [])
+    .sort((a, b) => {
+      const indexA = fardSalahIds.indexOf(a.id);
+      const indexB = fardSalahIds.indexOf(b.id);
+      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      return 0;
+    });
 
   return (
     <div className={`max-w-md mx-auto h-screen overflow-hidden flex flex-col relative shadow-2xl transition-all ${activeTab === 'reflect' ? '' : 'border-x border-slate-100'} ${user.settings?.darkMode ? 'bg-[#050a09]' : 'bg-[#fdfbf7]'}`}>
@@ -1076,6 +1084,8 @@ const App: React.FC = () => {
                           timeDisplay={timeStatus as any}
                           onComplete={(q) => completeQuest(q)}
                           onRemove={removeQuest}
+                          onPin={togglePinQuest}
+                          isPinned={user.pinnedQuests?.includes(q.id)}
                           darkMode={user.settings?.darkMode}
                         />
                       );
@@ -1096,6 +1106,8 @@ const App: React.FC = () => {
                         isActive
                         onComplete={(q) => completeQuest(q)}
                         onRemove={removeQuest}
+                        onPin={togglePinQuest}
+                        isPinned={user.pinnedQuests?.includes(q.id)}
                         darkMode={user.settings?.darkMode}
                       />
                     ))}
