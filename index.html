@@ -1,18 +1,21 @@
-
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NurPath</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Amiri:wght@400;700&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             --nur-green: #064e3b;
             --nur-gold: #d4af37;
             --nur-white: #fdfbf7;
         }
+
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             background-color: var(--nur-white);
@@ -21,57 +24,60 @@
             overflow-x: hidden;
             transition: background-color 0.3s ease, color 0.3s ease;
         }
+
         .dark {
             background-color: #050a09 !important;
             color: #fdfbf7 !important;
         }
+
         .arabian-pattern {
             background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M40 0l20 40-20 40-20-40z' fill='%23064e3b' fill-opacity='0.03'/%3E%3C/svg%3E");
         }
+
         .dark .arabian-pattern {
             background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M40 0l20 40-20 40-20-40z' fill='%23ffffff' fill-opacity='0.02'/%3E%3C/svg%3E");
         }
+
         .minaret-shape {
             clip-path: polygon(50% 0%, 100% 25%, 100% 100%, 0 100%, 0 25%);
         }
+
         .quran-font {
             font-family: 'Amiri', serif;
         }
+
         .scrollbar-hide::-webkit-scrollbar {
             display: none;
         }
+
         .scrollbar-hide {
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
+
         @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-            100% { transform: translateY(0px); }
+            0% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+
+            100% {
+                transform: translateY(0px);
+            }
         }
+
         .animate-float {
             animation: float 6s ease-in-out infinite;
         }
     </style>
-<script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@^19.2.4",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "react/": "https://esm.sh/react@^19.2.4/",
-    "@google/genai": "https://esm.sh/@google/genai@^1.40.0",
-    "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
-    "jszip": "https://esm.sh/jszip@^3.10.1",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.4",
-    "vite": "https://esm.sh/vite@^7.3.1",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.95.3"
-  }
-}
-</script>
-<link rel="stylesheet" href="/index.css">
 </head>
+
 <body class="">
     <div id="root"></div>
     <script type="module" src="./src/index.tsx"></script>
 </body>
+
 </html>
