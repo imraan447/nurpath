@@ -7,21 +7,25 @@ if (!apiKey) {
 }
 const ai = new GoogleGenAI({ apiKey: apiKey || '' });
 
-export async function generateReflections(count: number = 3): Promise<ReflectionItem[]> {
+export async function generateReflections(count: number = 2): Promise<ReflectionItem[]> {
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-1.5-flash',
       contents: `Generate ${count} profound Islamic spiritual reflection topics.
       
+      CRITICAL CONSTRAINTS:
+      1. Methodology: Must strictly adhere to Ahlus Sunnah wal Jamaah (Sunni) mainstream understanding. Avoid Shia, Ahmadi, or other sectarian deviations.
+      2. Content Style: "Brainrot Replacer" - Short, punchy, fascinating, and deeply spiritual. Mix of "Cosmic Awe" (Science/Nature) and "Heart Softeners" (Hadith/Seerah).
+      3. Images: Return a search keyword for Unsplash. STRICTLY NO HUMANS, NO FACES, NO EYES, NO SCULPTURES. Use landscapes, space, nature, geometry, or architecture.
+
       Requirements:
-      1. 'content' should be a short, powerful hook/title.
+      1. 'content' should be a short, powerful hook/title (e.g., "The Weight of a Cloud").
       2. 'summary' should be a 2-3 sentence teaser.
-      3. 'mediaUrl' should be a keyword for an image background (e.g. 'galaxy', 'lion', 'desert').
-      4. 'praise' must be: Subhanallah, Alhamdulillah, Allahu Akbar, or MashaAllah.
+      3. 'praise' must be: Subhanallah, Alhamdulillah, Allahu Akbar, or MashaAllah.
+      4. 'tags': Array of 2-3 keywords (e.g. ["Science", "Quran"]).
+      5. 'readTime': Estimate (e.g., "2 min read").
       
-      Types: 'verse' (Quran), 'hadith', 'nature' (Scientific miracle), 'animal', 'question' (Introspection).
-      
-      Return JSON ONLY.`,
+      Return JSON ONLY matching the schema.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -34,22 +38,27 @@ export async function generateReflections(count: number = 3): Promise<Reflection
               summary: { type: Type.STRING },
               source: { type: Type.STRING },
               praise: { type: Type.STRING },
-              mediaUrl: { type: Type.STRING }
+              mediaUrl: { type: Type.STRING },
+              author: { type: Type.STRING },
+              tags: { type: Type.ARRAY, items: { type: Type.STRING } },
+              readTime: { type: Type.STRING }
             },
-            required: ['type', 'content', 'summary', 'praise', 'mediaUrl']
+            required: ['type', 'content', 'summary', 'praise', 'mediaUrl', 'tags', 'readTime']
           }
         }
       }
     });
 
-    const text = response.text;
+    const text = response.text();
     if (!text) return [];
 
     const results = JSON.parse(text);
     return results.map((item: any) => ({
       ...item,
       id: Math.random().toString(36).substr(2, 9),
-      mediaUrl: item.mediaUrl ? `https://loremflickr.com/1080/1920/${item.mediaUrl.replace(/s+/g, ',')}?lock=${Math.floor(Math.random() * 1000)}` : undefined
+      isAiGenerated: true,
+      author: "Reflect AI",
+      mediaUrl: item.mediaUrl ? `https://source.unsplash.com/1600x900/?${encodeURIComponent(item.mediaUrl)},nature,aesthetic` : undefined
     }));
   } catch (error) {
     console.error("Gemini Feed Error:", error);
@@ -60,20 +69,24 @@ export async function generateReflections(count: number = 3): Promise<Reflection
 export async function generateReflectionDeepDive(item: ReflectionItem): Promise<string> {
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-1.5-pro',
       contents: `Write a profound, soul-shaking Islamic spiritual essay based on this topic: "${item.content}".
       
       Context: ${item.summary}
       
-      Requirements:
-      1. Write in a deeply moving, poetic, and spiritual tone.
-      2. Connect it to the reader's daily life and struggles.
-      3. Use metaphors from nature or Quranic imagery.
-      4. Length: 600-1000 words. (Do not write less than this).
-      5. Return ONLY the essay text, no markdown formatting like headers or bolding.`
+      Strict Guidelines:
+      1. **Tone**: Deeply moving, poetic, and spiritual. Intellectual but accessible.
+      2. **Methodology**: Strictly Sunni/Salafi/Traditional. Quote Quran (Saheeh International) and Bukhari/Muslim/Tirmidhi only.
+      3. **Content**: Connect the reader's daily modern struggles (anxiety, distraction, loneliness) to Allah's Names and Attributes.
+      4. **Logic**: Use analogies (like the "Needle in the Desert" or "Ship in the Ocean").
+      5. **Science**: If relevant, mention the miracle of creation (biology, physics) as proof of Al-Khaliq.
+      6. **Length**: 500-800 words.
+      7. **Output**: Plain text (paragraphs). No markdown bolding/headers (the UI handles that).
+
+      Begin directly with the essay.`
     });
 
-    return response.text || item.summary || "Content unavailable.";
+    return response.text() || item.summary || "Content unavailable.";
   } catch (error) {
     console.error("Gemini Deep Dive Error:", error);
     return item.summary || "Content unavailable.";
