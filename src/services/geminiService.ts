@@ -1,14 +1,31 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { ReflectionItem } from "../types";
 
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-if (!apiKey) {
-  console.error("Missing Gemini API Key");
+let aiClient: GoogleGenAI | null = null;
+
+function getAiClient(): GoogleGenAI | null {
+  if (aiClient) return aiClient;
+
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (!apiKey) {
+    console.warn("Missing Gemini API Key - AI features will be disabled");
+    return null;
+  }
+
+  try {
+    aiClient = new GoogleGenAI({ apiKey });
+    return aiClient;
+  } catch (err) {
+    console.error("Failed to initialize Gemini client:", err);
+    return null;
+  }
 }
-const ai = new GoogleGenAI({ apiKey: apiKey || '' });
 
 export async function generateReflections(count: number = 2): Promise<ReflectionItem[]> {
   try {
+    const ai = getAiClient();
+    if (!ai) return [];
+
     const response = await ai.models.generateContent({
       model: 'gemini-1.5-flash',
       contents: `Generate ${count} profound Islamic spiritual reflection topics.
@@ -49,7 +66,8 @@ export async function generateReflections(count: number = 2): Promise<Reflection
       }
     });
 
-    const text = response.text();
+    const r = response as any;
+    const text = typeof r.text === 'function' ? r.text() : (r.text as string);
     if (!text) return [];
 
     const results = JSON.parse(text);
@@ -68,6 +86,9 @@ export async function generateReflections(count: number = 2): Promise<Reflection
 
 export async function generateReflectionDeepDive(item: ReflectionItem): Promise<string> {
   try {
+    const ai = getAiClient();
+    if (!ai) return item.summary || "AI content unavailable (API Key missing).";
+
     const response = await ai.models.generateContent({
       model: 'gemini-1.5-pro',
       contents: `Write a profound, soul-shaking Islamic spiritual essay based on this topic: "${item.content}".
@@ -86,7 +107,10 @@ export async function generateReflectionDeepDive(item: ReflectionItem): Promise<
       Begin directly with the essay.`
     });
 
-    return response.text() || item.summary || "Content unavailable.";
+    // Handle potential API differences (function vs property) safely
+    const r = response as any;
+    const text = typeof r.text === 'function' ? r.text() : (r.text as string);
+    return text || item.summary || "Content unavailable.";
   } catch (error) {
     console.error("Gemini Deep Dive Error:", error);
     return item.summary || "Content unavailable.";
