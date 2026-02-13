@@ -5,107 +5,146 @@ import { Sun, Moon, Sunrise, Sunset, Clock, Star, CloudSun, Hand, CalendarDays, 
 // ... (Previous Quest Data remains mostly same, keeping it concise for XML limit, assuming it exists) ...
 export const ALL_QUESTS: Quest[] = [
   // SALAH (MAIN)
-  { id: 'fajr', title: 'Fajr Salah', description: 'The light before dawn. "Prayer is better than sleep."', category: QuestCategory.MAIN, xp: 600, locationType: 'mosque' },
-  { id: 'dhuhr', title: 'Dhuhr Salah', description: 'Noontime connection amidst the chaos of the day.', category: QuestCategory.MAIN, xp: 480, locationType: 'mosque' },
-  { id: 'asr', title: 'Asr Salah', description: 'The middle prayer. Guard it strictly.', category: QuestCategory.MAIN, xp: 480, locationType: 'mosque' },
-  { id: 'maghrib', title: 'Maghrib Salah', description: 'The gratitude at the end of the day.', category: QuestCategory.MAIN, xp: 480, locationType: 'mosque' },
-  { id: 'isha', title: 'Isha Salah', description: 'The heavy prayer that proves faith.', category: QuestCategory.MAIN, xp: 600, locationType: 'mosque' },
-  
-  // SUNNAH RAWATIB (NEW)
-  { id: 'sunnah_fajr', title: '2 Sunnah (Fajr)', description: 'Better than the world and everything in it.', category: QuestCategory.SUNNAH, xp: 300 },
-  { id: 'sunnah_dhuhr', title: 'Sunnah (Dhuhr)', description: '4 before and 2 after Dhuhr.', category: QuestCategory.SUNNAH, xp: 350 },
-  { id: 'sunnah_maghrib', title: '2 Sunnah (Maghrib)', description: 'Performed immediately after Fard.', category: QuestCategory.SUNNAH, xp: 200 },
-  { id: 'sunnah_isha', title: '2 Sunnah (Isha)', description: 'Performed after Isha Fard.', category: QuestCategory.SUNNAH, xp: 200 },
-  { id: 'witr', title: 'Witr Prayer', description: 'The final prayer of the night.', category: QuestCategory.SUNNAH, xp: 400 },
+  { id: 'fajr', title: 'Pray Fajr', description: 'The light before dawn. "Prayer is better than sleep."', category: QuestCategory.MAIN, xp: 600, locationType: 'mosque' },
+  { id: 'dhuhr', title: 'Pray Dhuhr', description: 'Noontime connection amidst the chaos of the day.', category: QuestCategory.MAIN, xp: 480, locationType: 'mosque' },
+  { id: 'asr', title: 'Pray Asr', description: 'The middle prayer. Guard it strictly.', category: QuestCategory.MAIN, xp: 480, locationType: 'mosque' },
+  { id: 'maghrib', title: 'Pray Maghrib', description: 'The gratitude at the end of the day.', category: QuestCategory.MAIN, xp: 480, locationType: 'mosque' },
+  { id: 'isha', title: 'Pray Isha', description: 'The heavy prayer that proves faith.', category: QuestCategory.MAIN, xp: 600, locationType: 'mosque' },
 
-  // PDF SPECIFIC - DAILY ROUTINE
-  { id: 'surah_yaseen', title: 'Surah Yaseen', description: 'The Heart of the Quran. Read in the early morning for fulfillment of needs.', category: QuestCategory.DHIKR, xp: 350 },
-  { id: 'morning_adhkar', title: 'Morning Adhkar', description: 'The fortress of the believer. Protection until evening.', category: QuestCategory.DHIKR, xp: 200 },
-  { id: 'kalima_100', title: '100x Kalima Tayyiba', description: 'La ilaha illallah. The best of Dhikr.', category: QuestCategory.DHIKR, xp: 300 },
-  { id: 'ishraq_salah', title: 'Ishraq Salah', description: 'Prayer after sunrise. Reward of a Hajj and Umrah.', category: QuestCategory.SUNNAH, xp: 500 },
-  { id: 'surah_fatah', title: 'Surah Fatah', description: 'To be read after Dhuhr. "Verily We have granted you a manifest victory."', category: QuestCategory.DHIKR, xp: 300 },
-  { id: 'surah_naba', title: 'Surah Naba (Amma)', description: 'To be read after Asr. Reflection on the Great News.', category: QuestCategory.DHIKR, xp: 250 },
-  { id: 'istighfar_100', title: '100x Istighfar', description: 'Seeking forgiveness. Eraser of sins.', category: QuestCategory.DHIKR, xp: 200 },
-  { id: 'durood_100', title: '100x Durood', description: 'Sending peace upon the Prophet ﷺ.', category: QuestCategory.DHIKR, xp: 250 },
-  { id: 'awwaabeen', title: 'Awwaabeen Salah', description: '6 Rakaats after Maghrib. The prayer of the oft-returning.', category: QuestCategory.SUNNAH, xp: 600 },
-  { id: 'surah_waqiah', title: 'Surah Waqiah', description: 'Read after Maghrib. Protection from poverty.', category: QuestCategory.DHIKR, xp: 350 },
-  { id: 'surah_mulk', title: 'Surah Mulk', description: 'Read after Isha. Protection from the punishment of the grave.', category: QuestCategory.DHIKR, xp: 350 },
-  { id: 'surah_sajdah', title: 'Surah Sajdah', description: 'Sunnah of the Prophet ﷺ before sleeping.', category: QuestCategory.DHIKR, xp: 300 },
-  { id: 'ayatul_kursi', title: 'Ayatul Kursi', description: 'Greatest verse. Protection from Shaitan.', category: QuestCategory.DHIKR, xp: 100 },
-  { id: 'tahajjud', title: 'Tahajjud Salah', description: 'The arrow of the night that does not miss.', category: QuestCategory.SUNNAH, xp: 1000 },
-  { id: 'salatul_tasbeeh', title: 'Salatul Tasbeeh', description: 'The prayer of forgiveness. 300 Tasbeehs.', category: QuestCategory.SUNNAH, xp: 1500 },
-  
+  // DAILY DHIKR & ADHKAR (Standalone, shown in All Quests)
+  { id: 'morning_adhkar', title: 'Read Morning Adhkar', description: 'The fortress of the believer. Protection until evening.', category: QuestCategory.DHIKR, xp: 200 },
+  { id: 'kalima_100', title: 'Recite 100x Kalima Tayyiba', description: 'La ilaha illallah. The best of Dhikr.', category: QuestCategory.DHIKR, xp: 300 },
+  { id: 'istighfar_100', title: 'Make 100x Istighfar', description: 'Seeking forgiveness. Eraser of sins.', category: QuestCategory.DHIKR, xp: 200 },
+  { id: 'durood_100', title: 'Send 100x Durood', description: 'Sending peace upon the Prophet ﷺ.', category: QuestCategory.DHIKR, xp: 250 },
+  { id: 'read_quran', title: 'Read/Recite the Holy Quran', description: 'Each letter earns you 10 rewards. Make it a daily habit.', category: QuestCategory.DHIKR, xp: 400 },
+
+  // NAFL PRAYERS (Standalone)
+  { id: 'tahajjud', title: 'Pray Tahajjud', description: 'The arrow of the night that does not miss.', category: QuestCategory.SUNNAH, xp: 1000 },
+  { id: 'ishraq_salah', title: 'Pray Ishraq', description: 'Prayer after sunrise. Reward of a Hajj and Umrah.', category: QuestCategory.SUNNAH, xp: 500 },
+  { id: 'awwaabeen', title: 'Pray Awwaabeen', description: '6 Rakaats after Maghrib. The prayer of the oft-returning.', category: QuestCategory.SUNNAH, xp: 600 },
+  { id: 'salatul_tasbeeh', title: 'Pray Salatul Tasbeeh', description: 'The prayer of forgiveness. 300 Tasbeehs.', category: QuestCategory.SUNNAH, xp: 1500 },
+
   // PILLARS & FASTING
   { id: 'fasting_ramadan', title: 'Ramadan Fasting', description: 'The month of the Quran (Currently unavailable)', category: QuestCategory.MAIN, xp: 8000, isGreyed: true },
-  { id: 'fasting_sunnah', title: 'Sunnah Fast', description: 'Mondays or Thursdays fasting.', category: QuestCategory.SUNNAH, xp: 400 },
-  { id: 'zakaat', title: 'Zakaat', description: 'Purifying wealth (2.5%).', category: QuestCategory.MAIN, xp: 3200, locationType: 'charity' },
+  { id: 'fasting_sunnah', title: 'Keep a Sunnah Fast', description: 'Mondays or Thursdays fasting.', category: QuestCategory.SUNNAH, xp: 400 },
+  { id: 'zakaat', title: 'Pay Zakaat', description: 'Purifying wealth (2.5%).', category: QuestCategory.MAIN, xp: 3200, locationType: 'charity' },
   { id: 'hajj', title: 'Hajj Pilgrimage', description: 'The journey of a lifetime (Currently unavailable)', category: QuestCategory.MAIN, xp: 100000, isGreyed: true },
 
   // SUNNAH - DAILY MICRO-DEEDS
-  { id: 'miswak', title: 'Using Miswak', description: 'Sunnah of oral hygiene', category: QuestCategory.SUNNAH, xp: 200 },
-  { id: 'right_side_sleep', title: 'Sleep on Right Side', description: 'Prophetic etiquette of rest', category: QuestCategory.SUNNAH, xp: 160 },
-  { id: 'wudu_before_sleep', title: 'Wudu before Sleep', description: 'Angels pray for you through the night', category: QuestCategory.SUNNAH, xp: 240 },
-  { id: 'duha', title: 'Salat al-Duha', description: 'Charity for every joint', category: QuestCategory.SUNNAH, xp: 600 },
-  { id: 'smile_sunnah', title: 'Smiling to Others', description: 'Prophetic act of kindness', category: QuestCategory.SUNNAH, xp: 200 },
-  { id: 'salawat_10', title: '10x Salawat', description: 'Sending peace upon the Messenger (PBUH)', category: QuestCategory.SUNNAH, xp: 200 },
-  { id: 'drink_water_3_breaths', title: 'Water in 3 Breaths', description: 'Prophetic method of drinking', category: QuestCategory.SUNNAH, xp: 120 },
-  { id: 'dua_after_adhan', title: 'Dua After Adhan', description: 'Intercession guaranteed', category: QuestCategory.SUNNAH, xp: 280 },
-  { id: 'ayatul_kursi_salah', title: 'Ayatul Kursi Post-Salah', description: 'Protection until next prayer', category: QuestCategory.SUNNAH, xp: 320 },
-  { id: 'tahiyyatul_wudhu', title: 'Tahiyyatul Wudhu', description: '2 Rakaats after performing Wudhu, a key to Jannah.', category: QuestCategory.SUNNAH, xp: 250 },
-  { id: 'tahiyyatul_masjid', title: 'Tahiyyatul Masjid', description: '2 Rakaats upon entering the Masjid, honoring Allah\'s house.', category: QuestCategory.SUNNAH, xp: 200 },
+  { id: 'miswak', title: 'Use the Miswak', description: 'Sunnah of oral hygiene', category: QuestCategory.SUNNAH, xp: 200 },
+  { id: 'right_side_sleep', title: 'Sleep on Your Right Side', description: 'Prophetic etiquette of rest', category: QuestCategory.SUNNAH, xp: 160 },
+  { id: 'wudu_before_sleep', title: 'Make Wudu Before Sleep', description: 'Angels pray for you through the night', category: QuestCategory.SUNNAH, xp: 240 },
+  { id: 'duha', title: 'Pray Salat ad-Duha', description: 'Charity for every joint', category: QuestCategory.SUNNAH, xp: 600 },
+  { id: 'smile_sunnah', title: 'Smile at Others', description: 'Prophetic act of kindness', category: QuestCategory.SUNNAH, xp: 200 },
+  { id: 'salawat_10', title: 'Send 10x Salawat', description: 'Sending peace upon the Messenger ﷺ', category: QuestCategory.SUNNAH, xp: 200 },
+  { id: 'drink_water_3_breaths', title: 'Drink Water in 3 Breaths', description: 'Prophetic method of drinking', category: QuestCategory.SUNNAH, xp: 120 },
+  { id: 'dua_after_adhan', title: 'Make Dua After Adhan', description: 'Intercession guaranteed', category: QuestCategory.SUNNAH, xp: 280 },
+  { id: 'tahiyyatul_wudhu', title: 'Pray Tahiyyatul Wudhu', description: '2 Rakaats after performing Wudhu, a key to Jannah.', category: QuestCategory.SUNNAH, xp: 250 },
+  { id: 'tahiyyatul_masjid', title: 'Pray Tahiyyatul Masjid', description: '2 Rakaats upon entering the Masjid, honoring Allah\'s house.', category: QuestCategory.SUNNAH, xp: 200 },
 
   // CHARACTER & COMMUNITY
-  { id: 'forgive_someone', title: 'Forgive a Grudge', description: 'Release a grievance for the sake of Allah.', category: QuestCategory.SUNNAH, xp: 1600 },
-  { id: 'maintain_kinship', title: 'Maintain Kinship', description: 'Call or visit a relative you haven’t spoken to recently', category: QuestCategory.SUNNAH, xp: 1200 },
-  { id: 'clothes_poor', title: 'Give Clothes to Poor', description: 'Share your blessings', category: QuestCategory.CHARITY, xp: 1000, locationType: 'charity' },
-  { id: 'food_needy', title: 'Feed the Needy', description: 'Provide a meal for someone hungry', category: QuestCategory.CHARITY, xp: 800, locationType: 'soup_kitchen' },
-  { id: 'visit_sick', title: 'Visit the Sick', description: '70,000 angels pray for you.', category: QuestCategory.SUNNAH, xp: 800 },
+  { id: 'forgive_someone', title: 'Forgive Someone', description: 'Release a grievance for the sake of Allah.', category: QuestCategory.SUNNAH, xp: 1600 },
+  { id: 'maintain_kinship', title: 'Keep Ties of Kinship', description: 'Call or visit a relative you haven\'t spoken to recently', category: QuestCategory.SUNNAH, xp: 1200 },
+  { id: 'clothes_poor', title: 'Give Clothes to the Poor', description: 'Share your blessings', category: QuestCategory.CHARITY, xp: 1000, locationType: 'charity' },
+  { id: 'food_needy', title: 'Feed Someone in Need', description: 'Provide a meal for someone hungry', category: QuestCategory.CHARITY, xp: 800, locationType: 'soup_kitchen' },
+  { id: 'visit_sick', title: 'Visit Someone Who Is Sick', description: '70,000 angels pray for you.', category: QuestCategory.SUNNAH, xp: 800 },
   { id: 'hug_loved_one', title: 'Hug a Loved One', description: 'Spread warmth in your home', category: QuestCategory.SUNNAH, xp: 200 },
-  { id: 'reflect_universe', title: 'Universe Reflection', description: 'Contemplate the vastness of creation', category: QuestCategory.SUNNAH, xp: 400 },
+  { id: 'reflect_universe', title: 'Reflect on Creation', description: 'Contemplate the vastness of the universe', category: QuestCategory.SUNNAH, xp: 400 },
   { id: 'feed_stray_animal', title: 'Feed a Stray Animal', description: 'Mercy to all creation', category: QuestCategory.CHARITY, xp: 360 },
-  { id: 'help_neighbor', title: 'Help a Neighbor', description: 'Assist with groceries or tasks', category: QuestCategory.CHARITY, xp: 600 },
-  { id: 'convey_islam', title: 'Convey Islam\'s Message', description: 'Convey the message of Islam to someone, even with a smile.', category: QuestCategory.CHARITY, xp: 1500 },
-  { id: 'quran_traffic', title: 'Quran During Commute', description: 'Listen to the Quran during traffic or your daily commute.', category: QuestCategory.CHARITY, xp: 300 },
-  { id: 'no_road_rage', title: 'Patience on the Road', description: 'Repress road rage and practice patience while driving.', category: QuestCategory.CHARITY, xp: 500 },
-  { id: 'dua_for_ummah', title: 'Dua for the Ummah', description: 'Make a sincere dua for the well-being of the Muslim community.', category: QuestCategory.CHARITY, xp: 250 },
-  { id: 'help_elderly', title: 'Assist the Elderly', description: 'Assist, be kind to, and spend time with an elderly person.', category: QuestCategory.CHARITY, xp: 700 },
+  { id: 'help_neighbor', title: 'Help a Neighbour', description: 'Assist with groceries or tasks', category: QuestCategory.CHARITY, xp: 600 },
+  { id: 'convey_islam', title: 'Share the Message of Islam', description: 'Convey the message of Islam to someone, even with a smile.', category: QuestCategory.CHARITY, xp: 1500 },
+  { id: 'quran_traffic', title: 'Listen to Quran During Commute', description: 'Listen to the Quran during traffic or your daily commute.', category: QuestCategory.CHARITY, xp: 300 },
+  { id: 'no_road_rage', title: 'Practice Patience on the Road', description: 'Repress road rage and practice patience while driving.', category: QuestCategory.CHARITY, xp: 500 },
+  { id: 'dua_for_ummah', title: 'Make Dua for the Ummah', description: 'Make a sincere dua for the well-being of the Muslim community.', category: QuestCategory.CHARITY, xp: 250 },
+  { id: 'help_elderly', title: 'Help an Elderly Person', description: 'Assist, be kind to, and spend time with an elderly person.', category: QuestCategory.CHARITY, xp: 700 },
 
+  // GUIDE-DERIVED QUESTS (standalone Dhikr)
+  { id: 'read_manzil', title: 'Recite the Manzil', description: 'The 33 verses of security and protection against evil influences.', category: QuestCategory.DHIKR, xp: 350 },
+  { id: 'tasbeeh_fatimi', title: 'Recite Tasbeeh Fatimi', description: 'Subhanallah (33x), Alhamdulillah (33x), Allahu Akbar (34x). Better than a servant.', category: QuestCategory.DHIKR, xp: 150 },
 
-  // GUIDE-DERIVED QUESTS
-  { id: 'jumuah_surah_kahf', title: 'Recite Surah Kahf', description: 'A light illuminated for you until the next Jumu\'ah.', category: QuestCategory.DHIKR, xp: 400 },
-  { id: 'jumuah_durood_80', title: '80x Durood (Post-Asr)', description: 'On Jumu\'ah, after Asr, 80 years of sins are forgiven.', category: QuestCategory.DHIKR, xp: 300 },
-  { id: 'read_manzil', title: 'Recite Manzil', description: 'The 33 verses of security and protection against evil influences.', category: QuestCategory.DHIKR, xp: 350 },
-  { id: 'tasbeeh_fatimi', title: 'Tasbeeh Fatimi', description: 'Recite before sleep: Subhanallah (33x), Alhamdulillah (33x), Allahu Akbar (34x). Better than a servant.', category: QuestCategory.DHIKR, xp: 150 },
-  { id: 'post_salah_adhkar', title: 'Post-Salah Adhkar', description: 'Perform the sunnah remembrance after obligatory prayers.', category: QuestCategory.DHIKR, xp: 200 },
-  
-  // --- NEW CORRECTION QUESTS ---
-  // Minor Sin
+  // --- CORRECTION QUESTS ---
   { id: 'corr_pay_sadaqa_minor', title: 'Pay Sadaqa', description: 'Charity extinguishes sin as water extinguishes fire.', category: QuestCategory.CORRECTION, subCategory: 'Minor Sin', xp: 300, locationType: 'charity' },
   { id: 'corr_istighfar_100_minor', title: '100x Astaghfirullah', description: 'Seek Allah\'s forgiveness to cleanse the heart.', category: QuestCategory.CORRECTION, subCategory: 'Minor Sin', xp: 200 },
   { id: 'corr_subhanallah_100_minor', title: '100x Subhanallah', description: 'Glorify Allah to erase misdeeds.', category: QuestCategory.CORRECTION, subCategory: 'Minor Sin', xp: 200 },
-  // Major Sin
   { id: 'corr_salah_taubah', title: 'Salat-ul-Tawbah', description: 'Offer 2 Rakaats of sincere repentance.', category: QuestCategory.CORRECTION, subCategory: 'Major Sin', xp: 1200 },
   { id: 'corr_pay_sadaqa_major', title: 'Pay Sadaqa Generously', description: 'Give charity to seek mercy and forgiveness.', category: QuestCategory.CORRECTION, subCategory: 'Major Sin', xp: 800, locationType: 'charity' },
   { id: 'corr_istighfar_100_major', title: '100x Astaghfirullah', description: 'Beg for forgiveness with deep regret.', category: QuestCategory.CORRECTION, subCategory: 'Major Sin', xp: 300 },
   { id: 'corr_subhanallah_100_major', title: '100x Subhanallah', description: 'Glorify Allah\'s perfection as a part of repentance.', category: QuestCategory.CORRECTION, subCategory: 'Major Sin', xp: 300 },
   { id: 'corr_feed_needy', title: 'Feed a Family', description: 'Provide a good meal to a person or family in need.', category: QuestCategory.CORRECTION, subCategory: 'Major Sin', xp: 1000, locationType: 'soup_kitchen' },
   { id: 'corr_sacrifice_animal', title: 'Sacrifice for the Poor', description: 'Sacrifice an animal and distribute the meat to the needy.', category: QuestCategory.CORRECTION, subCategory: 'Major Sin', xp: 2000, locationType: 'community' },
-  // Wronged Someone
   { id: 'corr_apology', title: 'Seek Forgiveness', description: 'Sincerely apologize to the one you have wronged.', category: QuestCategory.CORRECTION, subCategory: 'Wronged Someone', xp: 1600 },
-  // Missed Salah
   { id: 'corr_qadha', title: 'Pray Qadha Salah', description: 'Make up the obligatory prayer you missed.', category: QuestCategory.CORRECTION, subCategory: 'Missed Salah', xp: 400 },
+
+  // --- PACKAGE SUB-QUESTS (Only shown under parent prayer cards) ---
+  // TAHAJJUD
+  { id: 'tahajjud-istighfar', title: 'Make Istighfar', description: 'Seek forgiveness in the last third of the night.', category: QuestCategory.DHIKR, xp: 100, isPackage: true },
+  { id: 'tahajjud-surah_sajdah', title: 'Recite Surah As-Sajdah', description: 'Sunnah of the Prophet ﷺ before sleeping.', category: QuestCategory.DHIKR, xp: 150, isPackage: true },
+  { id: 'tahajjud-witr', title: 'Pray Witr', description: 'The final odd prayer of the night.', category: QuestCategory.SUNNAH, xp: 200, isPackage: true },
+
+  // FAJR
+  { id: 'fajr-sunnah', title: 'Pray 2 Sunnah', description: 'Two rakaats before Fajr Fard. Better than the world.', category: QuestCategory.SUNNAH, xp: 100, isPackage: true },
+  { id: 'fajr-ayatul_kursi', title: 'Recite Ayatul Kursi', description: 'Protection until the next prayer.', category: QuestCategory.DHIKR, xp: 60, isPackage: true },
+  { id: 'fajr-adhkar', title: 'Read Post-Fajr Adhkar', description: 'Tasbeeh Fatimi, 3 Quls, morning adhkar.', category: QuestCategory.DHIKR, xp: 50, isPackage: true },
+  { id: 'fajr-surah', title: 'Recite Surah Yaseen', description: 'The Heart of the Quran. Fulfilment of needs.', category: QuestCategory.DHIKR, xp: 150, isPackage: true },
+
+  // DHUHR
+  { id: 'dhuhr-sunnah-pre', title: 'Pray 4 Sunnah (Before)', description: 'Four rakaats before Dhuhr Fard.', category: QuestCategory.SUNNAH, xp: 150, isPackage: true },
+  { id: 'dhuhr-sunnah-post', title: 'Pray 2 Sunnah (After)', description: 'Two rakaats after Dhuhr Fard.', category: QuestCategory.SUNNAH, xp: 100, isPackage: true },
+  { id: 'dhuhr-ayatul_kursi', title: 'Recite Ayatul Kursi', description: 'Protection until the next prayer.', category: QuestCategory.DHIKR, xp: 60, isPackage: true },
+  { id: 'dhuhr-adhkar', title: 'Read Post-Dhuhr Adhkar', description: 'Tasbeeh Fatimi.', category: QuestCategory.DHIKR, xp: 50, isPackage: true },
+  { id: 'dhuhr-surah', title: 'Recite Surah Al-Fatah', description: '"Verily We have granted you a manifest victory."', category: QuestCategory.DHIKR, xp: 150, isPackage: true },
+
+  // ASR
+  { id: 'asr-sunnah', title: 'Pray 4 Sunnah (Before)', description: 'Four rakaats before Asr Fard.', category: QuestCategory.SUNNAH, xp: 150, isPackage: true },
+  { id: 'asr-ayatul_kursi', title: 'Recite Ayatul Kursi', description: 'Protection until the next prayer.', category: QuestCategory.DHIKR, xp: 60, isPackage: true },
+  { id: 'asr-adhkar', title: 'Read Post-Asr Adhkar', description: 'Tasbeeh Fatimi, Asr Dua.', category: QuestCategory.DHIKR, xp: 50, isPackage: true },
+  { id: 'asr-surah', title: 'Recite Surah An-Naba', description: 'Reflection on the Great News.', category: QuestCategory.DHIKR, xp: 150, isPackage: true },
+
+  // MAGHRIB
+  { id: 'maghrib-sunnah', title: 'Pray 2 Sunnah', description: 'Two rakaats after Maghrib Fard.', category: QuestCategory.SUNNAH, xp: 100, isPackage: true },
+  { id: 'maghrib-ayatul_kursi', title: 'Recite Ayatul Kursi', description: 'Protection until the next prayer.', category: QuestCategory.DHIKR, xp: 60, isPackage: true },
+  { id: 'maghrib-adhkar', title: 'Read Post-Maghrib Adhkar', description: 'Tasbeeh Fatimi.', category: QuestCategory.DHIKR, xp: 50, isPackage: true },
+  { id: 'maghrib-surah', title: 'Recite Surah Al-Waqiah', description: 'Protection from poverty.', category: QuestCategory.DHIKR, xp: 150, isPackage: true },
+
+  // ISHA
+  { id: 'isha-sunnah', title: 'Pray 2 Sunnah', description: 'Two rakaats after Isha Fard.', category: QuestCategory.SUNNAH, xp: 100, isPackage: true },
+  { id: 'isha-ayatul_kursi', title: 'Recite Ayatul Kursi', description: 'Protection until the next prayer.', category: QuestCategory.DHIKR, xp: 60, isPackage: true },
+  { id: 'isha-adhkar', title: 'Read Post-Isha Adhkar', description: 'Tasbeeh Fatimi.', category: QuestCategory.DHIKR, xp: 50, isPackage: true },
+  { id: 'isha-surah', title: 'Recite Surah Al-Mulk', description: 'Protection from the punishment of the grave.', category: QuestCategory.DHIKR, xp: 150, isPackage: true },
+  { id: 'isha-witr', title: 'Pray Witr', description: 'The final odd prayer of the night.', category: QuestCategory.SUNNAH, xp: 200, isPackage: true },
 ];
+
+export const PRAYER_PACKAGES: Record<string, string[]> = {
+  'tahajjud': ['tahajjud-istighfar', 'tahajjud-surah_sajdah', 'tahajjud-witr'],
+  'fajr': ['fajr-sunnah', 'fajr-ayatul_kursi', 'fajr-adhkar', 'fajr-surah'],
+  'dhuhr': ['dhuhr-sunnah-pre', 'dhuhr-sunnah-post', 'dhuhr-ayatul_kursi', 'dhuhr-adhkar', 'dhuhr-surah'],
+  'asr': ['asr-sunnah', 'asr-ayatul_kursi', 'asr-adhkar', 'asr-surah'],
+  'maghrib': ['maghrib-sunnah', 'maghrib-ayatul_kursi', 'maghrib-adhkar', 'maghrib-surah'],
+  'isha': ['isha-sunnah', 'isha-ayatul_kursi', 'isha-adhkar', 'isha-surah', 'isha-witr']
+};
 
 export const CORRECTION_SUB_CATEGORIES = ['Minor Sin', 'Major Sin', 'Wronged Someone', 'Missed Salah'];
 
 export const PRAYER_RELATED_QUESTS: Record<string, string[]> = {
-  fajr: ['sunnah_fajr', 'surah_yaseen', 'morning_adhkar', 'ayatul_kursi'],
-  dhuhr: ['sunnah_dhuhr', 'surah_fatah', 'ayatul_kursi_salah', 'post_salah_adhkar'],
-  asr: ['surah_naba', 'post_salah_adhkar', 'ayatul_kursi_salah'],
-  maghrib: ['sunnah_maghrib', 'awwaabeen', 'surah_waqiah', 'post_salah_adhkar'],
-  isha: ['sunnah_isha', 'witr', 'surah_mulk', 'surah_sajdah', 'tasbeeh_fatimi', 'wudu_before_sleep'],
-  tahajjud: ['tahajjud', 'istighfar_100']
+  fajr: ['fajr-sunnah', 'fajr-ayatul_kursi', 'fajr-adhkar', 'fajr-surah', 'morning_adhkar'],
+  dhuhr: ['dhuhr-sunnah-pre', 'dhuhr-sunnah-post', 'dhuhr-ayatul_kursi', 'dhuhr-adhkar', 'dhuhr-surah'],
+  asr: ['asr-sunnah', 'asr-ayatul_kursi', 'asr-adhkar', 'asr-surah'],
+  maghrib: ['maghrib-sunnah', 'maghrib-ayatul_kursi', 'maghrib-adhkar', 'maghrib-surah', 'awwaabeen'],
+  isha: ['isha-sunnah', 'isha-ayatul_kursi', 'isha-adhkar', 'isha-surah', 'isha-witr', 'wudu_before_sleep'],
+  tahajjud: ['tahajjud-istighfar', 'tahajjud-surah_sajdah', 'tahajjud-witr']
 };
+
+export const JUMUAH_CHECKLIST = [
+  { id: 'jumuah_ghusl', title: 'Take a Bath (Ghusl)', xp: 200 },
+  { id: 'jumuah_miswak', title: 'Use the Miswak', xp: 100 },
+  { id: 'jumuah_perfume', title: 'Wear Perfume (Itr)', xp: 100 },
+  { id: 'jumuah_best_clothes', title: 'Wear Best Clothes', xp: 100 },
+  { id: 'jumuah_early_arrival', title: 'Go Early to the Masjid', xp: 300 },
+  { id: 'jumuah_surah_kahf', title: 'Recite Surah Al-Kahf', xp: 400 },
+  { id: 'jumuah_durood', title: 'Send Abundant Durood', xp: 300 },
+  { id: 'jumuah_durood_80', title: 'Send 80x Durood (Post-Asr)', xp: 300 },
+  { id: 'jumuah_dua', title: 'Make Dua in the Last Hour', xp: 200 },
+];
 
 export const HARDCODED_REFLECTIONS: ReflectionItem[] = [
   {
@@ -339,7 +378,7 @@ export const FULL_ARABIC_CONTENT: Record<string, { arabic: string; translation: 
   // ... (Keep existing keys)
 };
 
-export const GUIDE_SECTIONS: GuideSection[] = []; 
+export const GUIDE_SECTIONS: GuideSection[] = [];
 export const NAFL_PRAYERS: NaflPrayerItem[] = [];
 
 // NEW: Special Surahs for Citadel Treasury
