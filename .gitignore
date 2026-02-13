@@ -12,3 +12,9 @@ build/
 # Misc
 .DS_Store
 *.log
+
+# Books (AI reference only)
+books*/
+
+# Agent
+.gemini/

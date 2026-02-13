@@ -18,6 +18,7 @@ export interface Quest {
   disclaimer?: string;
   locationType?: 'mosque' | 'charity' | 'soup_kitchen' | 'community' | null;
   completed?: boolean;
+  isPackage?: boolean; // For sub-quests in packages
 }
 
 export interface UserSettings {
