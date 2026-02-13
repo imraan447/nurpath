@@ -40,7 +40,7 @@ import {
   BookHeart,
   Book,
   Download,
-  Trophy,
+
   Users,
   Pin,
   MapPin,
@@ -923,14 +923,14 @@ const App: React.FC = () => {
         <header className={`z-20 backdrop-blur-md ${user.settings?.darkMode ? 'bg-[#050a09]/90' : 'bg-[#fdfbf7]/90'}`}>
           <div className="p-6 pb-4 flex items-center justify-between relative">
             <div className="flex flex-col z-10"><span className={`text-[12px] font-black uppercase tracking-[0.5em] ${user.settings?.darkMode ? 'text-white' : 'text-[#064e3b]'}`}>NurPath</span></div>
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pt-2 flex items-center gap-2">
-              <button onClick={() => setActiveTab('community')} className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-transform active:scale-95 ${user.settings?.darkMode ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-[#064e3b]/5 border-[#064e3b]/10 hover:bg-[#064e3b]/10'}`}>
-                <Trophy size={12} className={user.settings?.darkMode ? 'text-yellow-400' : 'text-[#d4af37]'} />
-                <span className={`text-[10px] font-black uppercase tracking-wider ${user.settings?.darkMode ? 'text-white' : 'text-[#064e3b]'}`}>Community</span>
+            <div className="flex items-center gap-2 z-10">
+              <button onClick={() => setActiveTab('community')} className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all active:scale-95 shadow-md ${user.settings?.darkMode ? 'bg-gradient-to-r from-cyan-600 to-teal-500 hover:from-cyan-500 hover:to-teal-400' : 'bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400'}`}>
+                <Globe size={13} className="text-white" />
+                <span className="text-[10px] font-black uppercase tracking-wider text-white">Ummah</span>
                 {hasFriendRequests && <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 border border-white dark:border-[#050a09]"></span></span>}
               </button>
+              <button onClick={() => setShowSettings(true)} className={`p-2 rounded-full transition-colors ${user.settings?.darkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}><Settings size={18} /></button>
             </div>
-            <div className="z-10"><button onClick={() => setShowSettings(true)} className={`p-2 rounded-full transition-colors ${user.settings?.darkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}><Settings size={18} /></button></div>
           </div>
           <div className="px-6 pb-6 pt-0">
             <div className="flex justify-between items-end mb-1">
