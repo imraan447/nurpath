@@ -161,9 +161,48 @@ export interface Group {
   name: string;
   created_by: string;
   created_at: string;
-  members?: Friend[];
+  members?: GroupMember[];
+}
+
+export interface GroupMember {
+  id: string;
+  username: string;
+  xp: number;
+  country: string;
+  active_quests?: string[];
+  role?: 'admin' | 'member';
+}
+
+export interface GroupInvite {
+  id: string;
+  group_id: string;
+  invited_by: string;
+  invited_user: string;
+  status: 'pending' | 'accepted' | 'declined';
+  created_at: string;
+  group_name?: string;
+  inviter_name?: string;
+}
+
+export interface GroupQuestItem {
+  id: string;
+  group_id: string;
+  title: string;
+  created_by: string;
+  xp: number;
+  created_at: string;
 }
 
 export interface GroupQuest extends Quest {
   sharedBy: string[]; // Usernames of people in the group doing this quest
+}
+
+export interface Dua {
+  id: string;
+  user_id: string;
+  text: string;
+  ameen_count: number;
+  created_at: string;
+  username?: string;
+  has_said_ameen?: boolean;
 }
