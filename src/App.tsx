@@ -535,6 +535,7 @@ const App: React.FC = () => {
       localStorage.setItem(`nurpath_user_${u.id}`, JSON.stringify({
         activeQuests: u.activeQuests,
         completedDailyQuests: u.completedDailyQuests,
+        pinnedQuests: u.pinnedQuests,
         settings: u.settings
       }));
       try {
@@ -704,12 +705,12 @@ const App: React.FC = () => {
   const handleSaveRoutine = async (selectedIds: string[]) => {
     if (!user) return;
 
-    // 1. Update activeQuests (Merge new routine items)
-    // We do NOT remove existing active quests to prevent data loss, unless they are removed from routine?
-    // User requested: "once routine is created, it will automatically put all those quests to My Quests"
-    // Usually routine = "My Daily List".
-    // I will merge unique IDs.
-    const newActiveQuests = Array.from(new Set([...user.activeQuests, ...selectedIds]));
+    // Only add non-package (parent) quests to activeQuests — sub-quests live only in the routine definition
+    const parentIds = selectedIds.filter(id => {
+      const quest = ALL_QUESTS.find(q => q.id === id);
+      return quest && !quest.isPackage;
+    });
+    const newActiveQuests = Array.from(new Set([...user.activeQuests, ...parentIds]));
 
     // 2. Prepare update object
     // Store routine in 'pinned_quests' column
@@ -881,7 +882,7 @@ const App: React.FC = () => {
 
   const activeSideQuests = user?.activeQuests
     .map(qid => ALL_QUESTS.find(q => q.id === qid))
-    .filter(q => q && q.id !== heroQuest?.id && q.category !== QuestCategory.MAIN && !fardSalahIds.includes(q.id)) as Quest[] || [];
+    .filter(q => q && q.id !== heroQuest?.id && q.category !== QuestCategory.MAIN && !fardSalahIds.includes(q.id) && !q.isPackage) as Quest[] || [];
 
   const handleLoadMoreReflections = async () => {
     // For now, we only have curated content. 
