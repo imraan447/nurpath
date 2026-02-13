@@ -4,7 +4,8 @@ export enum QuestCategory {
   SUNNAH = 'Sunnah Quest',
   CORRECTION = 'Correction Quest',
   CHARITY = 'Charity Quest',
-  DHIKR = 'Dhikr & Dua'
+  DHIKR = 'Dhikr & Dua',
+  COMMUNITY = 'Community Challenge'
 }
 
 export interface Quest {
@@ -19,6 +20,7 @@ export interface Quest {
   locationType?: 'mosque' | 'charity' | 'soup_kitchen' | 'community' | null;
   completed?: boolean;
   isPackage?: boolean; // For sub-quests in packages
+  isGroupQuest?: boolean;
 }
 
 export interface UserSettings {
@@ -191,10 +193,24 @@ export interface GroupQuestItem {
   created_by: string;
   xp: number;
   created_at: string;
+  deadline?: string; // ISO timestamp
+}
+
+export interface GroupQuestCompletion {
+  id: string;
+  group_quest_id: string;
+  user_id: string;
+  completed_at: string;
+  is_claimed: boolean;
 }
 
 export interface GroupQuest extends Quest {
   sharedBy: string[]; // Usernames of people in the group doing this quest
+  groupId?: string;
+  deadline?: string;
+  completionCount?: number;
+  totalMembers?: number;
+  isLocked?: boolean; // True if user completed but waiting for group
 }
 
 export interface Dua {

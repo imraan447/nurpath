@@ -24,13 +24,18 @@ interface QuestCardProps {
     status: 'now' | 'future' | 'past' | 'upcoming';
     timeLeft?: string;
   };
+  isGroupQuest?: boolean;
+  groupProgress?: { current: number; total: number };
+  isLocked?: boolean;
+  deadline?: string;
 }
 
 const QuestCard: React.FC<QuestCardProps> = ({
   quest, onAction, onComplete, onRemove, onPin,
   isActive, isCompleted, isPinned, darkMode,
   onShowTasbeehGuide, isGreyed, relatedQuests,
-  onCompleteRelated, isBundle, timeDisplay, isTracked
+  onCompleteRelated, isBundle, timeDisplay, isTracked,
+  isGroupQuest, groupProgress, isLocked, deadline
 }) => {
 
   const getCategoryStyles = () => {
@@ -46,6 +51,9 @@ const QuestCard: React.FC<QuestCardProps> = ({
       case QuestCategory.CORRECTION:
         // Correction is highlighted Red
         return darkMode ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-rose-100 text-rose-700 border border-rose-200';
+      case QuestCategory.COMMUNITY:
+        // Community is Indigo
+        return darkMode ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'bg-indigo-100 text-indigo-700 border border-indigo-200';
       default:
         return 'bg-slate-100 text-slate-700';
     }
@@ -111,7 +119,9 @@ const QuestCard: React.FC<QuestCardProps> = ({
           <h3 className={`font-bold text-lg transition-colors ${darkMode ? 'text-white' : 'text-slate-900'} ${isTracked || isCompleted ? 'opacity-70' : ''}`}>{quest.title}</h3>
         </div>
         <div className="flex flex-col items-end gap-2">
-          <div className="text-[#d4af37] font-black text-sm transition-colors">+{quest.xp} XP</div>
+          <div className={`font-black text-sm transition-colors ${isLocked ? 'text-slate-400 flex items-center gap-1' : 'text-[#d4af37]'}`}>
+            {isLocked ? <><Lock size={12} /> Locked</> : `+${quest.xp} XP`}
+          </div>
           {!isCompleted && !isBundle && onPin && !effectiveIsGreyed && (
             <button
               onClick={(e) => { e.stopPropagation(); onPin(quest); }}
@@ -130,6 +140,24 @@ const QuestCard: React.FC<QuestCardProps> = ({
         <div className="mb-4 flex items-center gap-2 text-xs font-bold text-[#d4af37] bg-[#d4af37]/10 p-2 rounded-lg w-fit">
           <Clock size={14} />
           <span>Starts in {timeDisplay.timeLeft}</span>
+        </div>
+      )}
+
+      {/* Group Challenge Progress */}
+      {isGroupQuest && groupProgress && (
+        <div className="mb-4 space-y-1">
+          <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider opacity-70">
+            <span>Group Progress</span>
+            <span>{groupProgress.current}/{groupProgress.total} Members</span>
+          </div>
+          <div className={`h-2.5 w-full rounded-full overflow-hidden ${darkMode ? 'bg-white/10' : 'bg-slate-100'}`}>
+            <div
+              className={`h-full transition-all duration-500 ${isLocked ? 'bg-slate-400' : 'bg-indigo-500'}`}
+              style={{ width: `${(groupProgress.current / groupProgress.total) * 100}%` }}
+            ></div>
+          </div>
+          {isLocked && <p className="text-[10px] text-slate-400 mt-1 italic">XP locked until all members complete.</p>}
+          {deadline && <p className="text-[10px] text-rose-400 font-bold mt-1">Deadline: {new Date(deadline).toLocaleDateString()}</p>}
         </div>
       )}
 
