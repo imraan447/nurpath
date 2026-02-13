@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './lib/supabaseClient';
 import { User, Quest, QuestCategory, ReflectionItem, UserSettings, GuideSection, NaflPrayerItem, AdhkarItem } from './types';
-import { ALL_QUESTS, CORRECTION_SUB_CATEGORIES, GUIDE_SECTIONS, SEERAH_CHAPTERS, NAFL_PRAYERS, PRAYER_RELATED_QUESTS, PRAYER_PACKAGES, JUMUAH_CHECKLIST } from './constants';
+import { ALL_QUESTS, GUIDE_SECTIONS, SEERAH_CHAPTERS, NAFL_PRAYERS, PRAYER_RELATED_QUESTS, PRAYER_PACKAGES, JUMUAH_CHECKLIST } from './constants';
 import JSZip from 'jszip';
 import {
   LayoutGrid,
@@ -1025,41 +1025,16 @@ const App: React.FC = () => {
                             <Plus size={12} /> Add All 5 Salah
                           </button>
                         )}
-                        {category === 'Correction Quests' ? (
-                          CORRECTION_SUB_CATEGORIES.map(subCat => {
-                            const subCatQuests = displayQuests.filter(q => q.subCategory === subCat);
-                            if (subCatQuests.length === 0) return null;
-                            return (
-                              <div key={subCat} className="space-y-3">
-                                <h3 className="text-xs font-bold text-rose-500 dark:text-rose-400 pl-4">{subCat}</h3>
-                                <div className="grid grid-cols-1 gap-4">
-                                  {subCatQuests.map(q => (
-                                    <QuestCard
-                                      key={q.id}
-                                      quest={q}
-                                      onAction={handleQuestSelect}
-                                      isTracked={user.activeQuests.includes(q.id)}
-                                      darkMode={user.settings?.darkMode}
-                                    />
-                                  ))}
-                                </div>
-                              </div>
-                            )
-                          })
-                        ) : (
-                          displayQuests.map(q => (
-                            <QuestCard
-                              key={q.id}
-                              quest={q}
-                              onAction={handleQuestSelect}
-                              onPin={togglePinQuest}
-                              isTracked={user.activeQuests.includes(q.id)}
-                              isPinned={user.pinnedQuests?.includes(q.id)}
-                              darkMode={user.settings?.darkMode}
-                              isGreyed={q.isGreyed || isCompletedToday(q.id)}
-                            />
-                          ))
-                        )}
+                        {displayQuests.map(q => (
+                          <QuestCard
+                            key={q.id}
+                            quest={q}
+                            onAction={handleQuestSelect}
+                            isTracked={user.activeQuests.includes(q.id)}
+                            darkMode={user.settings?.darkMode}
+                            isGreyed={q.isGreyed || isCompletedToday(q.id)}
+                          />
+                        ))}
                       </div>
                     )}
                   </section>

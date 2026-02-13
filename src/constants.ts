@@ -63,17 +63,14 @@ export const ALL_QUESTS: Quest[] = [
   { id: 'tasbeeh_fatimi', title: 'Recite Tasbeeh Fatimi', description: 'Subhanallah (33x), Alhamdulillah (33x), Allahu Akbar (34x). Better than a servant.', category: QuestCategory.DHIKR, xp: 150 },
 
   // --- CORRECTION QUESTS ---
-  { id: 'corr_pay_sadaqa_minor', title: 'Pay Sadaqa', description: 'Charity extinguishes sin as water extinguishes fire.', category: QuestCategory.CORRECTION, subCategory: 'Minor Sin', xp: 300, locationType: 'charity' },
-  { id: 'corr_istighfar_100_minor', title: '100x Astaghfirullah', description: 'Seek Allah\'s forgiveness to cleanse the heart.', category: QuestCategory.CORRECTION, subCategory: 'Minor Sin', xp: 200 },
-  { id: 'corr_subhanallah_100_minor', title: '100x Subhanallah', description: 'Glorify Allah to erase misdeeds.', category: QuestCategory.CORRECTION, subCategory: 'Minor Sin', xp: 200 },
-  { id: 'corr_salah_taubah', title: 'Salat-ul-Tawbah', description: 'Offer 2 Rakaats of sincere repentance.', category: QuestCategory.CORRECTION, subCategory: 'Major Sin', xp: 1200 },
-  { id: 'corr_pay_sadaqa_major', title: 'Pay Sadaqa Generously', description: 'Give charity to seek mercy and forgiveness.', category: QuestCategory.CORRECTION, subCategory: 'Major Sin', xp: 800, locationType: 'charity' },
-  { id: 'corr_istighfar_100_major', title: '100x Astaghfirullah', description: 'Beg for forgiveness with deep regret.', category: QuestCategory.CORRECTION, subCategory: 'Major Sin', xp: 300 },
-  { id: 'corr_subhanallah_100_major', title: '100x Subhanallah', description: 'Glorify Allah\'s perfection as a part of repentance.', category: QuestCategory.CORRECTION, subCategory: 'Major Sin', xp: 300 },
-  { id: 'corr_feed_needy', title: 'Feed a Family', description: 'Provide a good meal to a person or family in need.', category: QuestCategory.CORRECTION, subCategory: 'Major Sin', xp: 1000, locationType: 'soup_kitchen' },
-  { id: 'corr_sacrifice_animal', title: 'Sacrifice for the Poor', description: 'Sacrifice an animal and distribute the meat to the needy.', category: QuestCategory.CORRECTION, subCategory: 'Major Sin', xp: 2000, locationType: 'community' },
-  { id: 'corr_apology', title: 'Seek Forgiveness', description: 'Sincerely apologize to the one you have wronged.', category: QuestCategory.CORRECTION, subCategory: 'Wronged Someone', xp: 1600 },
-  { id: 'corr_qadha', title: 'Pray Qadha Salah', description: 'Make up the obligatory prayer you missed.', category: QuestCategory.CORRECTION, subCategory: 'Missed Salah', xp: 400 },
+  { id: 'corr_intention', title: 'Sincere Intention', description: 'Resolve firmly in your heart to never repeat the sin.', category: QuestCategory.CORRECTION, xp: 200 },
+  { id: 'corr_ghusl_tawbah', title: 'Ghusl & Salat-ul-Tawbah', description: 'Purify with Ghusl, then pray 2 Rak\'ahs of repentance.', category: QuestCategory.CORRECTION, xp: 800 },
+  { id: 'corr_istighfar_100', title: 'Istighfar ×100', description: 'Say "Astaghfirullah" 100 times with sincerity.', category: QuestCategory.CORRECTION, xp: 200 },
+  { id: 'corr_subhanallah_100', title: 'SubhanAllah ×100', description: 'Say "SubhanAllah wa bihamdihi" 100 times.', category: QuestCategory.CORRECTION, xp: 200 },
+  { id: 'corr_sadaqah', title: 'Pay Sadaqah', description: 'Charity extinguishes sin as water extinguishes fire.', category: QuestCategory.CORRECTION, xp: 400, locationType: 'charity' },
+  { id: 'corr_feed_poor', title: 'Feed the Poor', description: 'Distribute food to those in need for Allah\'s sake.', category: QuestCategory.CORRECTION, xp: 500 },
+  { id: 'corr_seek_forgiveness', title: 'Seek Forgiveness from Others', description: 'Sincerely apologize to anyone you may have wronged.', category: QuestCategory.CORRECTION, xp: 600 },
+  { id: 'corr_qadha', title: 'Pray Qadha Salah', description: 'Make up any obligatory prayers you have missed.', category: QuestCategory.CORRECTION, xp: 400 },
 
   // --- PACKAGE SUB-QUESTS (Only shown under parent prayer cards) ---
   // TAHAJJUD
@@ -123,7 +120,7 @@ export const PRAYER_PACKAGES: Record<string, string[]> = {
   'isha': ['isha-sunnah', 'isha-ayatul_kursi', 'isha-adhkar', 'isha-surah', 'isha-witr']
 };
 
-export const CORRECTION_SUB_CATEGORIES = ['Minor Sin', 'Major Sin', 'Wronged Someone', 'Missed Salah'];
+
 
 export const PRAYER_RELATED_QUESTS: Record<string, string[]> = {
   fajr: ['fajr-sunnah', 'fajr-ayatul_kursi', 'fajr-adhkar', 'fajr-surah', 'morning_adhkar'],
