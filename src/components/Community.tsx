@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { User, Group, GroupMember, Friend, FriendRequest, Quest, GroupQuest, GroupInvite, GroupQuestItem, Dua } from '../types';
 import { ALL_QUESTS } from '../constants';
-import { Users, UserPlus, Search, Trophy, Crown, Globe, MapPin, Loader2, Plus, Check, X, Shield, Star, Sparkles, ChevronRight, ChevronDown, Heart, Send, Trash2, LogOut, Settings, Mail, Pin, CheckCircle2, Clock, Lock, Pencil, Save } from 'lucide-react';
+import { HeartHandshake, Users, UserPlus, Search, Trophy, Crown, Globe, MapPin, Loader2, Plus, Check, X, Shield, Star, Sparkles, ChevronRight, ChevronDown, Heart, Send, Trash2, LogOut, Settings, Mail, Pin, CheckCircle2, Clock, Lock, Pencil, Save } from 'lucide-react';
 import QuestCard from './QuestCard';
 import Leaderboard from './Leaderboard';
 
@@ -588,7 +588,10 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
               <Users size={24} />
             </div>
             <div>
-              <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>Ummah</h2>
+              <div className={`relative flex items-center gap-2 px-4 py-2 rounded-full shadow-lg ${darkMode ? 'bg-gradient-to-r from-cyan-600 to-teal-500' : 'bg-gradient-to-r from-cyan-500 to-teal-500'}`}>
+                <HeartHandshake size={20} className="text-white" />
+                <h2 className="text-sm font-black uppercase tracking-widest text-white">Nur-Connect</h2>
+              </div>
               <p className="text-[10px] text-[#d4af37] font-black uppercase tracking-widest">Connect & Compete</p>
             </div>
           </div>
@@ -618,7 +621,7 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
           <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4">
             {/* Post Dua */}
             <div className={`p-5 rounded-3xl border-2 ${darkMode ? 'bg-[#1a1500] border-[#d4af37]/30' : 'bg-[#fffbeb] border-[#d4af37]/20'}`}>
-              <p className={`text-xs font-bold mb-3 ${darkMode ? 'text-[#d4af37]' : 'text-[#92780c]'}`}>🤲 Share your Dua with the Ummah</p>
+              <p className={`text-xs font-bold mb-3 ${darkMode ? 'text-[#d4af37]' : 'text-[#92780c]'}`}>🤲 Share your Dua with the Community</p>
               <textarea
                 placeholder="Ya Allah, I ask You for..."
                 className={`w-full p-3 rounded-2xl text-sm resize-none outline-none min-h-[80px] ${darkMode ? 'bg-black/30 text-white placeholder:text-white/30 border border-white/10' : 'bg-white border border-slate-200 placeholder:text-slate-300'}`}
