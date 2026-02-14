@@ -35,8 +35,8 @@ const ReflectionFeed: React.FC<ReflectionFeedProps> = ({ items, loading, hasMore
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           const index = parseInt(entry.target.getAttribute('data-index') || '0');
-          // Only trigger if we are near the end AND we are allowed to load more
-          if (items && index >= items.length - 2 && !loading && hasMore) {
+          // Trigger earlier (4-5 items before end) for smoother infinite scroll preloading
+          if (items && index >= items.length - 5 && !loading && hasMore) {
             onLoadMore();
           }
         }
@@ -134,24 +134,33 @@ const ReflectionFeed: React.FC<ReflectionFeedProps> = ({ items, loading, hasMore
                 {item.content}
               </h2>
 
-              {item.summary && (
-                <p className={`text-sm md:text-base font-medium leading-relaxed opacity-90 max-w-md mx-auto ${hasMedia ? 'text-slate-100' : 'text-slate-600'}`}>
-                  {item.summary}
-                </p>
+              {/* Logic: If short/inline content, show DETAILS directly. Else show SUMMARY + Button */}
+              {(['hadith', 'verse'].includes(item.type) || (item.details && item.details.length < 400)) && item.details ? (
+                <div className={`text-lg md:text-xl font-medium leading-relaxed opacity-90 max-w-2xl mx-auto whitespace-pre-wrap ${hasMedia ? 'text-slate-100' : 'text-slate-700'}`}>
+                  {item.details}
+                </div>
+              ) : (
+                <>
+                  {item.summary && (
+                    <p className={`text-sm md:text-base font-medium leading-relaxed opacity-90 max-w-md mx-auto ${hasMedia ? 'text-slate-100' : 'text-slate-600'}`}>
+                      {item.summary}
+                    </p>
+                  )}
+
+                  <p className="text-xs font-black uppercase tracking-[0.4em] text-[#d4af37]">
+                    {item.praise}
+                  </p>
+
+                  <button
+                    onClick={() => handleExpand(item)}
+                    className={`group flex items-center gap-3 mx-auto px-10 py-5 rounded-[40px] transition-all active:scale-95 shadow-2xl hover:shadow-3xl ${hasMedia ? 'bg-[#d4af37] text-white shadow-[#d4af37]/20' : 'bg-[#064e3b] text-white'
+                      }`}
+                  >
+                    <BookOpen size={20} className="group-hover:scale-110 transition-transform" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em]">Read Article</span>
+                  </button>
+                </>
               )}
-
-              <p className="text-xs font-black uppercase tracking-[0.4em] text-[#d4af37]">
-                {item.praise}
-              </p>
-
-              <button
-                onClick={() => handleExpand(item)}
-                className={`group flex items-center gap-3 mx-auto px-10 py-5 rounded-[40px] transition-all active:scale-95 shadow-2xl hover:shadow-3xl ${hasMedia ? 'bg-[#d4af37] text-white shadow-[#d4af37]/20' : 'bg-[#064e3b] text-white'
-                  }`}
-              >
-                <BookOpen size={20} className="group-hover:scale-110 transition-transform" />
-                <span className="text-[10px] font-black uppercase tracking-[0.3em]">Read Article</span>
-              </button>
 
               {/* AUTHOR / FOOTER */}
               <div className={`pt-4 flex items-center gap-4 ${hasMedia ? 'text-white/60' : 'text-slate-400'}`}>
@@ -258,7 +267,7 @@ const ReflectionFeed: React.FC<ReflectionFeedProps> = ({ items, loading, hasMore
             {loading && <div className="absolute inset-0 flex items-center justify-center"><div className="w-2 h-2 bg-[#d4af37] rounded-full" /></div>}
           </div>
           <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">
-            {loading ? 'Seeking Wisdom...' : 'End of Path'}
+            {loading ? 'Seeking Wisdom...' : 'Scroll for More'}
           </span>
         </div>
       ) : (

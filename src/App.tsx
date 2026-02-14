@@ -63,7 +63,7 @@ import Leaderboard from './components/Leaderboard';
 import Community from './components/Community';
 import RoutineBuilder from './components/RoutineBuilder'; // Added import
 import Citadel from './components/Citadel';
-import { generateReflections } from './services/geminiService';
+import { generateReflections, generateReflectionsStream } from './services/geminiService';
 import { CURATED_REFLECTIONS } from './data/reflections';
 
 const DEFAULT_SETTINGS: UserSettings = {
@@ -744,24 +744,14 @@ const App: React.FC = () => {
   }, [activeTab]);
 
   // Randomize and Filter on Tab Switch to 'reflect'
+  // Randomize and Filter on Tab Switch to 'reflect' - DISABLED for Infinite Scroll
+  /*
   useEffect(() => {
     if (activeTab === 'reflect') {
-      // Filter out read items
-      const readIds = user?.readReflections || [];
-      const unreadItems = CURATED_REFLECTIONS.filter(item => !readIds.includes(item.id));
-
-      // If all read, maybe show them again or show a message? For now, let's just show all if everything is read to avoid empty state.
-      const itemsPool = unreadItems.length > 0 ? unreadItems : CURATED_REFLECTIONS;
-
-      // Shuffle
-      const shuffled = [...itemsPool];
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-      }
-      setReflections(shuffled);
+        // Legacy Logic removed to support infinite scroll persistence
     }
-  }, [activeTab, user?.readReflections?.length]); // Re-run when tab changes or read count changes (though typically user reads inside the tab)
+  }, [activeTab]); 
+  */
 
   // Initial Load (removed legacy logic, handled by the effect above or default state)
   // We keep the initial state as CURATED_REFLECTIONS to ensure something is there before first tab switch if needed.
@@ -1148,14 +1138,27 @@ const App: React.FC = () => {
     .filter(q => q && q.id !== heroQuest?.id && q.category !== QuestCategory.MAIN && !fardSalahIds.includes(q.id) && !q.isPackage) as Quest[] || [];
 
   const handleLoadMoreReflections = async () => {
-    // For now, we only have curated content. 
-    // Just simulate a delay and then stop loading to prevent infinite loops.
-    if (loadingReflections || !hasMoreReflections) return;
+    if (loadingReflections) return;
+
     setLoadingReflections(true);
-    setTimeout(() => {
+    try {
+      // Use AI to generate new reflections
+      // Count: 3 items per load
+      const newItems = await generateReflectionsStream(3);
+
+      if (newItems.length > 0) {
+        setReflections(prev => [...prev, ...newItems]);
+        setHasMoreReflections(true); // Keep going
+      } else {
+        // AI failed or returned empty? Maybe retry? 
+        // For now, assume end of path if empty but we can try again.
+        // We won't set hasMore=false to allow user to try scrolling again later.
+      }
+    } catch (e) {
+      console.error("Failed to load reflections", e);
+    } finally {
       setLoadingReflections(false);
-      setHasMoreReflections(false); // No more to load for now
-    }, 1000);
+    }
   };
 
   const handleUpdateItem = (id: string, updates: Partial<ReflectionItem>) => {

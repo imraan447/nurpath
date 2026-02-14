@@ -3,6 +3,35 @@ import { ReflectionItem } from "../types";
 
 let aiClient: GoogleGenAI | null = null;
 
+const PEXEL_IMAGES = [
+  "/images/pexels-alohaphotostudio-10498909.jpg",
+  "/images/pexels-andy-dufresne-1782800-15722322.jpg",
+  "/images/pexels-duc-tinh-ngo-2147637857-30270538.jpg",
+  "/images/pexels-francesco-ungaro-3361052.jpg",
+  "/images/pexels-fredrikwandem-19427620.jpg",
+  "/images/pexels-grisentig-4215100.jpg",
+  "/images/pexels-ikbalphoto-7469648.jpg",
+  "/images/pexels-jonasvonwerne-1376173.jpg",
+  "/images/pexels-joshsorenson-386148.jpg",
+  "/images/pexels-krisof-1252873.jpg",
+  "/images/pexels-mohamedbinzayed-8233715.jpg",
+  "/images/pexels-mylokaye-8464438.jpg",
+  "/images/pexels-nicobecker-5566306.jpg",
+  "/images/pexels-philippedonn-1169754.jpg",
+  "/images/pexels-pixabay-2150.jpg",
+  "/images/pexels-pixabay-248796.jpg",
+  "/images/pexels-pixabay-274021.jpg",
+  "/images/pexels-ruben-boekeloo-521336009-18410509.jpg",
+  "/images/pexels-samrana3003-1883409.jpg",
+  "/images/pexels-stijn-dijkstra-1306815-16747789.jpg",
+  "/images/pexels-taryn-elliott-3889659.jpg",
+  "/images/pexels-taryn-elliott-4253928.jpg",
+  "/images/pexels-thales13-34378358.jpg",
+  "/images/pexels-thatguycraig000-1652301.jpg",
+  "/images/pexels-tomverdoot-3181458.jpg",
+  "/images/pexels-yide-sun-84747826-19461146.jpg"
+];
+
 function getAiClient(): GoogleGenAI | null {
   if (aiClient) return aiClient;
 
@@ -21,48 +50,47 @@ function getAiClient(): GoogleGenAI | null {
   }
 }
 
-export async function generateReflections(count: number = 2): Promise<ReflectionItem[]> {
+export async function generateReflectionsStream(count: number = 3): Promise<ReflectionItem[]> {
   try {
     const ai = getAiClient();
     if (!ai) return [];
 
+    console.log("Requesting new reflections from Gemini...");
+
     const response = await ai.models.generateContent({
       model: 'gemini-1.5-flash',
-      contents: `Generate ${count} profound Islamic spiritual reflection topics.
+      contents: `Generate ${count} profound Islamic spiritual reflection items.
       
-      CRITICAL CONSTRAINTS:
-      1. Methodology: Must strictly adhere to Ahlus Sunnah wal Jamaah (Sunni) mainstream understanding. Avoid Shia, Ahmadi, or other sectarian deviations.
-      2. Content Style: "Brainrot Replacer" - Short, punchy, fascinating, and deeply spiritual. Mix of "Cosmic Awe" (Science/Nature) and "Heart Softeners" (Hadith/Seerah).
-      3. Images: Return a search keyword for Unsplash. STRICTLY NO HUMANS, NO FACES, NO EYES, NO SCULPTURES. Use landscapes, space, nature, geometry, or architecture.
+      Output Format: JSON Array.
+      
+      Topic Mix:
+      - 1 Short Hadith (with reference like "Sahih Bukhari")
+      - 1 Short Quran Verse (with Surah:Verse)
+      - 1 "Wonder of Allah" (Short biological/cosmic fact connecting to Al-Khaliq)
+      - Or simple "Heart Softener" quotes/stories.
 
-      Requirements:
-      1. 'content' should be a short, powerful hook/title (e.g., "The Weight of a Cloud").
-      2. 'summary' should be a 2-3 sentence teaser.
-      3. 'praise' must be: Subhanallah, Alhamdulillah, Allahu Akbar, or MashaAllah.
-      4. 'tags': Array of 2-3 keywords (e.g. ["Science", "Quran"]).
-      5. 'readTime': Estimate (e.g., "2 min read").
-      
-      Return JSON ONLY matching the schema.`,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              type: { type: Type.STRING },
-              content: { type: Type.STRING },
-              summary: { type: Type.STRING },
-              source: { type: Type.STRING },
-              praise: { type: Type.STRING },
-              mediaUrl: { type: Type.STRING },
-              author: { type: Type.STRING },
-              tags: { type: Type.ARRAY, items: { type: Type.STRING } },
-              readTime: { type: Type.STRING }
-            },
-            required: ['type', 'content', 'summary', 'praise', 'mediaUrl', 'tags', 'readTime']
-          }
+      Constraints:
+      1. Content: Deep, meaningful, authentic Sunni sources.
+      2. 'details': Provide the FULL content here (2-3 paragraphs or the full Hadith text). Don't make it too long, but enough to read inline.
+      3. 'type': 'hadith' | 'verse' | 'wonder' | 'story'.
+      4. 'praise': One of ["Subhanallah", "Alhamdulillah", "Allahu Akbar"].
+      5. No humans/faces in description implied.
+
+      Schema:
+      [
+        {
+          "type": "string",
+          "content": "Title/Hook",
+          "summary": "One sentence teaser",
+          "details": "The full text/reflection/hadith content to show inline.",
+          "author": "Source Name",
+          "praise": "Praise Word",
+          "tags": ["tag1", "tag2"],
+          "readTime": "1 min read"
         }
+      ]`,
+      config: {
+        responseMimeType: "application/json"
       }
     });
 
@@ -71,17 +99,29 @@ export async function generateReflections(count: number = 2): Promise<Reflection
     if (!text) return [];
 
     const results = JSON.parse(text);
+
+    // Map random Pexel images
     return results.map((item: any) => ({
       ...item,
       id: Math.random().toString(36).substr(2, 9),
       isAiGenerated: true,
-      author: "Reflect AI",
-      mediaUrl: item.mediaUrl ? `https://source.unsplash.com/1600x900/?${encodeURIComponent(item.mediaUrl)},nature,aesthetic` : undefined
+      mediaUrl: PexelImages_getRandom()
     }));
+
   } catch (error) {
     console.error("Gemini Feed Error:", error);
     return [];
   }
+}
+
+function PexelImages_getRandom() {
+  const idx = Math.floor(Math.random() * PEXEL_IMAGES.length);
+  return PEXEL_IMAGES[idx];
+}
+
+// Legacy function - kept for compatibility if needed, but redirects to stream
+export async function generateReflections(count: number = 2): Promise<ReflectionItem[]> {
+  return generateReflectionsStream(count);
 }
 
 export async function generateReflectionDeepDive(item: ReflectionItem): Promise<string> {
@@ -96,18 +136,15 @@ export async function generateReflectionDeepDive(item: ReflectionItem): Promise<
       Context: ${item.summary}
       
       Strict Guidelines:
-      1. **Tone**: Deeply moving, poetic, and spiritual. Intellectual but accessible.
-      2. **Methodology**: Strictly Sunni/Salafi/Traditional. Quote Quran (Saheeh International) and Bukhari/Muslim/Tirmidhi only.
-      3. **Content**: Connect the reader's daily modern struggles (anxiety, distraction, loneliness) to Allah's Names and Attributes.
-      4. **Logic**: Use analogies (like the "Needle in the Desert" or "Ship in the Ocean").
-      5. **Science**: If relevant, mention the miracle of creation (biology, physics) as proof of Al-Khaliq.
-      6. **Length**: 500-800 words.
-      7. **Output**: Plain text (paragraphs). No markdown bolding/headers (the UI handles that).
-
+      1. **Tone**: Deeply moving, poetic, and spiritual.
+      2. **Methodology**: Strictly Sunni/Salafi/Traditional.
+      3. **Content**: Connect the reader's daily modern struggles to Allah.
+      4. **Length**: 500-800 words.
+      5. **Output**: Plain text (paragraphs).
+      
       Begin directly with the essay.`
     });
 
-    // Handle potential API differences (function vs property) safely
     const r = response as any;
     const text = typeof r.text === 'function' ? r.text() : (r.text as string);
     return text || item.summary || "Content unavailable.";
