@@ -447,7 +447,7 @@ const App: React.FC = () => {
         const pinned: string[] = profileData.pinned_quests;
         const toAdd = pinned.filter(pid => {
           const quest = ALL_QUESTS.find(q => q.id === pid);
-          return quest && !quest.isPackage && !activeQuests.includes(pid) && !mergedDailyQuests[pid];
+          return quest && !activeQuests.includes(pid) && !mergedDailyQuests[pid];
         });
         if (toAdd.length > 0) {
           activeQuests = [...activeQuests, ...toAdd];
@@ -582,7 +582,7 @@ const App: React.FC = () => {
           madhab: profileData.madhab ?? 0
         };
 
-        setUser({
+        const finalUserObj = {
           id: userId,
           name: profileData.username || 'Traveler',
           email: email,
@@ -594,9 +594,20 @@ const App: React.FC = () => {
           pinnedQuests: profileData.pinned_quests || [],
           autoAddPinned: profileData.auto_add_pinned || false,
           completedDailyQuests: mergedDailyQuests,
+          readReflections: profileData.read_reflections || [],
           settings: dbSettings,
           createdAt: createdAt
-        });
+        };
+        setUser(finalUserObj);
+
+        // HOTFIX: Persist to localStorage immediately
+        localStorage.setItem(`nurpath_user_${userId}`, JSON.stringify({
+          activeQuests: finalUserObj.activeQuests,
+          completedDailyQuests: finalUserObj.completedDailyQuests,
+          pinnedQuests: finalUserObj.pinnedQuests,
+          settings: finalUserObj.settings
+        }));
+
         setPendingSettings(dbSettings);
         setManualLocationInput(profileData.location || '');
       } else {
