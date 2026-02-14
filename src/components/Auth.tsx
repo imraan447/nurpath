@@ -40,20 +40,21 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
         const cleanUsername = username.trim();
 
         try {
+            if (!captchaToken) {
+                setError("Please complete the captcha verification.");
+                setLoading(false);
+                return;
+            }
+
             if (view === 'login') {
                 const { error } = await supabase.auth.signInWithPassword({
                     email: cleanEmail,
-                    password
+                    password,
+                    options: { captchaToken }
                 });
                 if (error) throw error;
                 onLoginSuccess();
             } else if (view === 'signup') {
-
-                if (!captchaToken) {
-                    setError("Please complete the captcha.");
-                    setLoading(false);
-                    return;
-                }
 
                 // Direct Sign Up
                 const { data, error: signUpError } = await supabase.auth.signUp({
@@ -83,6 +84,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
             } else if (view === 'forgot') {
                 const { error: resetError } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
                     redirectTo: window.location.origin,
+                    captchaToken
                 });
                 if (resetError) throw resetError;
                 setMessage("Password reset link sent to your email.");
@@ -113,10 +115,8 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
             setError(errMsg);
         } finally {
             setLoading(false);
-            if (view === 'signup') {
-                captchaRef.current?.resetCaptcha();
-                setCaptchaToken(null);
-            }
+            captchaRef.current?.resetCaptcha();
+            setCaptchaToken(null);
         }
     };
 
@@ -264,15 +264,13 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
                             </div>
                         )}
 
-                        {view === 'signup' && (
-                            <div className="flex justify-center my-4 overflow-hidden rounded-md">
-                                <HCaptcha
-                                    sitekey={import.meta.env.VITE_HCAPTCHA_SITE_KEY || '01182010-d99a-4936-8974-05f6edfe77d0'}
-                                    onVerify={(token) => setCaptchaToken(token)}
-                                    ref={captchaRef}
-                                />
-                            </div>
-                        )}
+                        <div className="flex justify-center my-4 overflow-hidden rounded-md">
+                            <HCaptcha
+                                sitekey={import.meta.env.VITE_HCAPTCHA_SITE_KEY || '01182010-d99a-4936-8974-05f6edfe77d0'}
+                                onVerify={(token) => setCaptchaToken(token)}
+                                ref={captchaRef}
+                            />
+                        </div>
 
                         <button
                             type="submit"
