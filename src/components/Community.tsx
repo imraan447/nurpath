@@ -583,11 +583,9 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
       {/* Header */}
       <div className={`p-6 pb-2 border-b ${darkMode ? 'border-white/5' : 'border-slate-100'}`}>
         <div className="flex items-center justify-between mb-6">
-          <div className="mb-6">
-            <div className={`relative inline-flex items-center gap-2 px-6 py-3 rounded-full shadow-lg ${darkMode ? 'bg-gradient-to-r from-cyan-600 to-teal-500' : 'bg-gradient-to-r from-cyan-500 to-teal-500'}`}>
-              <HeartHandshake size={24} className="text-white" />
-              <h2 className="text-sm md:text-base font-black uppercase tracking-[0.2em] text-white">Nur-Connect</h2>
-            </div>
+          <div className={`relative inline-flex items-center gap-2 px-6 py-3 rounded-full shadow-lg ${darkMode ? 'bg-gradient-to-r from-cyan-600 to-teal-500' : 'bg-gradient-to-r from-cyan-500 to-teal-500'}`}>
+            <HeartHandshake size={24} className="text-white" />
+            <h2 className="text-sm md:text-base font-black uppercase tracking-[0.2em] text-white">Nur-Connect</h2>
           </div>
           <button onClick={onClose} className={`p-2.5 rounded-full transition-colors ${darkMode ? 'bg-white/10 text-white/60 hover:bg-white/20 hover:text-white' : 'bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-600'}`}>
             <X size={20} />
