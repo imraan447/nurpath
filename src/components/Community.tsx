@@ -45,6 +45,28 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
   const [groupOutgoingInvites, setGroupOutgoingInvites] = useState<string[]>([]);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameText, setRenameText] = useState('');
+  const [declinedQuests, setDeclinedQuests] = useState<string[]>([]);
+  const [hiddenQuests, setHiddenQuests] = useState<string[]>([]);
+
+  useEffect(() => {
+    const savedDeclined = localStorage.getItem('nurpath_declined_group_quests');
+    if (savedDeclined) setDeclinedQuests(JSON.parse(savedDeclined));
+
+    const savedHidden = localStorage.getItem('nurpath_hidden_group_quests');
+    if (savedHidden) setHiddenQuests(JSON.parse(savedHidden));
+  }, []);
+
+  const handleDeclineQuest = (questId: string) => {
+    const updated = [...declinedQuests, questId];
+    setDeclinedQuests(updated);
+    localStorage.setItem('nurpath_declined_group_quests', JSON.stringify(updated));
+  };
+
+  const handleHideQuest = (questId: string) => {
+    const updated = [...hiddenQuests, questId];
+    setHiddenQuests(updated);
+    localStorage.setItem('nurpath_hidden_group_quests', JSON.stringify(updated));
+  };
 
   // Duas State
   const [duas, setDuas] = useState<Dua[]>([]);
@@ -1019,10 +1041,9 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
                   </div>
                 )}
 
-                {/* Group Challenge List */}
                 <div className="space-y-3">
-                  {groupQuests.length > 0 && <h4 className={`text-[10px] font-black uppercase tracking-widest pl-2 ${darkMode ? 'text-indigo-300' : 'text-indigo-700'}`}>Active Challenges</h4>}
-                  {groupQuests.map(quest => {
+                  {groupQuests.filter(q => !hiddenQuests.includes(q.id)).length > 0 && <h4 className={`text-[10px] font-black uppercase tracking-widest pl-2 ${darkMode ? 'text-indigo-300' : 'text-indigo-700'}`}>Active Challenges</h4>}
+                  {groupQuests.filter(q => !hiddenQuests.includes(q.id)).map(quest => {
                     const trackingId = `gq_${quest.id}`;
                     const isTracking = currentUser.activeQuests?.includes(trackingId);
                     const completedCount = groupQuestCompletions[quest.id] || 0;
@@ -1030,9 +1051,14 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
                     const isLocked = completedCount < totalMembers;
                     const iUserCompleted = currentUser.completedDailyQuests?.[trackingId] || false;
                     const isFullyComplete = !isLocked; // All members completed
+                    const isDeclined = declinedQuests.includes(quest.id);
+
+                    // Calculations for Greyed Out
+                    // Gray out if: User completed BUT group not finished
+                    const isGreyedOut = iUserCompleted && !isFullyComplete;
 
                     return (
-                      <div key={quest.id} className={`p-4 rounded-2xl border flex flex-col gap-3 transition-all duration-200 ${isFullyComplete ? 'opacity-50' : ''} ${darkMode ? 'bg-white/5 border-white/5' : 'bg-white border-slate-100 shadow-sm'}`}>
+                      <div key={quest.id} className={`p-4 rounded-2xl border flex flex-col gap-3 transition-all duration-200 ${isGreyedOut ? 'opacity-50 grayscale' : ''} ${darkMode ? 'bg-white/5 border-white/5' : 'bg-white border-slate-100 shadow-sm'}`}>
                         <div className="flex items-start justify-between">
                           <div>
                             <div className="flex items-center gap-2 mb-1">
@@ -1040,11 +1066,16 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
                               {quest.deadline && <span className="text-[9px] font-bold text-rose-400 flex items-center gap-1"><Clock size={10} /> Ends {new Date(quest.deadline).toLocaleDateString()}</span>}
                             </div>
                             <h4 className={`font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>{quest.title}</h4>
+                            {isGreyedOut && <p className="text-[10px] text-slate-400 font-bold mt-1">Waiting for other members to complete...</p>}
+                            {isFullyComplete && <p className="text-[10px] text-emerald-500 font-bold mt-1">Challenge Completed! All members done.</p>}
+                            {isDeclined && <p className="text-[10px] text-rose-400 font-bold mt-1">Declined</p>}
                           </div>
 
                           {/* Actions */}
-                          <div className="flex items-center gap-2">
-                            {!isFullyComplete ? (
+                          <div className={`flex items-center gap-2 ${isGreyedOut ? 'pointer-events-none' : ''}`}>
+
+                            {/* Track Button (Show if not completed, not declined, not fully complete) */}
+                            {!iUserCompleted && !isFullyComplete && !isDeclined && (
                               <button
                                 onClick={() => onTrackQuest?.({
                                   id: trackingId,
@@ -1059,39 +1090,56 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
                                 className={`p-2 rounded-xl transition-all duration-200 ${isTracking
                                   ? 'bg-emerald-500/15 text-emerald-500'
                                   : darkMode ? 'bg-white/10 text-slate-400 hover:bg-white/20 hover:text-white' : 'bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-600'}`}
-                                title={isTracking ? "Untrack from My Quests" : "Track in My Quests"}
+                                title={isTracking ? "Untrack" : "Track"}
                               >
-                                <CheckCircle2 size={18} />
+                                {isTracking ? <Check size={18} /> : <Plus size={18} />}
                               </button>
-                            ) : (
-                              <span className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500">
-                                <CheckCircle2 size={18} />
-                              </span>
                             )}
 
-                            {/* Admin Delete */}
-                            {myRole === 'admin' && (
+                            {/* Decline Button (Show if not tracked, not completed, not declined) */}
+                            {!isTracking && !iUserCompleted && !isFullyComplete && !isDeclined && (
+                              <button
+                                onClick={() => handleDeclineQuest(quest.id)}
+                                className={`p-2 rounded-xl transition-all duration-200 ${darkMode ? 'bg-white/10 text-slate-400 hover:text-rose-400' : 'bg-slate-100 text-slate-400 hover:text-rose-500'}`}
+                                title="Decline"
+                              >
+                                <X size={18} />
+                              </button>
+                            )}
+
+                            {/* User Delete (Unlock if Declined OR Fully Complete) */}
+                            {(isDeclined || isFullyComplete) && (
+                              <button
+                                onClick={() => { if (confirm('Remove this card from your view?')) handleHideQuest(quest.id); }}
+                                className={`p-2 rounded-xl text-slate-400 hover:text-rose-500 ${darkMode ? 'bg-white/10' : 'bg-slate-100'}`}
+                                title="Remove Card"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            )}
+
+                            {/* Admin Delete (Only for Admin, separate from local hide) */}
+                            {myRole === 'admin' && !isFullyComplete && !isDeclined && (
                               <button onClick={async () => {
-                                if (confirm('Delete this challenge?')) {
+                                if (confirm('Delete this challenge for EVERYONE?')) {
                                   try {
-                                    // Delete completions first, then the quest
                                     await supabase.from('group_quest_completions').delete().eq('group_quest_id', quest.id);
                                     const { error } = await supabase.from('group_quests').delete().eq('id', quest.id);
                                     if (error) throw error;
                                     setGroupQuests(prev => prev.filter(q => q.id !== quest.id));
                                   } catch (e) {
                                     console.error('Delete failed:', e);
-                                    alert('Could not delete challenge. Please try again.');
+                                    alert('Could not delete challenge.');
                                   }
                                 }
-                              }} className="p-2 rounded-xl hover:bg-rose-500/10 text-slate-400 hover:text-rose-500 transition-all duration-200">
+                              }} className="p-2 rounded-xl hover:bg-rose-500/10 text-slate-400 hover:text-rose-500 transition-all duration-200" title="Admin Delete">
                                 <Trash2 size={16} />
                               </button>
                             )}
                           </div>
                         </div>
 
-                        {/* Progress Bar */}
+                        {/* Progress Bar (Always Show) */}
                         <div className="text-xs opacity-70">
                           <div className="flex justify-between mb-1 text-[9px] font-bold uppercase tracking-wider">
                             <span>Group Progress</span>
@@ -1100,13 +1148,9 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
                           <div className={`h-1.5 w-full rounded-full overflow-hidden ${darkMode ? 'bg-white/10' : 'bg-slate-200'}`}>
                             <div className={`h-full transition-all duration-500 ${isLocked ? 'bg-slate-400' : 'bg-indigo-500'}`} style={{ width: `${(completedCount / totalMembers) * 100}%` }}></div>
                           </div>
-                          {isLocked ? (
+                          {isLocked && iUserCompleted && (
                             <div className="flex items-center gap-1 mt-1 text-slate-400 italic text-[10px]">
-                              <Lock size={10} /> XP locked until all members complete
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1 mt-1 text-emerald-500 font-bold text-[10px]">
-                              <CheckCircle2 size={10} /> Challenge Complete! XP Unlocked
+                              Waiting for others to finish to unlock XP...
                             </div>
                           )}
                         </div>
