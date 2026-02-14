@@ -1087,23 +1087,24 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
                                   groupId: quest.group_id,
                                   deadline: quest.deadline
                                 } as any)}
-                                className={`p-2 rounded-xl transition-all duration-200 ${isTracking
-                                  ? 'bg-emerald-500/15 text-emerald-500'
-                                  : darkMode ? 'bg-white/10 text-slate-400 hover:bg-white/20 hover:text-white' : 'bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-600'}`}
+                                className={`px-3 py-1.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all duration-200 ${isTracking
+                                  ? 'bg-slate-200 text-slate-500 hover:bg-slate-300'
+                                  : 'bg-orange-500 text-white hover:bg-orange-600'}`}
                                 title={isTracking ? "Untrack" : "Track"}
                               >
-                                {isTracking ? <Check size={18} /> : <Plus size={18} />}
+                                {isTracking ? 'Untrack' : 'Track'}
                               </button>
                             )}
 
-                            {/* Decline Button (Show if not tracked, not completed, not declined) */}
+                            {/* Decline Button (Removes from view) */}
                             {!isTracking && !iUserCompleted && !isFullyComplete && !isDeclined && (
                               <button
-                                onClick={() => handleDeclineQuest(quest.id)}
-                                className={`p-2 rounded-xl transition-all duration-200 ${darkMode ? 'bg-white/10 text-slate-400 hover:text-rose-400' : 'bg-slate-100 text-slate-400 hover:text-rose-500'}`}
+                                onClick={() => { if (confirm('Decline and remove this challenge?')) handleHideQuest(quest.id); }}
+                                className="px-3 py-1.5 rounded-xl bg-orange-500 text-white font-black text-[10px] uppercase tracking-widest hover:bg-orange-600 transition-all duration-200"
+                                style={{ backgroundColor: '#f43f5e' }} // Force Rose-500
                                 title="Decline"
                               >
-                                <X size={18} />
+                                Decline
                               </button>
                             )}
 
