@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import HCaptcha from '@hcaptcha/react-hcaptcha';
 import { supabase } from '../lib/supabaseClient';
 import { Loader2, ArrowRight, Mail, Lock, User, Globe, AlertCircle, CheckCircle2, ChevronDown, ArrowLeft } from 'lucide-react';
 
@@ -26,6 +27,8 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
     const [country, setCountry] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
+    const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+    const captchaRef = useRef<HCaptcha>(null);
 
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -46,6 +49,12 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
                 onLoginSuccess();
             } else if (view === 'signup') {
 
+                if (!captchaToken) {
+                    setError("Please complete the captcha.");
+                    setLoading(false);
+                    return;
+                }
+
                 // Direct Sign Up
                 const { data, error: signUpError } = await supabase.auth.signUp({
                     email: cleanEmail,
@@ -54,7 +63,8 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
                         data: {
                             username: cleanUsername,
                             country,
-                        }
+                        },
+                        captchaToken
                     }
                 });
 
@@ -103,6 +113,10 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
             setError(errMsg);
         } finally {
             setLoading(false);
+            if (view === 'signup') {
+                captchaRef.current?.resetCaptcha();
+                setCaptchaToken(null);
+            }
         }
     };
 
@@ -247,6 +261,16 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
                             <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
                                 <CheckCircle2 className="text-emerald-500 shrink-0" size={20} />
                                 <p className="text-xs font-bold text-emerald-600 leading-relaxed">{message}</p>
+                            </div>
+                        )}
+
+                        {view === 'signup' && (
+                            <div className="flex justify-center my-4 overflow-hidden rounded-md">
+                                <HCaptcha
+                                    sitekey={import.meta.env.VITE_HCAPTCHA_SITE_KEY || '01182010-d99a-4936-8974-05f6edfe77d0'}
+                                    onVerify={(token) => setCaptchaToken(token)}
+                                    ref={captchaRef}
+                                />
                             </div>
                         )}
 
