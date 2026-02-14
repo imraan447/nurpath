@@ -950,8 +950,16 @@ const App: React.FC = () => {
     const isActive = user.activeQuests.includes(id);
 
     let newActive;
-    if (isActive) newActive = user.activeQuests.filter(q => q !== id);
-    else newActive = [...user.activeQuests, id];
+    if (isActive) {
+      // Untrack
+      newActive = user.activeQuests.filter(q => q !== id);
+      setTrackedGroupQuests(prev => prev.filter(q => q.id !== id));
+    } else {
+      // Track
+      const qToAdd = { ...quest, isLocked: false, completionCount: 0, completed: false, sharedBy: [] } as GroupQuest;
+      newActive = [...user.activeQuests, id];
+      setTrackedGroupQuests(prev => [...prev, qToAdd]);
+    }
 
     const updated = { ...user, activeQuests: newActive };
     saveUser(updated);
@@ -975,23 +983,8 @@ const App: React.FC = () => {
       activeQuests: newActiveQuests
     };
 
-    setUser(updatedUser);
+    saveUser(updatedUser);
     setShowRoutineBuilder(false);
-
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          pinned_quests: selectedIds,
-          active_quests: newActiveQuests
-        })
-        .eq('id', user.id);
-
-      if (error) throw error;
-    } catch (e) {
-      console.error('Error saving routine:', e);
-      // Revert on error? For now, just log.
-    }
   };
 
   // --- HERO CARD LOGIC ---
