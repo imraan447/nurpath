@@ -143,7 +143,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
     };
 
     return (
-        <div className="min-h-screen w-full flex items-center justify-center p-6 bg-[#f7f1e3] relative overflow-hidden">
+        <div className="min-h-screen w-full flex items-center justify-center p-6 bg-[#ecf0f1] relative overflow-hidden">
 
             <div className="w-full max-w-md relative z-10 animate-in fade-in zoom-in-95 duration-700">
 
