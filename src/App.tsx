@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './lib/supabaseClient';
-import { User, Quest, QuestCategory, ReflectionItem, UserSettings, GuideSection, NaflPrayerItem, AdhkarItem } from './types';
+import { User, Quest, QuestCategory, ReflectionItem, UserSettings, GuideSection, NaflPrayerItem, AdhkarItem, GroupQuest } from './types';
 import { ALL_QUESTS, GUIDE_SECTIONS, SEERAH_CHAPTERS, NAFL_PRAYERS, PRAYER_RELATED_QUESTS, PRAYER_PACKAGES, JUMUAH_CHECKLIST } from './constants';
 import JSZip from 'jszip';
 import {
@@ -421,13 +421,25 @@ const App: React.FC = () => {
         localData = { activeQuests: [], completedDailyQuests: {}, settings: DEFAULT_SETTINGS };
       }
 
-      const mergedDailyQuests = { ...localData.completedDailyQuests, ...dbDailyCompletions };
+      // CLEAN STALE: Only keep today's completions from localStorage to prevent ghost data
+      const cleanedLocalCompletions: { [key: string]: string } = {};
+      if (localData.completedDailyQuests) {
+        Object.entries(localData.completedDailyQuests).forEach(([qid, date]) => {
+          if (date === todayKey) {
+            cleanedLocalCompletions[qid] = date;
+          }
+        });
+      }
+
+      // DB completions are authoritative, overlay on cleaned local
+      const mergedDailyQuests = { ...cleanedLocalCompletions, ...dbDailyCompletions };
 
       // DB is source of truth for activeQuests, merge any localStorage-only additions
       const dbActiveQuests: string[] = profileData?.active_quests || [];
       const localActiveQuests: string[] = localData.activeQuests || [];
       // Combine: DB first, then any local additions not already in DB
-      const localAdditions = localActiveQuests.filter(id => !dbActiveQuests.includes(id));
+      // IMPORTANT: Do NOT re-add quests that were completed today (they were removed from DB active list for a reason)
+      const localAdditions = localActiveQuests.filter(id => !dbActiveQuests.includes(id) && !mergedDailyQuests[id]);
       let activeQuests = [...dbActiveQuests, ...localAdditions];
 
       // HANDLE AUTO-ADD PINNED
@@ -549,7 +561,8 @@ const App: React.FC = () => {
               deadline: gq.deadline,
               completionCount: completions.length,
               isLocked: false, // Tracked quests in My Quests are completable by user
-              completed: iCompleted
+              completed: iCompleted,
+              sharedBy: []
             } as GroupQuest;
           });
           setTrackedGroupQuests(enrichedTracked);
@@ -620,6 +633,104 @@ const App: React.FC = () => {
       saveUser(updatedUser); // Consider debouncing this if it happens too often, but for clicks it's fine
     }
   };
+
+  // RE-SYNC QUESTS when switching to "My Quests" tab
+  // This ensures tracked quests from Community, completions from other devices, etc. are always fresh
+  useEffect(() => {
+    if (activeTab !== 'active' || !user?.id) return;
+
+    const refreshQuests = async () => {
+      try {
+        const todayKey = new Date().toISOString().split('T')[0];
+        const startOfUtcDay = new Date();
+        startOfUtcDay.setUTCHours(0, 0, 0, 0);
+
+        // 1. Fetch latest active_quests from DB
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('active_quests, pinned_quests')
+          .eq('id', user.id)
+          .single();
+
+        // 2. Fetch today's completions from DB
+        const { data: todaysQuests } = await supabase
+          .from('user_quests')
+          .select('quest_id')
+          .eq('user_id', user.id)
+          .gte('completed_at', startOfUtcDay.toISOString());
+
+        const freshCompletions: { [key: string]: string } = {};
+        if (todaysQuests) {
+          todaysQuests.forEach(q => {
+            freshCompletions[q.quest_id] = todayKey;
+          });
+        }
+
+        // 3. Merge: DB active quests + local-only additions (minus completed)
+        const dbActive: string[] = profileData?.active_quests || [];
+        const localOnly = user.activeQuests.filter(id => !dbActive.includes(id) && !freshCompletions[id]);
+        const mergedActive = [...dbActive, ...localOnly].filter(id => !freshCompletions[id]);
+
+        // 4. Only update if something actually changed (prevents infinite re-renders)
+        const currentCompletionKeys = Object.keys(user.completedDailyQuests || {}).filter(k => (user.completedDailyQuests || {})[k] === todayKey).sort().join(',');
+        const freshCompletionKeys = Object.keys(freshCompletions).sort().join(',');
+        const activeChanged = JSON.stringify(mergedActive.sort()) !== JSON.stringify([...user.activeQuests].sort());
+        const completionsChanged = currentCompletionKeys !== freshCompletionKeys;
+
+        if (activeChanged || completionsChanged) {
+          const updated = {
+            ...user,
+            activeQuests: mergedActive,
+            completedDailyQuests: { ...freshCompletions }, // DB is source of truth for today
+            pinnedQuests: profileData?.pinned_quests || user.pinnedQuests
+          };
+          setUser(updated);
+          // Update localStorage (but don't trigger DB write since we just read from DB)
+          localStorage.setItem(`nurpath_user_${user.id}`, JSON.stringify({
+            activeQuests: updated.activeQuests,
+            completedDailyQuests: updated.completedDailyQuests,
+            pinnedQuests: updated.pinnedQuests,
+            settings: updated.settings
+          }));
+        }
+
+        // 5. Also refresh tracked group quests
+        const trackedGqIds = mergedActive.filter(id => id.startsWith('gq_')).map(id => id.replace('gq_', ''));
+        if (trackedGqIds.length > 0) {
+          const { data: tGQuests } = await supabase.from('group_quests').select('*, group:groups(name)').in('id', trackedGqIds);
+          if (tGQuests && tGQuests.length > 0) {
+            const { data: tCompletions } = await supabase.from('group_quest_completions').select('group_quest_id, user_id').in('group_quest_id', trackedGqIds);
+            const enrichedTracked = tGQuests.map(gq => {
+              const completions = tCompletions?.filter(c => c.group_quest_id === gq.id) || [];
+              const iCompleted = completions.some(c => c.user_id === user.id);
+              return {
+                id: `gq_${gq.id}`,
+                title: gq.title,
+                description: `${gq.group?.name || 'Group'} • ${gq.xp} XP`,
+                category: QuestCategory.COMMUNITY,
+                xp: gq.xp,
+                isGroupQuest: true,
+                groupId: gq.group_id,
+                groupName: gq.group?.name,
+                deadline: gq.deadline,
+                completionCount: completions.length,
+                isLocked: false,
+                completed: iCompleted,
+                sharedBy: []
+              } as GroupQuest;
+            });
+            setTrackedGroupQuests(enrichedTracked);
+          } else {
+            setTrackedGroupQuests([]);
+          }
+        }
+      } catch (e) {
+        console.error('Quest refresh error:', e);
+      }
+    };
+
+    refreshQuests();
+  }, [activeTab]);
 
   // Randomize and Filter on Tab Switch to 'reflect'
   useEffect(() => {
@@ -972,7 +1083,7 @@ const App: React.FC = () => {
     }
   }
 
-  if (bundle && user?.activeQuests.includes(bundle.mainQuest.id)) {
+  if (bundle && user?.activeQuests.includes(bundle.mainQuest.id) && !isCompletedToday(bundle.mainQuest.id)) {
     heroQuest = bundle.mainQuest;
     heroRelatedQuests = bundle.relatedQuests;
   } else if (user) {
@@ -980,6 +1091,8 @@ const App: React.FC = () => {
       .map(qid => ALL_QUESTS.find(q => q.id === qid))
       .find(q => {
         if (!q) return false;
+        // Skip if already completed today
+        if (isCompletedToday(q.id)) return false;
         // Is it a Main Quest?
         if (q.category !== QuestCategory.MAIN && !fardSalahIds.includes(q.id)) return false;
 
@@ -1011,6 +1124,7 @@ const App: React.FC = () => {
     .reduce((sum, rq) => sum + rq.xp, 0) : 0;
 
   const activeMainQuests = (user?.activeQuests
+    .filter(qid => !isCompletedToday(qid)) // Don't show completed-today quests
     .map(qid => ALL_QUESTS.find(q => q.id === qid))
     .filter(q => q && q.id !== heroQuest?.id && (q.category === QuestCategory.MAIN || fardSalahIds.includes(q.id))) as Quest[] || [])
     .sort((a, b) => {
@@ -1025,6 +1139,7 @@ const App: React.FC = () => {
     });
 
   const activeSideQuests = user?.activeQuests
+    .filter(qid => !isCompletedToday(qid)) // Don't show completed-today quests
     .map(qid => ALL_QUESTS.find(q => q.id === qid))
     .filter(q => q && q.id !== heroQuest?.id && q.category !== QuestCategory.MAIN && !fardSalahIds.includes(q.id) && !q.isPackage) as Quest[] || [];
 
@@ -1473,11 +1588,11 @@ const App: React.FC = () => {
                   )}
 
                   {/* Tracked Group Challenges */}
-                  {trackedGroupQuests.length > 0 && (
+                  {trackedGroupQuests.filter(q => !q.completed && !isCompletedToday(q.id)).length > 0 && (
                     <div>
                       <h3 className="text-xs font-black uppercase tracking-widest text-[#d4af37] mb-3 ml-2 flex items-center gap-2"><Shield size={12} /> Group Challenges</h3>
                       <div className="space-y-3">
-                        {trackedGroupQuests.map(q => (
+                        {trackedGroupQuests.filter(q => !q.completed && !isCompletedToday(q.id)).map(q => (
                           <QuestCard
                             key={q.id}
                             quest={q}
