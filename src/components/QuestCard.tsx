@@ -125,9 +125,9 @@ const QuestCard: React.FC<QuestCardProps> = ({
           {!isCompleted && !isBundle && onPin && !effectiveIsGreyed && (
             <button
               onClick={(e) => { e.stopPropagation(); onPin(quest); }}
-              className={`p-1.5 rounded-full transition-colors ${isPinned ? 'bg-[#d4af37] text-white' : 'text-slate-300 hover:text-[#d4af37]'}`}
+              className={`p-1.5 rounded-full transition-colors ${isPinned ? 'bg-emerald-500 text-white' : 'text-slate-300 hover:text-emerald-500'}`}
             >
-              {isPinned ? <PinOff size={14} /> : <Pin size={14} />}
+              <CheckCircle2 size={16} />
             </button>
           )}
         </div>

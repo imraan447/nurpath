@@ -1061,7 +1061,7 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
                                   : darkMode ? 'bg-white/10 text-slate-400 hover:bg-white/20 hover:text-white' : 'bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-600'}`}
                                 title={isTracking ? "Untrack from My Quests" : "Track in My Quests"}
                               >
-                                {isTracking ? <CheckCircle2 size={18} /> : <Pin size={18} />}
+                                <CheckCircle2 size={18} />
                               </button>
                             ) : (
                               <span className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500">
