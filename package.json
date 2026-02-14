@@ -10,11 +10,12 @@
   },
   "dependencies": {
     "@google/genai": "^1.40.0",
+    "@hcaptcha/react-hcaptcha": "^2.0.2",
     "@supabase/supabase-js": "^2.39.0",
+    "jszip": "^3.10.1",
     "lucide-react": "^0.460.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "jszip": "^3.10.1"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
