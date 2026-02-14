@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { User, Group, GroupMember, Friend, FriendRequest, Quest, GroupQuest, GroupInvite, GroupQuestItem, Dua } from '../types';
 import { ALL_QUESTS } from '../constants';
-import { Users, UserPlus, Search, Trophy, Crown, Globe, MapPin, Loader2, Plus, Check, X, Shield, Star, Sparkles, ChevronRight, ChevronDown, Heart, Send, Trash2, LogOut, Settings, Mail, Pin, CheckCircle2, Clock, Lock } from 'lucide-react';
+import { Users, UserPlus, Search, Trophy, Crown, Globe, MapPin, Loader2, Plus, Check, X, Shield, Star, Sparkles, ChevronRight, ChevronDown, Heart, Send, Trash2, LogOut, Settings, Mail, Pin, CheckCircle2, Clock, Lock, Pencil, Save } from 'lucide-react';
 import QuestCard from './QuestCard';
 import Leaderboard from './Leaderboard';
 
@@ -43,6 +43,8 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
   const [myRole, setMyRole] = useState<'admin' | 'member'>('member');
   const [groupInvites, setGroupInvites] = useState<GroupInvite[]>([]);
   const [groupOutgoingInvites, setGroupOutgoingInvites] = useState<string[]>([]);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameText, setRenameText] = useState('');
 
   // Duas State
   const [duas, setDuas] = useState<Dua[]>([]);
@@ -416,7 +418,7 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
         setGroupQuestCompletions({});
       }
 
-      setGroupTab('leaderboard');
+      setGroupTab('quests');
     } catch (e) {
       console.error(e);
     } finally {
@@ -425,6 +427,21 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
   };
 
 
+  const renameGroup = async () => {
+    if (!activeGroup || !renameText.trim()) return;
+    try {
+      const { error } = await supabase.from('groups').update({ name: renameText.trim() }).eq('id', activeGroup.id);
+      if (error) throw error;
+
+      const newName = renameText.trim();
+      setActiveGroup(prev => prev ? { ...prev, name: newName } : null);
+      setGroups(prev => prev.map(g => g.id === activeGroup.id ? { ...g, name: newName } : g));
+      setIsRenaming(false);
+    } catch (e) {
+      console.error(e);
+      alert('Failed to rename group');
+    }
+  };
 
   const addGroupQuest = async () => {
     if (!newGroupQuestTitle.trim() || !activeGroup) return;
@@ -489,6 +506,7 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
 
   const leaveGroup = async () => {
     if (!activeGroup) return;
+    if (!confirm('Are you sure you want to leave this group?')) return;
     try {
       await supabase.from('group_members').delete().eq('group_id', activeGroup.id).eq('user_id', currentUser.id);
       setActiveGroup(null);
@@ -499,7 +517,7 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
   };
 
   const deleteGroup = async () => {
-    if (!activeGroup || !confirm('Are you sure you want to delete this group? This cannot be undone.')) return;
+    if (!activeGroup || !confirm('Are you sure you want to delete this group? You can\'t undo this.')) return;
     try {
       await supabase.from('groups').delete().eq('id', activeGroup.id);
       setActiveGroup(null);
@@ -852,7 +870,30 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
 
             {/* Group Header */}
             <div className="text-center space-y-3">
-              <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : ''}`}>{activeGroup.name}</h2>
+              {isRenaming ? (
+                <div className="flex items-center justify-center gap-2">
+                  <input
+                    value={renameText}
+                    onChange={e => setRenameText(e.target.value)}
+                    className={`text-2xl font-bold text-center bg-transparent border-b-2 outline-none w-2/3 ${darkMode ? 'text-white border-white/20' : 'text-slate-900 border-slate-200'}`}
+                    autoFocus
+                  />
+                  <button onClick={renameGroup} className="p-2 bg-[#064e3b] text-white rounded-full"><Save size={16} /></button>
+                  <button onClick={() => setIsRenaming(false)} className="p-2 bg-rose-500 text-white rounded-full"><X size={16} /></button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-2 group/title">
+                  <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : ''}`}>{activeGroup.name}</h2>
+                  {myRole === 'admin' && (
+                    <button
+                      onClick={() => { setRenameText(activeGroup.name); setIsRenaming(true); }}
+                      className={`opacity-0 group-hover/title:opacity-100 transition-opacity p-1.5 rounded-lg ${darkMode ? 'text-white/40 hover:bg-white/10 hover:text-white' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'}`}
+                    >
+                      <Pencil size={14} />
+                    </button>
+                  )}
+                </div>
+              )}
               <div className="flex justify-center -space-x-2">
                 {activeGroup.members?.map((m, i) => (
                   <div key={i} className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-[10px] font-bold ${darkMode ? 'bg-white/10 border-[#050a09] text-white/60' : 'bg-slate-200 border-white text-slate-500'} ${m.role === 'admin' ? 'ring-2 ring-[#d4af37]' : ''}`} title={`${m.username}${m.role === 'admin' ? ' (Admin)' : ''}`}>

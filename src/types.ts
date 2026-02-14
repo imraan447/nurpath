@@ -147,7 +147,7 @@ export interface FriendRequest {
   receiver_id: string;
   status: 'pending' | 'accepted';
   created_at: string;
-  sender?: { username: string; xp: number; country: string };
+  sender?: { id: string; username: string; xp: number; country: string };
 }
 
 export interface Friend {
