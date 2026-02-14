@@ -583,16 +583,10 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
       {/* Header */}
       <div className={`p-6 pb-2 border-b ${darkMode ? 'border-white/5' : 'border-slate-100'}`}>
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-[#064e3b] rounded-2xl flex items-center justify-center shadow-lg text-white minaret-shape">
-              <Users size={24} />
-            </div>
-            <div>
-              <div className={`relative flex items-center gap-2 px-4 py-2 rounded-full shadow-lg ${darkMode ? 'bg-gradient-to-r from-cyan-600 to-teal-500' : 'bg-gradient-to-r from-cyan-500 to-teal-500'}`}>
-                <HeartHandshake size={20} className="text-white" />
-                <h2 className="text-sm font-black uppercase tracking-widest text-white">Nur-Connect</h2>
-              </div>
-              <p className="text-[10px] text-[#d4af37] font-black uppercase tracking-widest">Connect & Compete</p>
+          <div className="mb-6">
+            <div className={`relative inline-flex items-center gap-2 px-6 py-3 rounded-full shadow-lg ${darkMode ? 'bg-gradient-to-r from-cyan-600 to-teal-500' : 'bg-gradient-to-r from-cyan-500 to-teal-500'}`}>
+              <HeartHandshake size={24} className="text-white" />
+              <h2 className="text-sm md:text-base font-black uppercase tracking-[0.2em] text-white">Nur-Connect</h2>
             </div>
           </div>
           <button onClick={onClose} className={`p-2.5 rounded-full transition-colors ${darkMode ? 'bg-white/10 text-white/60 hover:bg-white/20 hover:text-white' : 'bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-600'}`}>
