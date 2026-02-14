@@ -744,14 +744,13 @@ const App: React.FC = () => {
   }, [activeTab]);
 
   // Randomize and Filter on Tab Switch to 'reflect'
-  // Randomize and Filter on Tab Switch to 'reflect' - DISABLED for Infinite Scroll
-  /*
+  // Safety: Ensure we always have content (fixes empty state on load)
   useEffect(() => {
-    if (activeTab === 'reflect') {
-        // Legacy Logic removed to support infinite scroll persistence
+    if (reflections.length === 0 && CURATED_REFLECTIONS.length > 0) {
+      const shuffled = [...CURATED_REFLECTIONS].sort(() => 0.5 - Math.random());
+      setReflections(shuffled);
     }
-  }, [activeTab]); 
-  */
+  }, [reflections.length]);
 
   // Initial Load (removed legacy logic, handled by the effect above or default state)
   // We keep the initial state as CURATED_REFLECTIONS to ensure something is there before first tab switch if needed.
