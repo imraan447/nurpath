@@ -1407,17 +1407,17 @@ const App: React.FC = () => {
               <>
                 {/* Header Section */}
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className={`text-2xl font-bold tracking-tight ${user.settings?.darkMode ? 'text-white' : 'text-[#0f172a]'}`}>Today's Focus</h2>
+                  <h2 className={`text-[12px] font-black uppercase tracking-[0.5em] ${user.settings?.darkMode ? 'text-white' : 'text-[#064e3b]'}`}>Today's Focus</h2>
                   {/* Stats on the right */}
-                  <div className="flex flex-col items-end pt-1">
-                    <div className="relative flex items-center justify-center mb-1">
-                      <svg className="w-8 h-8 -rotate-90 absolute" viewBox="0 0 36 36">
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-[#d4af37]">+{xpGainedToday} XP</span>
+                    <div className="relative flex items-center justify-center w-7 h-7">
+                      <svg className="w-7 h-7 -rotate-90 absolute inset-0" viewBox="0 0 36 36">
                         <path className="text-slate-200 dark:text-white/10" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" />
                         <path className="text-[#064e3b] dark:text-[#d4af37]" strokeDasharray={`${Math.min(100, (questsCompletedCount / Math.max(1, user.activeQuests.length + questsCompletedCount)) * 100)}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" />
                       </svg>
-                      <span className="text-[10px] font-bold text-slate-500 z-10">{questsCompletedCount}</span>
+                      <span className="text-[9px] font-bold text-slate-500 z-10 relative">{questsCompletedCount}</span>
                     </div>
-                    <span className="text-[9px] font-black uppercase tracking-widest text-[#d4af37]">+{xpGainedToday} XP</span>
                   </div>
                 </div>
 
