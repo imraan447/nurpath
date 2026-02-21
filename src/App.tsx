@@ -443,7 +443,7 @@ const App: React.FC = () => {
       let activeQuests = [...dbActiveQuests, ...localAdditions];
 
       // HANDLE AUTO-ADD PINNED
-      if (profileData?.auto_add_pinned && profileData?.pinned_quests) {
+      if (profileData?.pinned_quests) {
         const pinned: string[] = profileData.pinned_quests;
         const toAdd = pinned.filter(pid => {
           const quest = ALL_QUESTS.find(q => q.id === pid);
@@ -648,10 +648,12 @@ const App: React.FC = () => {
   // RE-SYNC QUESTS when switching to "My Quests" tab
   // This ensures tracked quests from Community, completions from other devices, etc. are always fresh
   useEffect(() => {
-    if (activeTab !== 'active' || !user?.id) return;
+    if (!user?.id) return;
 
     const refreshQuests = async () => {
       try {
+        await supabase.auth.getSession(); // Force token refresh on tab change if expired
+
         const todayKey = new Date().toISOString().split('T')[0];
         const startOfUtcDay = new Date();
         startOfUtcDay.setUTCHours(0, 0, 0, 0);
@@ -680,7 +682,14 @@ const App: React.FC = () => {
         // 3. Merge: DB active quests + local-only additions (minus completed)
         const dbActive: string[] = profileData?.active_quests || [];
         const localOnly = user.activeQuests.filter(id => !dbActive.includes(id) && !freshCompletions[id]);
-        const mergedActive = [...dbActive, ...localOnly].filter(id => !freshCompletions[id]);
+        let mergedActive = [...dbActive, ...localOnly].filter(id => !freshCompletions[id]);
+
+        // 3.5. Ensure Routine/Pinned quests are continually added for the new day
+        const pinned: string[] = profileData?.pinned_quests || [];
+        const toAddFromPinned = pinned.filter(pid => !mergedActive.includes(pid) && !freshCompletions[pid]);
+        if (toAddFromPinned.length > 0) {
+          mergedActive = [...mergedActive, ...toAddFromPinned];
+        }
 
         // 4. Only update if something actually changed (prevents infinite re-renders)
         const currentCompletionKeys = Object.keys(user.completedDailyQuests || {}).filter(k => (user.completedDailyQuests || {})[k] === todayKey).sort().join(',');

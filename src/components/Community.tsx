@@ -75,9 +75,14 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
   const [myDuaCountToday, setMyDuaCountToday] = useState(0);
 
   useEffect(() => {
-    if (tab === 'friends') fetchFriendsAndRequests();
-    else if (tab === 'groups') { fetchGroups(); fetchGroupInvites(); }
-    else if (tab === 'duas') fetchDuas();
+    const loadTab = async () => {
+      // Force token refresh if expired (fixes issue where tab goes to sleep)
+      await supabase.auth.getSession();
+      if (tab === 'friends') fetchFriendsAndRequests();
+      else if (tab === 'groups') { fetchGroups(); fetchGroupInvites(); }
+      else if (tab === 'duas') fetchDuas();
+    };
+    loadTab();
   }, [tab, currentUser.id]);
 
   useEffect(() => {

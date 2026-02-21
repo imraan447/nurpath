@@ -40,17 +40,18 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
         const cleanUsername = username.trim();
 
         try {
-            if (!captchaToken) {
+            /* Temporarily disabled HCaptcha 
+            if (view === 'signup' && !captchaToken) {
                 setError("Please complete the captcha verification.");
                 setLoading(false);
                 return;
             }
+            */
 
             if (view === 'login') {
                 const { error } = await supabase.auth.signInWithPassword({
                     email: cleanEmail,
                     password,
-                    options: { captchaToken }
                 });
                 if (error) throw error;
                 onLoginSuccess();
@@ -64,8 +65,8 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
                         data: {
                             username: cleanUsername,
                             country,
-                        },
-                        captchaToken
+                        }
+                        // captchaToken: captchaToken ?? undefined
                     }
                 });
 
@@ -84,7 +85,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
             } else if (view === 'forgot') {
                 const { error: resetError } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
                     redirectTo: window.location.origin,
-                    captchaToken
+                    // captchaToken: captchaToken ?? undefined
                 });
                 if (resetError) throw resetError;
                 setMessage("Password reset link sent to your email.");
@@ -264,13 +265,15 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
                             </div>
                         )}
 
-                        <div className="flex justify-center my-4 overflow-hidden rounded-md">
-                            <HCaptcha
-                                sitekey={import.meta.env.VITE_HCAPTCHA_SITE_KEY || '01182010-d99a-4936-8974-05f6edfe77d0'}
-                                onVerify={(token) => setCaptchaToken(token)}
-                                ref={captchaRef}
-                            />
-                        </div>
+                        {/* view === 'signup' && (
+                            <div className="flex justify-center my-4 overflow-hidden rounded-md">
+                                <HCaptcha
+                                    sitekey={import.meta.env.VITE_HCAPTCHA_SITE_KEY || '01182010-d99a-4936-8974-05f6edfe77d0'}
+                                    onVerify={(token) => setCaptchaToken(token)}
+                                    ref={captchaRef}
+                                />
+                            </div>
+                        ) */}
 
                         <button
                             type="submit"
