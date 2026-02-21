@@ -58,6 +58,7 @@ import {
 } from 'lucide-react';
 import QuestCard from './components/QuestCard';
 import ReflectionFeed from './components/ReflectionFeed';
+import RamadanTracker from './components/RamadanTracker';
 import Auth from './components/Auth';
 import Leaderboard from './components/Leaderboard';
 import Community from './components/Community';
@@ -112,7 +113,9 @@ const App: React.FC = () => {
   const previousTabRef = useRef<'collect' | 'active' | 'reflect' | 'guide' | 'seerah'>('collect');
   const [showProfile, setShowProfile] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showRamadanTracker, setShowRamadanTracker] = useState(false);
   const [confirmQuest, setConfirmQuest] = useState<Quest | null>(null);
+  const [selectedSubQuests, setSelectedSubQuests] = useState<string[]>([]);
   const [showTasbeehGuide, setShowTasbeehGuide] = useState(false);
   const [openCategories, setOpenCategories] = useState<string[]>([]);
   const [hasFriendRequests, setHasFriendRequests] = useState(false);
@@ -847,6 +850,26 @@ const App: React.FC = () => {
     alert('Added all 5 prayers to your journey!');
   };
 
+  const toggleRamadanDay = async (day: number) => {
+    if (!user) return;
+    const currentDays = user.settings?.ramadan_tracker || [];
+    const isCompleted = currentDays.includes(day);
+    const newDays = isCompleted ? currentDays.filter(d => d !== day) : [...currentDays, day];
+    const newSettings = { ...user.settings, ramadan_tracker: newDays } as UserSettings;
+    const xpDelta = isCompleted ? -200 : 200;
+    const newXp = Math.max(0, user.xp + xpDelta);
+
+    const updatedUser = { ...user, settings: newSettings, xp: newXp };
+    saveUser(updatedUser);
+
+    try {
+      await supabase.auth.getSession();
+      await supabase.from('profiles').update({ settings: newSettings, xp: newXp }).eq('id', user.id);
+    } catch (e) {
+      console.error('Failed to save Ramadan Tracker state', e);
+    }
+  };
+
   const addToActive = () => {
     if (!user || !confirmQuest) return;
     const updated = { ...user, activeQuests: [...new Set([...user.activeQuests, confirmQuest.id])] };
@@ -865,6 +888,8 @@ const App: React.FC = () => {
     if (!user || !user.id || quests.length === 0) return;
 
     try {
+      await supabase.auth.getSession(); // Force token refresh on completion to prevent silent failures
+
       let totalXp = 0;
       const questIds = quests.map(q => q.id);
       const dailyUpdates: Record<string, string> = {};
@@ -1297,14 +1322,25 @@ const App: React.FC = () => {
                           </button>
                         )}
                         {displayQuests.map(q => (
-                          <QuestCard
-                            key={q.id}
-                            quest={q}
-                            onAction={handleQuestSelect}
-                            isTracked={user.activeQuests.includes(q.id)}
-                            darkMode={user.settings?.darkMode}
-                            isGreyed={q.isGreyed || isCompletedToday(q.id)}
-                          />
+                          <React.Fragment key={q.id}>
+                            <QuestCard
+                              quest={q}
+                              onAction={handleQuestSelect}
+                              isTracked={user.activeQuests.includes(q.id)}
+                              darkMode={user.settings?.darkMode}
+                              isGreyed={q.isGreyed || isCompletedToday(q.id)}
+                            />
+                            {q.id === 'fasting_ramadan' && (
+                              <button
+                                onClick={() => setActiveTab('active')}
+                                className="w-full text-center py-2 transition-opacity hover:opacity-80"
+                              >
+                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#064e3b] dark:text-[#d4af37]">
+                                  Trackable - see My Journey
+                                </span>
+                              </button>
+                            )}
+                          </React.Fragment>
                         ))}
                       </div>
                     )}
@@ -1376,6 +1412,27 @@ const App: React.FC = () => {
                     <span className="absolute text-[10px] font-bold text-slate-400">{questsCompletedCount}</span>
                   </div>
                 </div>
+
+                {/* Ramadan Tracker Card */}
+                <button
+                  onClick={() => setShowRamadanTracker(true)}
+                  className={`w-full mb-6 p-5 rounded-[24px] border border-[#d4af37]/30 bg-gradient-to-r ${user.settings?.darkMode ? 'from-[#0a0f0d] to-[#1a1500]' : 'from-[#fffdf7] to-[#fffbed]'} shadow-lg flex items-center justify-between text-left transition-transform hover:scale-[1.01] active:scale-95`}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-[#d4af37]/20 flex items-center justify-center text-[#d4af37]">
+                      <Moon size={24} />
+                    </div>
+                    <div>
+                      <h3 className={`font-black text-lg ${user.settings?.darkMode ? 'text-white' : 'text-slate-800'}`}>Ramadan Tracker</h3>
+                      <p className={`text-[10px] font-bold uppercase tracking-widest ${user.settings?.darkMode ? 'text-[#d4af37]/80' : 'text-[#d4af37]'}`}>
+                        {(user.settings?.ramadan_tracker?.length || 0)}/30 Days • Earn 200XP per day
+                      </p>
+                    </div>
+                  </div>
+                  <div className={`p-2 rounded-full ${user.settings?.darkMode ? 'bg-white/5 text-white/40' : 'bg-slate-100 text-slate-400'}`}>
+                    <ChevronRight size={20} />
+                  </div>
+                </button>
 
                 {/* Hero Card - Next Main Goal */}
                 {heroQuest ? (
@@ -1534,7 +1591,14 @@ const App: React.FC = () => {
                                 isActive={!isFuture}
                                 isGreyed={isFuture}
                                 timeDisplay={timeStatus as any}
-                                onComplete={(q) => completeQuest(q)}
+                                onComplete={() => {
+                                  const subQuestsToComplete = selectedSubQuests
+                                    .filter(id => packageSubIds.includes(id))
+                                    .map(id => ALL_QUESTS.find(sq => sq.id === id))
+                                    .filter(Boolean) as Quest[];
+                                  completeQuests([q, ...subQuestsToComplete]);
+                                  setSelectedSubQuests(prev => prev.filter(id => !packageSubIds.includes(id)));
+                                }}
                                 onRemove={removeQuest}
                                 onPin={togglePinQuest}
                                 isPinned={user.pinnedQuests?.includes(q.id)}
@@ -1542,38 +1606,61 @@ const App: React.FC = () => {
                               />
 
                               {/* Sub-Quest Checklist */}
-                              {hasPackage && !isCompleted && (
-                                <div className={`px-4 pb-4 space-y-1.5 ${isFuture ? 'pointer-events-none' : ''}`}>
-                                  <div className={`text-[9px] font-black uppercase tracking-widest px-2 pt-1 pb-2 ${user.settings?.darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                                    Sub-Quests
+                              {hasPackage && !isCompleted && (() => {
+                                const isPreSalah = (id: string) => ['miswak', 'wudhu', 'tahiyyatul_wudhu', 'tahiyyatul_masjid', 'sunnah-pre'].some(k => id.includes(k));
+                                const preSalahIds = packageSubIds.filter(id => isPreSalah(id));
+                                const postSalahIds = packageSubIds.filter(id => !isPreSalah(id));
+
+                                const renderChecklist = (title: string, ids: string[]) => {
+                                  if (!ids.length) return null;
+                                  return (
+                                    <div className="mb-3 space-y-1.5">
+                                      <div className={`text-[9px] font-black uppercase tracking-widest px-2 pt-1 pb-1 ${user.settings?.darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                                        {title}
+                                      </div>
+                                      {ids.map(subId => {
+                                        const subQuest = ALL_QUESTS.find(sq => sq.id === subId);
+                                        if (!subQuest) return null;
+                                        const subDone = isCompletedToday(subId);
+                                        const isSelected = selectedSubQuests.includes(subId);
+
+                                        return (
+                                          <button
+                                            key={subId}
+                                            onClick={() => {
+                                              if (subDone || isFuture) return;
+                                              setSelectedSubQuests(prev =>
+                                                isSelected ? prev.filter(id => id !== subId) : [...prev, subId]
+                                              );
+                                            }}
+                                            disabled={subDone || isFuture}
+                                            className={`w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-all ${subDone
+                                              ? 'opacity-40'
+                                              : isFuture
+                                                ? 'opacity-30'
+                                                : (user.settings?.darkMode ? 'hover:bg-white/5 active:scale-[0.98]' : 'hover:bg-slate-50 active:scale-[0.98]')}`}
+                                          >
+                                            <div className="flex items-center gap-2.5">
+                                              <div className={`w-4 h-4 rounded flex items-center justify-center border transition-all ${subDone ? 'bg-emerald-500 border-emerald-500' : isSelected ? 'bg-[#d4af37] border-[#d4af37]' : isFuture ? 'border-slate-300 dark:border-white/10' : 'border-[#064e3b]/30 dark:border-white/20'}`}>
+                                                {(subDone || isSelected) && <Check size={10} className={isSelected && !subDone ? 'text-white' : 'text-white'} />}
+                                              </div>
+                                              <span className={`text-[11px] font-bold ${subDone ? 'line-through' : ''} ${user.settings?.darkMode ? 'text-white' : 'text-slate-700'}`}>{subQuest.title}</span>
+                                            </div>
+                                            <span className="text-[9px] font-black text-[#d4af37]">{subDone ? '✓' : `+${subQuest.xp}`}</span>
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  );
+                                };
+
+                                return (
+                                  <div className={`px-4 pb-4 ${isFuture ? 'pointer-events-none' : ''}`}>
+                                    {renderChecklist('Pre-Salah Checklist', preSalahIds)}
+                                    {renderChecklist('Post-Salah Checklist', postSalahIds)}
                                   </div>
-                                  {packageSubIds.map(subId => {
-                                    const subQuest = ALL_QUESTS.find(sq => sq.id === subId);
-                                    if (!subQuest) return null;
-                                    const subDone = isCompletedToday(subId);
-                                    return (
-                                      <button
-                                        key={subId}
-                                        onClick={() => !subDone && !isFuture && completeQuest(subQuest)}
-                                        disabled={subDone || isFuture}
-                                        className={`w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-all ${subDone
-                                          ? 'opacity-40'
-                                          : isFuture
-                                            ? 'opacity-30'
-                                            : (user.settings?.darkMode ? 'hover:bg-white/5 active:scale-[0.98]' : 'hover:bg-slate-50 active:scale-[0.98]')}`}
-                                      >
-                                        <div className="flex items-center gap-2.5">
-                                          <div className={`w-4 h-4 rounded flex items-center justify-center border transition-all ${subDone ? 'bg-emerald-500 border-emerald-500' : isFuture ? 'border-slate-300 dark:border-white/10' : 'border-[#064e3b]/30 dark:border-white/20'}`}>
-                                            {subDone && <Check size={10} className="text-white" />}
-                                          </div>
-                                          <span className={`text-[11px] font-bold ${subDone ? 'line-through' : ''} ${user.settings?.darkMode ? 'text-white' : 'text-slate-700'}`}>{subQuest.title}</span>
-                                        </div>
-                                        <span className="text-[9px] font-black text-[#d4af37]">{subDone ? '✓' : `+${subQuest.xp}`}</span>
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              )}
+                                );
+                              })()}
                             </div>
                           );
                         })}
@@ -1876,6 +1963,16 @@ const App: React.FC = () => {
           darkMode={user.settings?.darkMode}
         />
       )}
+      {/* Ramadan Tracker Modal */}
+      {showRamadanTracker && user && (
+        <RamadanTracker
+          user={user}
+          onClose={() => setShowRamadanTracker(false)}
+          onToggleDay={toggleRamadanDay}
+          darkMode={user.settings?.darkMode}
+        />
+      )}
+
     </div>
   );
 };

@@ -30,6 +30,7 @@ export interface UserSettings {
   seerahBookmark?: number;
   calcMethod?: number; // 2 for ISNA, 1 for MWL etc
   madhab?: number; // 0 for Shafi/Standard, 1 for Hanafi
+  ramadan_tracker?: number[]; // Array of completed Ramadan days (1-30)
 }
 
 export interface User {

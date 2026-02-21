@@ -109,25 +109,57 @@ export const ALL_QUESTS: Quest[] = [
   { id: 'isha-adhkar', title: 'Read Post-Isha Adhkar', description: 'Tasbeeh Fatimi.', category: QuestCategory.DHIKR, xp: 50, isPackage: true },
   { id: 'isha-surah', title: 'Recite Surah Al-Mulk', description: 'Protection from the punishment of the grave.', category: QuestCategory.DHIKR, xp: 150, isPackage: true },
   { id: 'isha-witr', title: 'Pray Witr', description: 'The final odd prayer of the night.', category: QuestCategory.SUNNAH, xp: 200, isPackage: true },
+
+  // --- PRE/POST SALAH GENERICS ---
+  // Fajr
+  { id: 'fajr-miswak', title: 'Use Miswak', description: 'Sunnah of oral hygiene before prayer.', category: QuestCategory.SUNNAH, xp: 50, isPackage: true },
+  { id: 'fajr-wudhu', title: 'Make Wudhu', description: 'Purify yourself for prayer.', category: QuestCategory.MAIN, xp: 50, isPackage: true },
+  { id: 'fajr-tahiyyatul_wudhu', title: 'Tahiyyatul Wudhu', description: 'Pray 2 Rakaats after Wudhu.', category: QuestCategory.SUNNAH, xp: 100, isPackage: true },
+  { id: 'fajr-tahiyyatul_masjid', title: 'Tahiyyatul Masjid', description: 'Pray 2 Rakaats upon entering Masjid.', category: QuestCategory.SUNNAH, xp: 100, isPackage: true },
+  { id: 'fajr-tasbeeh_fatimi', title: 'Tasbeeh Fatimi', description: '33x SubhanAllah, 33x Alhamdulillah, 34x Allahu Akbar', category: QuestCategory.DHIKR, xp: 100, isPackage: true },
+  // Dhuhr
+  { id: 'dhuhr-miswak', title: 'Use Miswak', description: 'Sunnah of oral hygiene before prayer.', category: QuestCategory.SUNNAH, xp: 50, isPackage: true },
+  { id: 'dhuhr-wudhu', title: 'Make Wudhu', description: 'Purify yourself for prayer.', category: QuestCategory.MAIN, xp: 50, isPackage: true },
+  { id: 'dhuhr-tahiyyatul_wudhu', title: 'Tahiyyatul Wudhu', description: 'Pray 2 Rakaats after Wudhu.', category: QuestCategory.SUNNAH, xp: 100, isPackage: true },
+  { id: 'dhuhr-tahiyyatul_masjid', title: 'Tahiyyatul Masjid', description: 'Pray 2 Rakaats upon entering Masjid.', category: QuestCategory.SUNNAH, xp: 100, isPackage: true },
+  { id: 'dhuhr-tasbeeh_fatimi', title: 'Tasbeeh Fatimi', description: '33x SubhanAllah, 33x Alhamdulillah, 34x Allahu Akbar', category: QuestCategory.DHIKR, xp: 100, isPackage: true },
+  // Asr
+  { id: 'asr-miswak', title: 'Use Miswak', description: 'Sunnah of oral hygiene before prayer.', category: QuestCategory.SUNNAH, xp: 50, isPackage: true },
+  { id: 'asr-wudhu', title: 'Make Wudhu', description: 'Purify yourself for prayer.', category: QuestCategory.MAIN, xp: 50, isPackage: true },
+  { id: 'asr-tahiyyatul_wudhu', title: 'Tahiyyatul Wudhu', description: 'Pray 2 Rakaats after Wudhu.', category: QuestCategory.SUNNAH, xp: 100, isPackage: true },
+  { id: 'asr-tahiyyatul_masjid', title: 'Tahiyyatul Masjid', description: 'Pray 2 Rakaats upon entering Masjid.', category: QuestCategory.SUNNAH, xp: 100, isPackage: true },
+  { id: 'asr-tasbeeh_fatimi', title: 'Tasbeeh Fatimi', description: '33x SubhanAllah, 33x Alhamdulillah, 34x Allahu Akbar', category: QuestCategory.DHIKR, xp: 100, isPackage: true },
+  // Maghrib
+  { id: 'maghrib-miswak', title: 'Use Miswak', description: 'Sunnah of oral hygiene before prayer.', category: QuestCategory.SUNNAH, xp: 50, isPackage: true },
+  { id: 'maghrib-wudhu', title: 'Make Wudhu', description: 'Purify yourself for prayer.', category: QuestCategory.MAIN, xp: 50, isPackage: true },
+  { id: 'maghrib-tahiyyatul_wudhu', title: 'Tahiyyatul Wudhu', description: 'Pray 2 Rakaats after Wudhu.', category: QuestCategory.SUNNAH, xp: 100, isPackage: true },
+  { id: 'maghrib-tahiyyatul_masjid', title: 'Tahiyyatul Masjid', description: 'Pray 2 Rakaats upon entering Masjid.', category: QuestCategory.SUNNAH, xp: 100, isPackage: true },
+  { id: 'maghrib-tasbeeh_fatimi', title: 'Tasbeeh Fatimi', description: '33x SubhanAllah, 33x Alhamdulillah, 34x Allahu Akbar', category: QuestCategory.DHIKR, xp: 100, isPackage: true },
+  // Isha
+  { id: 'isha-miswak', title: 'Use Miswak', description: 'Sunnah of oral hygiene before prayer.', category: QuestCategory.SUNNAH, xp: 50, isPackage: true },
+  { id: 'isha-wudhu', title: 'Make Wudhu', description: 'Purify yourself for prayer.', category: QuestCategory.MAIN, xp: 50, isPackage: true },
+  { id: 'isha-tahiyyatul_wudhu', title: 'Tahiyyatul Wudhu', description: 'Pray 2 Rakaats after Wudhu.', category: QuestCategory.SUNNAH, xp: 100, isPackage: true },
+  { id: 'isha-tahiyyatul_masjid', title: 'Tahiyyatul Masjid', description: 'Pray 2 Rakaats upon entering Masjid.', category: QuestCategory.SUNNAH, xp: 100, isPackage: true },
+  { id: 'isha-tasbeeh_fatimi', title: 'Tasbeeh Fatimi', description: '33x SubhanAllah, 33x Alhamdulillah, 34x Allahu Akbar', category: QuestCategory.DHIKR, xp: 100, isPackage: true },
 ];
 
 export const PRAYER_PACKAGES: Record<string, string[]> = {
   'tahajjud': ['tahajjud-istighfar', 'tahajjud-surah_sajdah', 'tahajjud-witr'],
-  'fajr': ['fajr-sunnah', 'fajr-ayatul_kursi', 'fajr-adhkar', 'fajr-surah'],
-  'dhuhr': ['dhuhr-sunnah-pre', 'dhuhr-sunnah-post', 'dhuhr-ayatul_kursi', 'dhuhr-adhkar', 'dhuhr-surah'],
-  'asr': ['asr-sunnah', 'asr-ayatul_kursi', 'asr-adhkar', 'asr-surah'],
-  'maghrib': ['maghrib-sunnah', 'maghrib-ayatul_kursi', 'maghrib-adhkar', 'maghrib-surah'],
-  'isha': ['isha-sunnah', 'isha-ayatul_kursi', 'isha-adhkar', 'isha-surah', 'isha-witr']
+  'fajr': ['fajr-miswak', 'fajr-wudhu', 'fajr-tahiyyatul_wudhu', 'fajr-tahiyyatul_masjid', 'fajr-sunnah', 'fajr-ayatul_kursi', 'fajr-adhkar', 'fajr-surah', 'fajr-tasbeeh_fatimi'],
+  'dhuhr': ['dhuhr-miswak', 'dhuhr-wudhu', 'dhuhr-tahiyyatul_wudhu', 'dhuhr-tahiyyatul_masjid', 'dhuhr-sunnah-pre', 'dhuhr-sunnah-post', 'dhuhr-ayatul_kursi', 'dhuhr-adhkar', 'dhuhr-surah', 'dhuhr-tasbeeh_fatimi'],
+  'asr': ['asr-miswak', 'asr-wudhu', 'asr-tahiyyatul_wudhu', 'asr-tahiyyatul_masjid', 'asr-sunnah', 'asr-ayatul_kursi', 'asr-adhkar', 'asr-surah', 'asr-tasbeeh_fatimi'],
+  'maghrib': ['maghrib-miswak', 'maghrib-wudhu', 'maghrib-tahiyyatul_wudhu', 'maghrib-tahiyyatul_masjid', 'maghrib-sunnah', 'maghrib-ayatul_kursi', 'maghrib-adhkar', 'maghrib-surah', 'maghrib-tasbeeh_fatimi'],
+  'isha': ['isha-miswak', 'isha-wudhu', 'isha-tahiyyatul_wudhu', 'isha-tahiyyatul_masjid', 'isha-sunnah', 'isha-ayatul_kursi', 'isha-adhkar', 'isha-surah', 'isha-witr', 'isha-tasbeeh_fatimi']
 };
 
 
 
 export const PRAYER_RELATED_QUESTS: Record<string, string[]> = {
-  fajr: ['fajr-sunnah', 'fajr-ayatul_kursi', 'fajr-adhkar', 'fajr-surah', 'morning_adhkar'],
-  dhuhr: ['dhuhr-sunnah-pre', 'dhuhr-sunnah-post', 'dhuhr-ayatul_kursi', 'dhuhr-adhkar', 'dhuhr-surah'],
-  asr: ['asr-sunnah', 'asr-ayatul_kursi', 'asr-adhkar', 'asr-surah'],
-  maghrib: ['maghrib-sunnah', 'maghrib-ayatul_kursi', 'maghrib-adhkar', 'maghrib-surah', 'awwaabeen'],
-  isha: ['isha-sunnah', 'isha-ayatul_kursi', 'isha-adhkar', 'isha-surah', 'isha-witr', 'wudu_before_sleep'],
+  fajr: ['fajr-miswak', 'fajr-wudhu', 'fajr-tahiyyatul_wudhu', 'fajr-tahiyyatul_masjid', 'fajr-sunnah', 'fajr-ayatul_kursi', 'fajr-adhkar', 'fajr-surah', 'fajr-tasbeeh_fatimi', 'morning_adhkar'],
+  dhuhr: ['dhuhr-miswak', 'dhuhr-wudhu', 'dhuhr-tahiyyatul_wudhu', 'dhuhr-tahiyyatul_masjid', 'dhuhr-sunnah-pre', 'dhuhr-sunnah-post', 'dhuhr-ayatul_kursi', 'dhuhr-adhkar', 'dhuhr-surah', 'dhuhr-tasbeeh_fatimi'],
+  asr: ['asr-miswak', 'asr-wudhu', 'asr-tahiyyatul_wudhu', 'asr-tahiyyatul_masjid', 'asr-sunnah', 'asr-ayatul_kursi', 'asr-adhkar', 'asr-surah', 'asr-tasbeeh_fatimi'],
+  maghrib: ['maghrib-miswak', 'maghrib-wudhu', 'maghrib-tahiyyatul_wudhu', 'maghrib-tahiyyatul_masjid', 'maghrib-sunnah', 'maghrib-ayatul_kursi', 'maghrib-adhkar', 'maghrib-surah', 'maghrib-tasbeeh_fatimi', 'awwaabeen'],
+  isha: ['isha-miswak', 'isha-wudhu', 'isha-tahiyyatul_wudhu', 'isha-tahiyyatul_masjid', 'isha-sunnah', 'isha-ayatul_kursi', 'isha-adhkar', 'isha-surah', 'isha-witr', 'isha-tasbeeh_fatimi', 'wudu_before_sleep'],
   tahajjud: ['tahajjud-istighfar', 'tahajjud-surah_sajdah', 'tahajjud-witr']
 };
 
