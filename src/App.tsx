@@ -1257,12 +1257,10 @@ const App: React.FC = () => {
         {activeTab === 'collect' && (
           <div className="space-y-6 py-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Same collection content as before */}
-            <div className="flex justify-between items-end px-6 mt-2 mb-6">
-              <div><h1 className={`text-lg font-bold leading-tight tracking-tight ${user.settings?.darkMode ? 'text-white' : 'text-slate-900'}`}>Salaam Alaykum, <br /><span className="text-[#064e3b] text-xl">{user.name.split(' ')[0]}</span></h1></div>
-              <div className="text-right flex flex-col items-end gap-0.5">
-                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{city}</div>
-                <div className="text-[9px] text-slate-400 font-medium uppercase tracking-widest opacity-80">{islamicDate}</div>
-              </div>
+            <div className="px-6 mt-2 mb-6">
+              <h1 className={`text-2xl font-black tracking-tight ${user.settings?.darkMode ? 'text-white' : 'text-slate-900'}`}>
+                Salaam Alaykum, <span className="text-[#064e3b]">{user.name.split(' ')[0]}</span>
+              </h1>
             </div>
 
             {/* ROUTINE BUILDER BUTTON */}
