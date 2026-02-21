@@ -1051,10 +1051,13 @@ const App: React.FC = () => {
     if (!mainQuest) return null;
 
     const relatedIds = PRAYER_RELATED_QUESTS[mainId] || [];
-    const relatedQuests = ALL_QUESTS.filter(q => relatedIds.includes(q.id)).map(q => ({
-      ...q,
-      completed: isCompletedToday(q.id)
-    }));
+    const relatedQuests = relatedIds
+      .map(id => ALL_QUESTS.find(q => q.id === id))
+      .filter((q): q is Quest => !!q)
+      .map(q => ({
+        ...q,
+        completed: isCompletedToday(q.id)
+      }));
 
     return { mainQuest, relatedQuests };
   };
@@ -1135,10 +1138,13 @@ const App: React.FC = () => {
     if (firstMain) {
       heroQuest = firstMain;
       const relIds = PRAYER_RELATED_QUESTS[firstMain.id] || [];
-      heroRelatedQuests = ALL_QUESTS.filter(q => relIds.includes(q.id)).map(q => ({
-        ...q,
-        completed: isCompletedToday(q.id)
-      }));
+      heroRelatedQuests = relIds
+        .map(id => ALL_QUESTS.find(q => q.id === id))
+        .filter((q): q is Quest => !!q)
+        .map(q => ({
+          ...q,
+          completed: isCompletedToday(q.id)
+        }));
     }
   }
 
@@ -1401,14 +1407,7 @@ const App: React.FC = () => {
               <>
                 {/* Header Section */}
                 <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-[#064e3b] to-[#043327] rounded-[16px] flex items-center justify-center text-white shadow-md minaret-shape">
-                      <Target size={22} />
-                    </div>
-                    <div>
-                      <h2 className={`text-2xl font-bold tracking-tight ${user.settings?.darkMode ? 'text-white' : 'text-slate-900'}`}>Today's Focus</h2>
-                    </div>
-                  </div>
+                  <h2 className={`text-2xl font-bold tracking-tight ${user.settings?.darkMode ? 'text-white' : 'text-[#0f172a]'}`}>Today's Focus</h2>
                   {/* Stats on the right */}
                   <div className="flex flex-col items-end pt-1">
                     <div className="relative flex items-center justify-center mb-1">
