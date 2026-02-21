@@ -145,21 +145,19 @@ export const ALL_QUESTS: Quest[] = [
 
 export const PRAYER_PACKAGES: Record<string, string[]> = {
   'tahajjud': ['tahajjud-istighfar', 'tahajjud-surah_sajdah', 'tahajjud-witr'],
-  'fajr': ['fajr-miswak', 'fajr-wudhu', 'fajr-tahiyyatul_wudhu', 'fajr-tahiyyatul_masjid', 'fajr-sunnah', 'fajr-ayatul_kursi', 'fajr-adhkar', 'fajr-surah', 'fajr-tasbeeh_fatimi'],
-  'dhuhr': ['dhuhr-miswak', 'dhuhr-wudhu', 'dhuhr-tahiyyatul_wudhu', 'dhuhr-tahiyyatul_masjid', 'dhuhr-sunnah-pre', 'dhuhr-sunnah-post', 'dhuhr-ayatul_kursi', 'dhuhr-adhkar', 'dhuhr-surah', 'dhuhr-tasbeeh_fatimi'],
-  'asr': ['asr-miswak', 'asr-wudhu', 'asr-tahiyyatul_wudhu', 'asr-tahiyyatul_masjid', 'asr-sunnah', 'asr-ayatul_kursi', 'asr-adhkar', 'asr-surah', 'asr-tasbeeh_fatimi'],
-  'maghrib': ['maghrib-miswak', 'maghrib-wudhu', 'maghrib-tahiyyatul_wudhu', 'maghrib-tahiyyatul_masjid', 'maghrib-sunnah', 'maghrib-ayatul_kursi', 'maghrib-adhkar', 'maghrib-surah', 'maghrib-tasbeeh_fatimi'],
-  'isha': ['isha-miswak', 'isha-wudhu', 'isha-tahiyyatul_wudhu', 'isha-tahiyyatul_masjid', 'isha-sunnah', 'isha-ayatul_kursi', 'isha-adhkar', 'isha-surah', 'isha-witr', 'isha-tasbeeh_fatimi']
+  'fajr': ['fajr-miswak', 'fajr-wudhu', 'fajr-tahiyyatul_wudhu', 'fajr-tahiyyatul_masjid', 'fajr-sunnah', 'fajr-tasbeeh_fatimi', 'fajr-ayatul_kursi', 'fajr-adhkar', 'fajr-surah'],
+  'dhuhr': ['dhuhr-miswak', 'dhuhr-wudhu', 'dhuhr-tahiyyatul_wudhu', 'dhuhr-tahiyyatul_masjid', 'dhuhr-sunnah-pre', 'dhuhr-sunnah-post', 'dhuhr-tasbeeh_fatimi', 'dhuhr-ayatul_kursi', 'dhuhr-adhkar', 'dhuhr-surah'],
+  'asr': ['asr-miswak', 'asr-wudhu', 'asr-tahiyyatul_wudhu', 'asr-tahiyyatul_masjid', 'asr-sunnah', 'asr-tasbeeh_fatimi', 'asr-ayatul_kursi', 'asr-adhkar', 'asr-surah'],
+  'maghrib': ['maghrib-miswak', 'maghrib-wudhu', 'maghrib-tahiyyatul_wudhu', 'maghrib-tahiyyatul_masjid', 'maghrib-sunnah', 'maghrib-tasbeeh_fatimi', 'maghrib-ayatul_kursi', 'maghrib-adhkar', 'maghrib-surah'],
+  'isha': ['isha-miswak', 'isha-wudhu', 'isha-tahiyyatul_wudhu', 'isha-tahiyyatul_masjid', 'isha-sunnah', 'isha-tasbeeh_fatimi', 'isha-ayatul_kursi', 'isha-adhkar', 'isha-surah', 'isha-witr']
 };
 
-
-
 export const PRAYER_RELATED_QUESTS: Record<string, string[]> = {
-  fajr: ['fajr-miswak', 'fajr-wudhu', 'fajr-tahiyyatul_wudhu', 'fajr-tahiyyatul_masjid', 'fajr-sunnah', 'fajr-ayatul_kursi', 'fajr-adhkar', 'fajr-surah', 'fajr-tasbeeh_fatimi', 'morning_adhkar'],
-  dhuhr: ['dhuhr-miswak', 'dhuhr-wudhu', 'dhuhr-tahiyyatul_wudhu', 'dhuhr-tahiyyatul_masjid', 'dhuhr-sunnah-pre', 'dhuhr-sunnah-post', 'dhuhr-ayatul_kursi', 'dhuhr-adhkar', 'dhuhr-surah', 'dhuhr-tasbeeh_fatimi'],
-  asr: ['asr-miswak', 'asr-wudhu', 'asr-tahiyyatul_wudhu', 'asr-tahiyyatul_masjid', 'asr-sunnah', 'asr-ayatul_kursi', 'asr-adhkar', 'asr-surah', 'asr-tasbeeh_fatimi'],
-  maghrib: ['maghrib-miswak', 'maghrib-wudhu', 'maghrib-tahiyyatul_wudhu', 'maghrib-tahiyyatul_masjid', 'maghrib-sunnah', 'maghrib-ayatul_kursi', 'maghrib-adhkar', 'maghrib-surah', 'maghrib-tasbeeh_fatimi', 'awwaabeen'],
-  isha: ['isha-miswak', 'isha-wudhu', 'isha-tahiyyatul_wudhu', 'isha-tahiyyatul_masjid', 'isha-sunnah', 'isha-ayatul_kursi', 'isha-adhkar', 'isha-surah', 'isha-witr', 'isha-tasbeeh_fatimi', 'wudu_before_sleep'],
+  fajr: ['fajr-miswak', 'fajr-wudhu', 'fajr-tahiyyatul_wudhu', 'fajr-tahiyyatul_masjid', 'fajr-sunnah', 'fajr-tasbeeh_fatimi', 'fajr-ayatul_kursi', 'fajr-adhkar', 'fajr-surah', 'morning_adhkar'],
+  dhuhr: ['dhuhr-miswak', 'dhuhr-wudhu', 'dhuhr-tahiyyatul_wudhu', 'dhuhr-tahiyyatul_masjid', 'dhuhr-sunnah-pre', 'dhuhr-sunnah-post', 'dhuhr-tasbeeh_fatimi', 'dhuhr-ayatul_kursi', 'dhuhr-adhkar', 'dhuhr-surah'],
+  asr: ['asr-miswak', 'asr-wudhu', 'asr-tahiyyatul_wudhu', 'asr-tahiyyatul_masjid', 'asr-sunnah', 'asr-tasbeeh_fatimi', 'asr-ayatul_kursi', 'asr-adhkar', 'asr-surah'],
+  maghrib: ['maghrib-miswak', 'maghrib-wudhu', 'maghrib-tahiyyatul_wudhu', 'maghrib-tahiyyatul_masjid', 'maghrib-sunnah', 'maghrib-tasbeeh_fatimi', 'maghrib-ayatul_kursi', 'maghrib-adhkar', 'maghrib-surah', 'awwaabeen'],
+  isha: ['isha-miswak', 'isha-wudhu', 'isha-tahiyyatul_wudhu', 'isha-tahiyyatul_masjid', 'isha-sunnah', 'isha-tasbeeh_fatimi', 'isha-ayatul_kursi', 'isha-adhkar', 'isha-surah', 'isha-witr', 'wudu_before_sleep'],
   tahajjud: ['tahajjud-istighfar', 'tahajjud-surah_sajdah', 'tahajjud-witr']
 };
 

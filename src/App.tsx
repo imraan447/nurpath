@@ -1209,6 +1209,13 @@ const App: React.FC = () => {
   const todayStr = new Date().toISOString().split('T')[0];
   const questsCompletedCount = Object.entries(user?.completedDailyQuests || {}).filter(([_, date]) => date === todayStr).length;
 
+  const xpGainedToday = Object.entries(user?.completedDailyQuests || {})
+    .filter(([_, date]) => date === todayStr)
+    .reduce((total, [questId]) => {
+      const q = ALL_QUESTS.find(quest => quest.id === questId);
+      return total + (q ? q.xp : 0);
+    }, 0);
+
   if (loadingAuth) return <div className="h-screen w-full flex items-center justify-center bg-[#fdfbf7]"><Loader2 className="animate-spin text-[#064e3b]" size={48} /></div>;
   if (!user) return <Auth onLoginSuccess={() => { }} />;
 
@@ -1393,23 +1400,25 @@ const App: React.FC = () => {
             {questTabView === 'my' && (
               <>
                 {/* Header Section */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-5">
-                    <div className="w-16 h-16 bg-gradient-to-br from-[#064e3b] to-[#043327] rounded-[24px] flex items-center justify-center text-white shadow-xl minaret-shape">
-                      <Target size={30} />
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-[#064e3b] to-[#043327] rounded-[16px] flex items-center justify-center text-white shadow-md minaret-shape">
+                      <Target size={22} />
                     </div>
                     <div>
-                      <h2 className={`text-2xl font-bold tracking-tight ${user.settings?.darkMode ? 'text-white' : 'text-slate-900'}`}>My Journey</h2>
-                      <p className="text-[10px] text-[#d4af37] font-black uppercase tracking-widest">Today's Focus</p>
+                      <h2 className={`text-2xl font-bold tracking-tight ${user.settings?.darkMode ? 'text-white' : 'text-slate-900'}`}>Today's Focus</h2>
                     </div>
                   </div>
-                  {/* Progress Ring */}
-                  <div className="relative w-14 h-14 flex items-center justify-center">
-                    <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                      <path className="text-slate-200 dark:text-white/10" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" />
-                      <path className="text-[#064e3b] dark:text-[#d4af37]" strokeDasharray={`${Math.min(100, (questsCompletedCount / Math.max(1, user.activeQuests.length + questsCompletedCount)) * 100)}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" />
-                    </svg>
-                    <span className="absolute text-[10px] font-bold text-slate-400">{questsCompletedCount}</span>
+                  {/* Stats on the right */}
+                  <div className="flex flex-col items-end pt-1">
+                    <div className="relative flex items-center justify-center mb-1">
+                      <svg className="w-8 h-8 -rotate-90 absolute" viewBox="0 0 36 36">
+                        <path className="text-slate-200 dark:text-white/10" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" />
+                        <path className="text-[#064e3b] dark:text-[#d4af37]" strokeDasharray={`${Math.min(100, (questsCompletedCount / Math.max(1, user.activeQuests.length + questsCompletedCount)) * 100)}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" />
+                      </svg>
+                      <span className="text-[10px] font-bold text-slate-500 z-10">{questsCompletedCount}</span>
+                    </div>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-[#d4af37]">+{xpGainedToday} XP</span>
                   </div>
                 </div>
 
