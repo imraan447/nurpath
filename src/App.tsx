@@ -1458,31 +1458,49 @@ const App: React.FC = () => {
                         <p className="text-sm text-white/80 mb-6 max-w-[80%]">{heroQuest.description}</p>
 
                         {/* Interactive Checklist inside Green Card */}
-                        {heroRelatedQuests.length > 0 && (
-                          <div className="mb-6 space-y-2 bg-black/20 p-4 rounded-2xl backdrop-blur-sm border border-white/5">
-                            <h4 className="text-[10px] font-black uppercase tracking-widest text-white/60 mb-2 flex items-center gap-1"><CheckSquare size={12} /> Related Optional Quests</h4>
-                            {heroRelatedQuests.map(rq => (
-                              <button
-                                key={rq.id}
-                                onClick={() => !rq.completed && toggleHeroRelated(rq.id)}
-                                disabled={!!rq.completed}
-                                className={`w-full flex items-center justify-between p-2 rounded-xl text-left transition-all ${rq.completed ? 'opacity-50' : 'hover:bg-white/10 active:scale-95'}`}
-                              >
-                                <div className="flex items-center gap-3">
-                                  <div className={`w-5 h-5 rounded flex items-center justify-center border transition-all ${rq.completed ? 'bg-emerald-500 border-emerald-500' :
-                                    selectedHeroRelated.includes(rq.id) ? 'bg-[#d4af37] border-[#d4af37]' :
-                                      'border-white/40'
-                                    }`}>
-                                    {rq.completed && <Check size={12} />}
-                                    {!rq.completed && selectedHeroRelated.includes(rq.id) && <Check size={12} className="text-white" />}
-                                  </div>
-                                  <span className={`text-xs font-bold ${rq.completed ? 'line-through text-white/50' : 'text-white'}`}>{rq.title}</span>
+                        {heroRelatedQuests.length > 0 && (() => {
+                          const isPreSalah = (id: string) => ['miswak', 'wudhu', 'tahiyyatul_wudhu', 'tahiyyatul_masjid', 'sunnah-pre'].some(k => id.includes(k));
+                          const preSalahQuests = heroRelatedQuests.filter(rq => isPreSalah(rq.id));
+                          const postSalahQuests = heroRelatedQuests.filter(rq => !isPreSalah(rq.id));
+
+                          const renderHeroChecklist = (title: string, items: typeof heroRelatedQuests) => {
+                            if (!items.length) return null;
+                            return (
+                              <div className="mb-4 last:mb-0">
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-white/60 mb-2 flex items-center gap-1"><CheckSquare size={12} /> {title}</h4>
+                                <div className="space-y-2">
+                                  {items.map(rq => (
+                                    <button
+                                      key={rq.id}
+                                      onClick={() => !rq.completed && toggleHeroRelated(rq.id)}
+                                      disabled={!!rq.completed}
+                                      className={`w-full flex items-center justify-between p-2 rounded-xl text-left transition-all ${rq.completed ? 'opacity-50' : 'hover:bg-white/10 active:scale-95'}`}
+                                    >
+                                      <div className="flex items-center gap-3">
+                                        <div className={`w-5 h-5 rounded flex items-center justify-center border transition-all ${rq.completed ? 'bg-emerald-500 border-emerald-500' :
+                                          selectedHeroRelated.includes(rq.id) ? 'bg-[#d4af37] border-[#d4af37]' :
+                                            'border-white/40'
+                                          }`}>
+                                          {rq.completed && <Check size={12} />}
+                                          {!rq.completed && selectedHeroRelated.includes(rq.id) && <Check size={12} className="text-white" />}
+                                        </div>
+                                        <span className={`text-xs font-bold ${rq.completed ? 'line-through text-white/50' : 'text-white'}`}>{rq.title}</span>
+                                      </div>
+                                      <span className="text-[9px] font-black text-[#d4af37]">{rq.completed ? 'Done' : `+${rq.xp}`}</span>
+                                    </button>
+                                  ))}
                                 </div>
-                                <span className="text-[9px] font-black text-[#d4af37]">{rq.completed ? 'Done' : `+${rq.xp}`}</span>
-                              </button>
-                            ))}
-                          </div>
-                        )}
+                              </div>
+                            );
+                          };
+
+                          return (
+                            <div className="mb-6 bg-black/20 p-4 rounded-2xl backdrop-blur-sm border border-white/5">
+                              {renderHeroChecklist('Pre-Salah Checklist', preSalahQuests)}
+                              {renderHeroChecklist('Post-Salah Checklist', postSalahQuests)}
+                            </div>
+                          );
+                        })()}
 
                         {heroTimeStatus?.status === 'future' ? (
                           <button
@@ -1591,76 +1609,12 @@ const App: React.FC = () => {
                                 isActive={!isFuture}
                                 isGreyed={isFuture}
                                 timeDisplay={timeStatus as any}
-                                onComplete={() => {
-                                  const subQuestsToComplete = selectedSubQuests
-                                    .filter(id => packageSubIds.includes(id))
-                                    .map(id => ALL_QUESTS.find(sq => sq.id === id))
-                                    .filter(Boolean) as Quest[];
-                                  completeQuests([q, ...subQuestsToComplete]);
-                                  setSelectedSubQuests(prev => prev.filter(id => !packageSubIds.includes(id)));
-                                }}
+                                onComplete={() => completeQuest(q)}
                                 onRemove={removeQuest}
                                 onPin={togglePinQuest}
                                 isPinned={user.pinnedQuests?.includes(q.id)}
                                 darkMode={user.settings?.darkMode}
                               />
-
-                              {/* Sub-Quest Checklist */}
-                              {hasPackage && !isCompleted && (() => {
-                                const isPreSalah = (id: string) => ['miswak', 'wudhu', 'tahiyyatul_wudhu', 'tahiyyatul_masjid', 'sunnah-pre'].some(k => id.includes(k));
-                                const preSalahIds = packageSubIds.filter(id => isPreSalah(id));
-                                const postSalahIds = packageSubIds.filter(id => !isPreSalah(id));
-
-                                const renderChecklist = (title: string, ids: string[]) => {
-                                  if (!ids.length) return null;
-                                  return (
-                                    <div className="mb-3 space-y-1.5">
-                                      <div className={`text-[9px] font-black uppercase tracking-widest px-2 pt-1 pb-1 ${user.settings?.darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                                        {title}
-                                      </div>
-                                      {ids.map(subId => {
-                                        const subQuest = ALL_QUESTS.find(sq => sq.id === subId);
-                                        if (!subQuest) return null;
-                                        const subDone = isCompletedToday(subId);
-                                        const isSelected = selectedSubQuests.includes(subId);
-
-                                        return (
-                                          <button
-                                            key={subId}
-                                            onClick={() => {
-                                              if (subDone || isFuture) return;
-                                              setSelectedSubQuests(prev =>
-                                                isSelected ? prev.filter(id => id !== subId) : [...prev, subId]
-                                              );
-                                            }}
-                                            disabled={subDone || isFuture}
-                                            className={`w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-all ${subDone
-                                              ? 'opacity-40'
-                                              : isFuture
-                                                ? 'opacity-30'
-                                                : (user.settings?.darkMode ? 'hover:bg-white/5 active:scale-[0.98]' : 'hover:bg-slate-50 active:scale-[0.98]')}`}
-                                          >
-                                            <div className="flex items-center gap-2.5">
-                                              <div className={`w-4 h-4 rounded flex items-center justify-center border transition-all ${subDone ? 'bg-emerald-500 border-emerald-500' : isSelected ? 'bg-[#d4af37] border-[#d4af37]' : isFuture ? 'border-slate-300 dark:border-white/10' : 'border-[#064e3b]/30 dark:border-white/20'}`}>
-                                                {(subDone || isSelected) && <Check size={10} className={isSelected && !subDone ? 'text-white' : 'text-white'} />}
-                                              </div>
-                                              <span className={`text-[11px] font-bold ${subDone ? 'line-through' : ''} ${user.settings?.darkMode ? 'text-white' : 'text-slate-700'}`}>{subQuest.title}</span>
-                                            </div>
-                                            <span className="text-[9px] font-black text-[#d4af37]">{subDone ? '✓' : `+${subQuest.xp}`}</span>
-                                          </button>
-                                        );
-                                      })}
-                                    </div>
-                                  );
-                                };
-
-                                return (
-                                  <div className={`px-4 pb-4 ${isFuture ? 'pointer-events-none' : ''}`}>
-                                    {renderChecklist('Pre-Salah Checklist', preSalahIds)}
-                                    {renderChecklist('Post-Salah Checklist', postSalahIds)}
-                                  </div>
-                                );
-                              })()}
                             </div>
                           );
                         })}
