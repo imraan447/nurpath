@@ -135,11 +135,18 @@ const QuestCard: React.FC<QuestCardProps> = ({
 
       <p className={`text-xs mb-4 leading-relaxed line-clamp-2 ${quest.category === QuestCategory.CORRECTION ? (darkMode ? 'text-rose-200/70' : 'text-rose-700/70') : 'text-slate-500'}`}>{quest.description}</p>
 
-      {/* Time Remaining Indicator for Future/Upcoming */}
-      {timeDisplay && timeDisplay.timeLeft && effectiveIsGreyed && (
-        <div className="mb-4 flex items-center gap-2 text-xs font-bold text-[#d4af37] bg-[#d4af37]/10 p-2 rounded-lg w-fit">
-          <Clock size={14} />
-          <span>Starts in {timeDisplay.timeLeft}</span>
+      {/* Time Remaining Indicator & Lock for Greyed Quests */}
+      {effectiveIsGreyed && (
+        <div className="mb-4 flex items-center justify-between w-full">
+          {timeDisplay && timeDisplay.timeLeft ? (
+            <div className="flex items-center gap-2 text-xs font-bold text-[#d4af37] bg-[#d4af37]/10 p-2 rounded-lg w-fit">
+              <Clock size={14} />
+              <span>Starts in {timeDisplay.timeLeft}</span>
+            </div>
+          ) : (
+            <div />
+          )}
+          <Lock size={16} className="text-slate-300 dark:text-white/20" />
         </div>
       )}
 
@@ -224,11 +231,6 @@ const QuestCard: React.FC<QuestCardProps> = ({
       )}
 
       {isCompleted && <div className="absolute top-4 right-4 text-emerald-500"><CheckCircle2 size={24} /></div>}
-      {effectiveIsGreyed && (
-        <div className="absolute top-4 right-4 text-slate-400 flex flex-col items-end gap-1">
-          <Lock size={20} />
-        </div>
-      )}
     </div>
   );
 };
