@@ -20,7 +20,7 @@ interface LeaderboardProps {
 }
 
 const Leaderboard: React.FC<LeaderboardProps> = ({ currentUserCountry, currentUserId, onClose, darkMode, embedded }) => {
-  const [activeTab, setActiveTab] = useState<'global' | 'country' | 'friends'>('global');
+  const [activeTab, setActiveTab] = useState<'global' | 'country' | 'friends'>('friends');
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -29,6 +29,13 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentUserCountry, currentUs
   }, [activeTab]);
 
   const fetchLeaderboard = async () => {
+    // Load from cache to prevent blank screen
+    const cacheKey = `nurpath_leaderboard_${activeTab}`;
+    const cached = localStorage.getItem(cacheKey);
+    if (cached && entries.length === 0) {
+      try { setEntries(JSON.parse(cached)); } catch (e) { }
+    }
+
     setLoading(true);
     try {
       await supabase.auth.getSession(); // Force token refresh if expired
@@ -77,6 +84,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentUserCountry, currentUs
 
       if (data) {
         setEntries(data as LeaderboardEntry[]);
+        localStorage.setItem(cacheKey, JSON.stringify(data));
       }
     } catch (e) {
       console.error("Leaderboard fetch error:", e);
@@ -116,10 +124,10 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentUserCountry, currentUs
 
           <div className="flex p-1 bg-slate-100 dark:bg-white/5 rounded-2xl">
             <button
-              onClick={() => setActiveTab('global')}
-              className={`flex-1 py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${activeTab === 'global' ? 'bg-white dark:bg-white/10 shadow-md text-[#064e3b] dark:text-white' : 'text-slate-400'}`}
+              onClick={() => setActiveTab('friends')}
+              className={`flex-1 py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${activeTab === 'friends' ? 'bg-white dark:bg-white/10 shadow-md text-[#064e3b] dark:text-white' : 'text-slate-400'}`}
             >
-              <Globe size={14} /> Global
+              <Users size={14} /> Friends
             </button>
             <button
               onClick={() => setActiveTab('country')}
@@ -128,10 +136,10 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentUserCountry, currentUs
               <MapPin size={14} /> National
             </button>
             <button
-              onClick={() => setActiveTab('friends')}
-              className={`flex-1 py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${activeTab === 'friends' ? 'bg-white dark:bg-white/10 shadow-md text-[#064e3b] dark:text-white' : 'text-slate-400'}`}
+              onClick={() => setActiveTab('global')}
+              className={`flex-1 py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${activeTab === 'global' ? 'bg-white dark:bg-white/10 shadow-md text-[#064e3b] dark:text-white' : 'text-slate-400'}`}
             >
-              <Users size={14} /> Friends
+              <Globe size={14} /> Global
             </button>
           </div>
         </div>
@@ -155,14 +163,14 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentUserCountry, currentUs
                 <div
                   key={entry.id}
                   className={`flex items-center gap-4 p-4 rounded-[24px] border transition-all ${isMe
-                      ? 'bg-[#064e3b]/5 border-[#064e3b]/20 dark:bg-emerald-900/20 dark:border-emerald-500/30'
-                      : 'bg-slate-50 border-slate-100 dark:bg-white/5 dark:border-white/5'
+                    ? 'bg-[#064e3b]/5 border-[#064e3b]/20 dark:bg-emerald-900/20 dark:border-emerald-500/30'
+                    : 'bg-slate-50 border-slate-100 dark:bg-white/5 dark:border-white/5'
                     }`}
                 >
                   <div className={`w-10 h-10 flex items-center justify-center rounded-full font-black text-sm ${rank === 1 ? 'bg-[#d4af37] text-white shadow-lg shadow-[#d4af37]/40' :
-                      rank === 2 ? 'bg-slate-300 text-slate-600' :
-                        rank === 3 ? 'bg-orange-300 text-orange-800' :
-                          'bg-slate-200 text-slate-400 dark:bg-white/10'
+                    rank === 2 ? 'bg-slate-300 text-slate-600' :
+                      rank === 3 ? 'bg-orange-300 text-orange-800' :
+                        'bg-slate-200 text-slate-400 dark:bg-white/10'
                     }`}>
                     {rank <= 3 ? <Crown size={16} /> : rank}
                   </div>

@@ -100,6 +100,12 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
   // ==================== DUAS LOGIC ====================
 
   const fetchDuas = async () => {
+    // Load from cache first to prevent blank screen
+    const cachedDuas = localStorage.getItem('nurpath_cached_duas');
+    if (cachedDuas && duas.length === 0) {
+      try { setDuas(JSON.parse(cachedDuas)); } catch (e) { }
+    }
+
     setDuaLoading(true);
     try {
       // Only fetch duas from last 60 days
@@ -131,6 +137,8 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
       }));
 
       setDuas(enriched);
+      // Cache the result
+      localStorage.setItem('nurpath_cached_duas', JSON.stringify(enriched));
 
       // Count my duas in last 24h for rate limiting
       const twentyFourAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();

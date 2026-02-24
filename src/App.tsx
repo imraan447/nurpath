@@ -796,6 +796,7 @@ const App: React.FC = () => {
           location: u.location,
           auto_add_pinned: u.autoAddPinned,
           pinned_quests: u.pinnedQuests,
+          settings: u.settings,
           calc_method: u.settings?.calcMethod,
           madhab: u.settings?.madhab
         }).eq('id', u.id);
