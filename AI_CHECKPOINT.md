@@ -1,36 +1,84 @@
 # AI Checkpoint: NurPath App Updates
 
-## Current State & Context (As of Session: Ramadan & Salaah Updates)
+## Current State (Session: New Updates - Feb 24, 2026)
+**Branch:** `feat/new-updates-session` (based off `dev`)
 
-### 📌 Summary of Completed Work
-We've significantly refactored how Quests (specifically the 5 daily prayers) work and introduced a brand new Ramadan Tracking module.
-- We are currently on the branch `feat/ramadaan-and-salaah-updates` which branches from `dev`.
+---
 
-### ✨ **Key Features Introduced:**
-1. **Prayer Nested Checklists (Pre & Post Salah)**
-   - **`constants.ts` Update:** `PRAYER_PACKAGES` now explicitly sort quests into a firm sequential order (e.g., Miswak -> Wudhu -> Tahiyyatul Wudhu -> Tahiyyatul Masjid -> Sunnah -> **Main Prayer** -> Post-Sunnah -> Tasbeeh Fatimi -> Ayatul Kursi -> Adhkar -> Surah).
-   - **Subquest Logic in UI:** The active/upcoming Main Prayer now shows up as the **"Today's Focus"** green Hero Card. Related sub-quests are beautifully nested inside under split headings: **"Pre-Salah Checklist"** and **"Post-Salah Checklist"**.
-   - **Deselecting Non-Main Cards:** Removed these checklists entirely from the greyed-out or off-focus prayer cards below the hero card, reverting them to simple "Complete" buttons to keep the Explore feed minimal.
+### ✅ Completed Features (This Session)
 
-2. **Today's Focus UI Rewrite**
-   - Refactored the upper section of the "My Quests" tab on `App.tsx`:
-   - Made it extremely minimal: Removed icons entirely from the header, using the app's title font styling (`text-[12px] font-black uppercase tracking-[0.5em]`).
-   - Replaced overlapping elements with a cleaner `flex-row` showing: `+ [XP_GAINED_TODAY] XP` natively beside the `[QUEST_COUNT] / [TOTAL]` circular progress dial.
-   - Built a dynamic reducer calculating `xpGainedToday` on the fly from `user.completedDailyQuests`.
+#### 1. API Key Security (Serverless Proxy)
+- Created `/api/reflections.ts` — Vercel serverless function proxying Gemini API calls
+- `src/services/geminiService.ts` now uses `fetch('/api/reflections')` instead of direct SDK calls
+- Gemini key moved from `VITE_GEMINI_API_KEY` (public) to `GEMINI_API_KEY` (server-only)
+- `.env.example` updated with new variable structure
 
-3. **Ramadan Integration**
-   - Built a dedicated `<RamadanTracker />` component.
-   - Saves completion via integer array in `user.settings.ramadan_tracker` directly to Supabase.
-   - Provides 200XP per day.
-   - Implemented a "Trackable - see My Journey" portal under the disabled `fasting_ramadan` legacy quest on the Explore Tab.
+#### 2. Colorful Category Dropdowns
+- Each of the 6 quest categories now has a distinct FlatUI gradient:
+  - Five Pillars: dark navy (`#2c3e50` → `#34495e`)
+  - Nafl Salaah: teal (`#16a085` → `#1abc9c`)
+  - Daily Remembrance: blue (`#2980b9` → `#3498db`)
+  - Sunnah & Character: purple (`#8e44ad` → `#9b59b6`)
+  - Community & Charity: orange (`#d35400` → `#e67e22`)
+  - Correction Quests: red (`#c0392b` → `#e74c3c`)
+- All have white text
 
-4. **Bug Fixes:**
-   - **Quest Completion Freeze:** Added a forced `supabase.auth.getSession()` call directly immediately prior to the database writes inside `completeQuests()`. This fixed a frustrating silent expiry issue that caused users to click "Complete Mission" and have nothing happen.
-   - **Salah Checklist Ordering Issue:** Rewrote exactly how `heroRelatedQuests` resolves from `ALL_QUESTS`. Instead of loosely `.filter()`ing the masterlist (which broke ordering based on the objects' creation time), we now tightly map the exact target array order defined in `constants.ts`.
-   - **Overlapping Lock Icons:** Corrected absolute positioning on `QuestCard.tsx` where Lock icons were bleeding into XP text.
-   - **Greeting Minimalist:** Swapped the bulky "Salaam Alaykum, Name | City | Date" into a single, clean headline.
+#### 3. Dark Mode — 3-Way Preference
+- Settings now offers Light / Dark / System selector
+- `darkModePreference: 'light' | 'dark' | 'system'` stored in `UserSettings`
+- System mode uses `window.matchMedia('(prefers-color-scheme: dark)')` with live listener
 
-### 📝 Next Steps / Future Work
-- Monitor production build for Vercel regarding any missing env hooks with new Supabase pulls.
-- Push the branch to github and merge into `main` and deploy.
-- Continue monitoring "End of day / New day" refresh behavior to ensure routine building resets quests perfectly.
+#### 4. Settings Overhaul
+- **Removed:** Haptic Feedback, Daily Goal, Backup/Download Source
+- **Added:** Leaderboard visibility toggle (opt-in, default off)
+- **Added:** Warning subtext when leaderboard is disabled
+- Prayer Calculation Standards section preserved
+
+#### 5. Leaderboard Gating
+- Leaderboard is **disabled by default** (`leaderboardEnabled: false`)
+- When disabled: leaderboard shows a gated message "Leaderboard Disabled" with instruction to enable in Settings
+- When disabled: user scores are NOT shown to others
+- Tab order changed: Friends → National → Global
+- `Leaderboard.tsx` accepts `leaderboardEnabled` prop
+
+#### 6. Data Caching (localStorage)
+- Duas data cached to `nurpath_cached_duas` — prevents blank screen on revisit
+- Leaderboard entries cached per tab to `nurpath_leaderboard_[tab]`
+- All caches are updated on successful fetch
+
+#### 7. Fasting (Ramadan) Save Fix
+- **Root cause:** `saveUser()` in `App.tsx` was NOT persisting the `settings` JSON column to Supabase — only `calc_method` and `madhab` were saved individually
+- **Fix:** Added `settings: u.settings` to the `supabase.from('profiles').update()` call
+- This also fixes persistence of `darkModePreference`, `leaderboardEnabled`, etc.
+
+#### 8. Prayer Notifications (Web + Android)
+- Created `src/services/notificationService.ts`
+- **Web:** Uses browser Notifications API with `setTimeout` scheduling
+- **Android:** Uses `@capacitor/local-notifications` for native notification scheduling
+- Schedules reminders 10 minutes before each prayer time
+- Auto-schedules when prayer times load AND notifications setting is enabled
+
+#### 9. "My Focus" Rename + Refresh Icon
+- "Today's Focus" → "My Focus"
+- Added ↻ refresh icon (RefreshCcw) next to the stats that reloads user data from Supabase
+
+#### 10. Pull-to-Refresh
+- Touch gesture handler on the main scroll area
+- Shows a spinning indicator when pulled down past 80px threshold
+- Calls `fetchProfile()` to reload all data from Supabase
+
+---
+
+### 🔲 Still To Do
+- **Salaah Manual Corrections:** UI for marking missed prayers that can add to quest count
+- **Nur-Connect Full Modern Redesign:** Visual overhaul with animations
+
+---
+
+### Previous Session Summary
+- Prayer Nested Checklists (Pre & Post Salah)
+- Ramadan Tracker component
+- Hero Card "Today's Focus" UI rewrite
+- Quest Completion Freeze fix (forced session refresh)
+- Salah Checklist ordering fix
+- Greeting simplification
