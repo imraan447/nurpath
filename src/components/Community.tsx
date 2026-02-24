@@ -592,151 +592,129 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
   };
 
   return (
-    <div className={`h-full flex flex-col ${darkMode ? 'bg-[#050a09]' : 'bg-[#fdfbf7]'} overflow-hidden`}>
-      {/* Premium Header */}
-      <div className={`relative overflow-hidden shrink-0`}>
-        {/* Animated gradient background */}
-        <div className={`absolute inset-0 ${darkMode
-          ? 'bg-gradient-to-br from-[#064e3b] via-[#0a3d2f] to-[#001a12]'
-          : 'bg-gradient-to-br from-teal-500 via-cyan-500 to-emerald-600'
-          }`} />
-        {/* Floating orb decorations */}
-        <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/5 blur-xl" />
-        <div className="absolute -bottom-4 -left-4 w-24 h-24 rounded-full bg-white/5 blur-lg" />
-        <div className="absolute top-1/2 right-1/4 w-16 h-16 rounded-full bg-[#d4af37]/10 blur-md" />
+    <div className={`h-full flex flex-col ${darkMode ? 'bg-[#0a0a0a]' : 'bg-white'} overflow-hidden`}>
 
-        <div className="relative z-10 p-6 pb-3">
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center shadow-lg border border-white/10">
-                <HeartHandshake size={22} className="text-white" />
-              </div>
-              <div>
-                <h2 className="text-lg font-black text-white tracking-tight">Nur-Connect</h2>
-                <p className="text-[10px] font-bold text-white/50 uppercase tracking-[0.2em]">Community Hub</p>
-              </div>
-            </div>
-            <button onClick={onClose} className="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-white/60 hover:text-white hover:bg-white/20 transition-all active:scale-90 border border-white/10">
-              <X size={18} />
+      {/* ─── MINIMAL HEADER ─── */}
+      <div className={`shrink-0 px-6 pt-6 pb-0 ${darkMode ? '' : ''}`}>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className={`text-2xl font-black tracking-[-0.03em] ${darkMode ? 'text-white' : 'text-[#111]'}`}>Nur-Connect</h2>
+            <p className={`text-[10px] font-semibold uppercase tracking-[0.25em] mt-0.5 ${darkMode ? 'text-white/25' : 'text-slate-400'}`}>Community</p>
+          </div>
+          <button onClick={onClose} className={`w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 ${darkMode ? 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white' : 'bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-600'}`}>
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* ─── TAB BAR (underline style) ─── */}
+        <div className={`flex border-b ${darkMode ? 'border-white/5' : 'border-slate-100'}`}>
+          {([
+            { key: 'duas', label: 'Duas', badge: false },
+            { key: 'leaderboard', label: 'Ranks', badge: false },
+            { key: 'friends', label: 'Friends', badge: hasFriendRequests },
+            { key: 'groups', label: 'Groups', badge: hasGroupInvites },
+          ] as const).map(t => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key as any)}
+              className={`relative flex-1 pb-3 text-[11px] font-bold uppercase tracking-[0.12em] transition-all duration-300 ${tab === t.key
+                ? darkMode ? 'text-white' : 'text-[#111]'
+                : darkMode ? 'text-white/25 hover:text-white/50' : 'text-slate-300 hover:text-slate-500'
+                }`}
+            >
+              {t.label}
+              {tab === t.key && (
+                <span className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-5 h-[2px] rounded-full ${darkMode ? 'bg-white' : 'bg-[#111]'}`} />
+              )}
+              {t.badge && (
+                <span className="absolute top-0 right-2 w-1.5 h-1.5 bg-rose-500 rounded-full" />
+              )}
             </button>
-          </div>
-
-          {/* Premium Tab Bar */}
-          <div className="flex gap-1.5 p-1 rounded-2xl bg-black/20 backdrop-blur-sm border border-white/5">
-            {([
-              { key: 'duas', label: 'Duas', icon: <Heart size={14} />, badge: false },
-              { key: 'leaderboard', label: 'Ranks', icon: <Trophy size={14} />, badge: false },
-              { key: 'friends', label: 'Friends', icon: <Users size={14} />, badge: hasFriendRequests },
-              { key: 'groups', label: 'Groups', icon: <Shield size={14} />, badge: hasGroupInvites },
-            ] as const).map(t => (
-              <button
-                key={t.key}
-                onClick={() => setTab(t.key as any)}
-                className={`relative flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all duration-300 ${tab === t.key
-                  ? 'bg-white text-[#064e3b] shadow-lg shadow-white/20 scale-[1.02]'
-                  : 'text-white/50 hover:text-white/80 hover:bg-white/5'
-                  }`}
-              >
-                {t.icon}
-                {t.label}
-                {t.badge && (
-                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-rose-500 rounded-full shadow-lg shadow-rose-500/50 animate-pulse" />
-                )}
-              </button>
-            ))}
-          </div>
+          ))}
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 pb-24 scrollbar-hide">
+      {/* ─── CONTENT ─── */}
+      <div className="flex-1 overflow-y-auto px-6 pt-6 pb-24 scrollbar-hide">
 
-        {/* ==================== DUAS TAB ==================== */}
+        {/* ═══════════════ DUAS TAB ═══════════════ */}
         {tab === 'duas' && (
-          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Post Dua - Premium Card */}
-            <div className={`relative overflow-hidden p-5 rounded-[28px] ${darkMode ? 'bg-gradient-to-br from-[#1a1500] to-[#0f0d00] border border-[#d4af37]/20' : 'bg-gradient-to-br from-[#fffdf5] to-[#fff8e1] border border-[#d4af37]/15 shadow-lg shadow-[#d4af37]/5'}`}>
-              <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-[#d4af37]/5 blur-xl" />
-              <div className="relative z-10">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-base">🤲</span>
-                  <p className={`text-xs font-black uppercase tracking-widest ${darkMode ? 'text-[#d4af37]' : 'text-[#92780c]'}`}>Share your Dua</p>
-                </div>
-                <textarea
-                  placeholder="Ya Allah, I ask You for..."
-                  className={`w-full p-4 rounded-2xl text-sm resize-none outline-none min-h-[80px] transition-all focus:ring-2 focus:ring-[#d4af37]/30 ${darkMode ? 'bg-black/40 text-white placeholder:text-white/25 border border-white/5' : 'bg-white/80 border border-[#d4af37]/10 placeholder:text-slate-300'}`}
-                  value={newDuaText}
-                  onChange={e => setNewDuaText(e.target.value)}
-                  maxLength={500}
-                />
-                <div className="flex items-center justify-between mt-3">
-                  <span className={`text-[10px] font-bold tabular-nums ${darkMode ? 'text-white/20' : 'text-slate-300'}`}>{newDuaText.length}/500</span>
-                  <button
-                    onClick={postDua}
-                    disabled={!newDuaText.trim()}
-                    className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-[#064e3b] to-[#0a6b52] text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.15em] disabled:opacity-20 transition-all hover:shadow-lg hover:shadow-[#064e3b]/30 active:scale-95"
-                  >
-                    <Send size={12} /> Post Dua
-                  </button>
-                </div>
+          <div className="space-y-5 animate-in fade-in duration-500">
+
+            {/* POST DUA */}
+            <div className={`p-5 rounded-2xl ${darkMode ? 'bg-white/[0.03] border border-white/[0.06]' : 'bg-slate-50/80 border border-slate-100'}`}>
+              <p className={`text-[10px] font-bold uppercase tracking-[0.2em] mb-3 ${darkMode ? 'text-[#d4af37]/60' : 'text-[#b8960b]/60'}`}>🤲 Share a Dua</p>
+              <textarea
+                placeholder="Ya Allah, I ask You for..."
+                className={`w-full p-4 rounded-xl text-[13px] leading-relaxed resize-none outline-none min-h-[80px] transition-all ${darkMode ? 'bg-white/[0.04] text-white/80 placeholder:text-white/15 border border-white/[0.04] focus:border-white/10' : 'bg-white text-slate-700 placeholder:text-slate-300 border border-slate-200/60 focus:border-slate-300'}`}
+                value={newDuaText}
+                onChange={e => setNewDuaText(e.target.value)}
+                maxLength={500}
+              />
+              <div className="flex items-center justify-between mt-3">
+                <span className={`text-[10px] font-medium tabular-nums ${darkMode ? 'text-white/15' : 'text-slate-300'}`}>{newDuaText.length}/500</span>
+                <button
+                  onClick={postDua}
+                  disabled={!newDuaText.trim()}
+                  className={`px-5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-[0.1em] transition-all active:scale-95 disabled:opacity-20 ${darkMode ? 'bg-white text-black hover:bg-white/90' : 'bg-[#111] text-white hover:bg-black'}`}
+                >
+                  Post
+                </button>
               </div>
             </div>
 
-            {/* Dua Feed */}
+            {/* DUA FEED */}
             {duaLoading ? (
-              <div className="flex flex-col items-center justify-center py-16 gap-3">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${darkMode ? 'bg-white/5' : 'bg-slate-50'}`}>
-                  <Loader2 className="animate-spin text-[#064e3b] dark:text-emerald-400" size={24} />
-                </div>
-                <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${darkMode ? 'text-white/30' : 'text-slate-300'}`}>Loading Duas...</span>
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className={`animate-spin ${darkMode ? 'text-white/20' : 'text-slate-200'}`} size={24} />
               </div>
             ) : duas.length === 0 ? (
-              <div className="text-center py-16">
-                <div className={`w-16 h-16 rounded-3xl mx-auto mb-4 flex items-center justify-center ${darkMode ? 'bg-white/5' : 'bg-slate-50'}`}>
-                  <Heart size={28} className={darkMode ? 'text-white/20' : 'text-slate-200'} />
-                </div>
-                <p className={`text-sm font-bold ${darkMode ? 'text-white/30' : 'text-slate-300'}`}>No duas yet. Be the first!</p>
+              <div className="text-center py-20">
+                <p className={`text-sm ${darkMode ? 'text-white/15' : 'text-slate-300'}`}>No duas yet. Be the first.</p>
               </div>
             ) : (
               duas.map((dua, i) => (
                 <div
                   key={dua.id}
-                  className={`group p-5 rounded-[24px] border transition-all duration-300 hover:scale-[1.01] ${darkMode ? 'bg-white/[0.03] border-white/5 hover:bg-white/[0.06] hover:border-white/10' : 'bg-white border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200'}`}
-                  style={{ animationDelay: `${i * 60}ms` }}
+                  className={`group py-5 transition-all duration-300 ${i > 0 ? `border-t ${darkMode ? 'border-white/[0.04]' : 'border-slate-100'}` : ''}`}
                 >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs ${darkMode ? 'bg-gradient-to-br from-emerald-900/50 to-emerald-800/30 text-emerald-400 border border-emerald-500/20' : 'bg-gradient-to-br from-[#064e3b]/10 to-[#064e3b]/5 text-[#064e3b]'}`}>
+                  {/* Author line */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold ${darkMode ? 'bg-white/[0.06] text-white/40' : 'bg-slate-100 text-slate-400'}`}>
                         {dua.username?.[0]?.toUpperCase() || '?'}
                       </div>
                       <div>
-                        <p className={`text-xs font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>{dua.username}</p>
-                        <p className={`text-[10px] font-medium ${darkMode ? 'text-white/25' : 'text-slate-400'}`}>{timeAgo(dua.created_at)}</p>
+                        <span className={`text-[12px] font-semibold ${darkMode ? 'text-white/70' : 'text-slate-700'}`}>{dua.username}</span>
+                        <span className={`text-[10px] ml-2 ${darkMode ? 'text-white/15' : 'text-slate-300'}`}>{timeAgo(dua.created_at)}</span>
                       </div>
                     </div>
                     {dua.user_id === currentUser.id && (
-                      <button onClick={() => deleteDua(dua.id)} className="p-2 rounded-xl opacity-0 group-hover:opacity-100 hover:bg-rose-500/10 text-slate-400 hover:text-rose-500 transition-all">
-                        <Trash2 size={13} />
+                      <button onClick={() => deleteDua(dua.id)} className={`p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all ${darkMode ? 'text-white/15 hover:text-rose-400 hover:bg-white/5' : 'text-slate-300 hover:text-rose-500 hover:bg-slate-50'}`}>
+                        <Trash2 size={12} />
                       </button>
                     )}
                   </div>
 
-                  <p className={`text-[13px] leading-relaxed mb-4 ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>{dua.text}</p>
+                  {/* Dua text */}
+                  <p className={`text-[14px] leading-[1.7] ${darkMode ? 'text-white/60' : 'text-slate-600'}`}>{dua.text}</p>
 
-                  <div className="flex items-center justify-between">
+                  {/* Actions */}
+                  <div className="flex items-center justify-between mt-4">
                     <button
                       onClick={() => !dua.has_said_ameen && sayAmeen(dua.id)}
                       disabled={dua.has_said_ameen || dua.user_id === currentUser.id}
-                      className={`flex items-center gap-2 px-5 py-2 rounded-2xl text-[10px] font-black uppercase tracking-[0.1em] transition-all duration-300 active:scale-90 ${dua.has_said_ameen
-                        ? 'bg-[#d4af37]/15 text-[#d4af37] shadow-inner'
+                      className={`text-[11px] font-semibold transition-all active:scale-95 ${dua.has_said_ameen
+                        ? darkMode ? 'text-[#d4af37]/50' : 'text-[#b8960b]/50'
                         : dua.user_id === currentUser.id
-                          ? `${darkMode ? 'bg-white/3 text-white/15' : 'bg-slate-50 text-slate-200'} cursor-default`
-                          : `border ${darkMode ? 'border-[#d4af37]/20 text-[#d4af37]/80 hover:bg-[#d4af37]/10 hover:border-[#d4af37]/40' : 'border-[#d4af37]/20 text-[#b8960b] hover:bg-[#d4af37]/5 hover:border-[#d4af37]/30'}`
+                          ? darkMode ? 'text-white/10 cursor-default' : 'text-slate-200 cursor-default'
+                          : darkMode ? 'text-[#d4af37]/40 hover:text-[#d4af37]/80' : 'text-[#b8960b]/50 hover:text-[#b8960b]'
                         }`}
                     >
-                      {dua.has_said_ameen ? '✓ Ameen' : '🤲 Ameen'}
+                      {dua.has_said_ameen ? '✓ Ameen' : 'Ameen'}
                     </button>
-                    <span className={`text-[10px] font-bold tabular-nums ${darkMode ? 'text-white/25' : 'text-slate-300'}`}>
-                      {dua.ameen_count} {dua.ameen_count === 1 ? 'Ameen' : 'Ameens'}
+                    <span className={`text-[10px] tabular-nums ${darkMode ? 'text-white/10' : 'text-slate-200'}`}>
+                      {dua.ameen_count}
                     </span>
                   </div>
                 </div>
@@ -757,50 +735,48 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
           />
         )}
 
-        {/* ==================== FRIENDS TAB ==================== */}
+        {/* ═══════════════ FRIENDS TAB ═══════════════ */}
         {tab === 'friends' && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-500">
-            {/* Search - Premium */}
+          <div className="space-y-6 animate-in fade-in duration-500">
+            {/* Search */}
             <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+              <Search className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${darkMode ? 'text-white/15' : 'text-slate-300'}`} size={15} />
               <input
                 type="text"
-                placeholder="Find seekers by username..."
-                className={`w-full p-4 pl-11 rounded-2xl outline-none transition-all focus:ring-2 text-sm font-medium ${darkMode ? 'bg-white/5 text-white focus:ring-emerald-500/20 border border-white/5 placeholder:text-white/20' : 'bg-white shadow-sm focus:ring-[#064e3b]/10 border border-slate-100 placeholder:text-slate-300'}`}
+                placeholder="Search by username..."
+                className={`w-full p-3.5 pl-10 rounded-xl text-[13px] outline-none transition-all ${darkMode ? 'bg-white/[0.03] text-white/80 border border-white/[0.06] placeholder:text-white/15 focus:border-white/15' : 'bg-slate-50/80 text-slate-700 border border-slate-100 placeholder:text-slate-300 focus:border-slate-200'}`}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && searchUsers()}
               />
-              <button onClick={searchUsers} className="absolute right-2 top-2 p-2.5 bg-gradient-to-r from-[#064e3b] to-[#0a6b52] text-white rounded-xl shadow-lg shadow-[#064e3b]/20 hover:shadow-[#064e3b]/40 transition-all active:scale-90">
-                {loading ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
+              <button onClick={searchUsers} className={`absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg transition-all active:scale-90 ${darkMode ? 'bg-white text-black hover:bg-white/90' : 'bg-[#111] text-white hover:bg-black'}`}>
+                {loading ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />}
               </button>
             </div>
 
-            {/* Search Results */}
+            {/* Results */}
             {searchResults.length > 0 && (
-              <div className="space-y-2">
-                <h3 className={`text-[10px] font-black uppercase tracking-[0.2em] pl-2 ${darkMode ? 'text-white/30' : 'text-slate-400'}`}>Results</h3>
-                {searchResults.map(res => (
-                  <div key={res.id} className={`p-4 rounded-[20px] flex justify-between items-center transition-all hover:scale-[1.01] ${darkMode ? 'bg-white/[0.03] border border-white/5' : 'bg-white border border-slate-100 shadow-sm'}`}>
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm ${darkMode ? 'bg-gradient-to-br from-white/10 to-white/5 text-slate-300 border border-white/10' : 'bg-gradient-to-br from-slate-100 to-slate-50 text-slate-600'}`}>{res.username[0].toUpperCase()}</div>
+              <div>
+                <p className={`text-[10px] font-semibold uppercase tracking-[0.2em] mb-3 ${darkMode ? 'text-white/20' : 'text-slate-400'}`}>Results</p>
+                {searchResults.map((res, i) => (
+                  <div key={res.id} className={`flex justify-between items-center py-3.5 ${i > 0 ? `border-t ${darkMode ? 'border-white/[0.04]' : 'border-slate-100'}` : ''}`}>
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ${darkMode ? 'bg-white/[0.06] text-white/40' : 'bg-slate-100 text-slate-400'}`}>{res.username[0].toUpperCase()}</div>
                       <div>
-                        <p className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-slate-800'}`}>{res.username}</p>
-                        <p className={`text-[10px] font-medium ${darkMode ? 'text-white/25' : 'text-slate-400'}`}>{res.country}</p>
+                        <p className={`text-[13px] font-semibold ${darkMode ? 'text-white/80' : 'text-slate-700'}`}>{res.username}</p>
+                        <p className={`text-[10px] ${darkMode ? 'text-white/15' : 'text-slate-300'}`}>{res.country}</p>
                       </div>
                     </div>
                     {(() => {
                       const isFriend = friends.some(f => f.id === res.id);
                       const isPendingOutgoing = sentRequestIds.includes(res.id);
                       const isPendingIncoming = requests.some(r => r.sender?.id === res.id);
-
-                      if (isFriend) return <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl ${darkMode ? 'bg-white/5 text-white/40' : 'bg-slate-100 text-slate-400'}`}>Friend</span>;
-                      if (isPendingIncoming) return <span className="text-[9px] font-black uppercase tracking-widest text-[#d4af37] bg-[#d4af37]/10 px-3 py-1.5 rounded-xl">Pending</span>;
-                      if (isPendingOutgoing) return <button disabled className={`p-2.5 rounded-xl cursor-not-allowed ${darkMode ? 'bg-white/5 text-white/20' : 'bg-slate-100 text-slate-300'}`}><Clock size={14} /></button>;
-
+                      if (isFriend) return <span className={`text-[9px] font-bold uppercase tracking-widest ${darkMode ? 'text-white/20' : 'text-slate-300'}`}>Added</span>;
+                      if (isPendingIncoming) return <span className={`text-[9px] font-bold uppercase tracking-widest ${darkMode ? 'text-[#d4af37]/40' : 'text-[#b8960b]/50'}`}>Pending</span>;
+                      if (isPendingOutgoing) return <span className={`text-[9px] font-bold uppercase tracking-widest ${darkMode ? 'text-white/15' : 'text-slate-300'}`}>Sent</span>;
                       return (
-                        <button onClick={() => sendFriendRequest(res.id)} className="p-2.5 bg-[#064e3b]/10 text-[#064e3b] rounded-xl hover:bg-[#064e3b] hover:text-white transition-all active:scale-90">
-                          <UserPlus size={16} />
+                        <button onClick={() => sendFriendRequest(res.id)} className={`p-2 rounded-lg transition-all active:scale-90 ${darkMode ? 'bg-white/[0.06] text-white/40 hover:bg-white/10 hover:text-white' : 'bg-slate-100 text-slate-500 hover:bg-[#111] hover:text-white'}`}>
+                          <UserPlus size={14} />
                         </button>
                       );
                     })()}
@@ -809,51 +785,42 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
               </div>
             )}
 
-            {/* Friend Requests - Premium */}
+            {/* Requests */}
             {requests.length > 0 && (
-              <div className="space-y-2">
-                <h3 className={`text-[10px] font-black uppercase tracking-[0.2em] pl-2 flex items-center gap-2 ${darkMode ? 'text-[#d4af37]/80' : 'text-[#d4af37]'}`}>
-                  <span className="w-2 h-2 bg-[#d4af37] rounded-full animate-pulse" /> Pending Requests
-                </h3>
-                {requests.map(req => (
-                  <div key={req.id} className={`p-4 rounded-[20px] flex justify-between items-center ${darkMode ? 'bg-gradient-to-r from-[#1a1500]/50 to-transparent border border-[#d4af37]/15' : 'bg-gradient-to-r from-[#fffbeb] to-white border border-[#d4af37]/15 shadow-sm'}`}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-[#d4af37] to-[#b8960b] rounded-xl flex items-center justify-center font-black text-sm text-white shadow-lg shadow-[#d4af37]/20">{req.sender?.username[0].toUpperCase()}</div>
+              <div>
+                <p className={`text-[10px] font-semibold uppercase tracking-[0.2em] mb-3 flex items-center gap-2 ${darkMode ? 'text-white/20' : 'text-slate-400'}`}>
+                  <span className="w-1.5 h-1.5 bg-rose-500 rounded-full" /> Requests
+                </p>
+                {requests.map((req, i) => (
+                  <div key={req.id} className={`flex justify-between items-center py-3.5 ${i > 0 ? `border-t ${darkMode ? 'border-white/[0.04]' : 'border-slate-100'}` : ''}`}>
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ${darkMode ? 'bg-white/[0.06] text-white/40' : 'bg-slate-100 text-slate-400'}`}>{req.sender?.username[0].toUpperCase()}</div>
                       <div>
-                        <p className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-slate-800'}`}>{req.sender?.username}</p>
-                        <p className={`text-[10px] font-medium ${darkMode ? 'text-white/30' : 'text-slate-400'}`}>Wants to connect</p>
+                        <p className={`text-[13px] font-semibold ${darkMode ? 'text-white/80' : 'text-slate-700'}`}>{req.sender?.username}</p>
+                        <p className={`text-[10px] ${darkMode ? 'text-white/15' : 'text-slate-300'}`}>Wants to connect</p>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => respondToRequest(req.id, true)} className="p-2.5 bg-[#064e3b] text-white rounded-xl shadow-lg shadow-[#064e3b]/20 hover:shadow-[#064e3b]/40 transition-all active:scale-90"><Check size={14} /></button>
-                      <button onClick={() => respondToRequest(req.id, false)} className="p-2.5 bg-rose-500 text-white rounded-xl shadow-lg shadow-rose-500/20 hover:shadow-rose-500/40 transition-all active:scale-90"><X size={14} /></button>
+                    <div className="flex gap-1.5">
+                      <button onClick={() => respondToRequest(req.id, true)} className={`p-2 rounded-lg transition-all active:scale-90 ${darkMode ? 'bg-white text-black' : 'bg-[#111] text-white'}`}><Check size={13} /></button>
+                      <button onClick={() => respondToRequest(req.id, false)} className={`p-2 rounded-lg transition-all active:scale-90 ${darkMode ? 'bg-white/[0.06] text-white/40 hover:text-rose-400' : 'bg-slate-100 text-slate-400 hover:text-rose-500'}`}><X size={13} /></button>
                     </div>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* My Friends - Premium */}
-            <div className="space-y-2">
-              <h3 className={`text-[10px] font-black uppercase tracking-[0.2em] pl-2 ${darkMode ? 'text-white/30' : 'text-slate-400'}`}>Your Circle</h3>
+            {/* Friends List */}
+            <div>
+              <p className={`text-[10px] font-semibold uppercase tracking-[0.2em] mb-3 ${darkMode ? 'text-white/20' : 'text-slate-400'}`}>Your Circle</p>
               {friends.length === 0 ? (
-                <div className="text-center py-10">
-                  <div className={`w-14 h-14 rounded-2xl mx-auto mb-3 flex items-center justify-center ${darkMode ? 'bg-white/5' : 'bg-slate-50'}`}>
-                    <Users size={24} className={darkMode ? 'text-white/15' : 'text-slate-200'} />
-                  </div>
-                  <p className={`text-xs font-bold ${darkMode ? 'text-white/25' : 'text-slate-300'}`}>You haven't added any seekers yet.</p>
-                </div>
+                <p className={`text-[13px] py-8 text-center ${darkMode ? 'text-white/15' : 'text-slate-300'}`}>No connections yet.</p>
               ) : (
                 friends.map((f, i) => (
-                  <div key={f.id} className={`p-4 rounded-[20px] flex items-center justify-between transition-all duration-300 hover:scale-[1.01] ${darkMode ? 'bg-white/[0.03] border border-white/5 hover:bg-white/[0.06]' : 'bg-white border border-slate-100 shadow-sm hover:shadow-md'}`} style={{ animationDelay: `${i * 40}ms` }}>
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm ${darkMode ? 'bg-gradient-to-br from-emerald-900/50 to-emerald-800/30 text-emerald-400 border border-emerald-500/20' : 'bg-gradient-to-br from-[#064e3b]/10 to-[#064e3b]/5 text-[#064e3b]'}`}>{f.username[0].toUpperCase()}</div>
-                      <div>
-                        <p className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-slate-800'}`}>{f.username}</p>
-                        <p className={`text-[10px] font-medium ${darkMode ? 'text-white/25' : 'text-slate-400'}`}>
-                          <span className="text-[#d4af37] font-bold">{f.xp.toLocaleString()} XP</span> • {f.country}
-                        </p>
-                      </div>
+                  <div key={f.id} className={`flex items-center gap-2.5 py-3.5 ${i > 0 ? `border-t ${darkMode ? 'border-white/[0.04]' : 'border-slate-100'}` : ''}`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ${darkMode ? 'bg-white/[0.06] text-white/40' : 'bg-slate-100 text-slate-400'}`}>{f.username[0].toUpperCase()}</div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-[13px] font-semibold ${darkMode ? 'text-white/80' : 'text-slate-700'}`}>{f.username}</p>
+                      <p className={`text-[10px] ${darkMode ? 'text-white/15' : 'text-slate-300'}`}>{f.xp.toLocaleString()} XP · {f.country}</p>
                     </div>
                   </div>
                 ))
@@ -862,91 +829,83 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
           </div>
         )}
 
-        {/* ==================== GROUPS TAB ==================== */}
+        {/* ═══════════════ GROUPS TAB ═══════════════ */}
         {tab === 'groups' && !activeGroup && (
-          <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-500">
-            {/* Group Invites - Premium */}
+          <div className="space-y-6 animate-in fade-in duration-500">
+            {/* Invites */}
             {groupInvites.length > 0 && (
-              <div className="space-y-2">
-                <h3 className={`text-[10px] font-black uppercase tracking-[0.2em] pl-2 flex items-center gap-2 ${darkMode ? 'text-[#d4af37]/80' : 'text-[#d4af37]'}`}>
-                  <span className="w-2 h-2 bg-[#d4af37] rounded-full animate-pulse" />
-                  <Mail size={12} /> Group Invites
-                </h3>
-                {groupInvites.map(inv => (
-                  <div key={inv.id} className={`p-4 rounded-[20px] flex justify-between items-center ${darkMode ? 'bg-gradient-to-r from-[#1a1500]/50 to-transparent border border-[#d4af37]/15' : 'bg-gradient-to-r from-[#fffbeb] to-white border border-[#d4af37]/15 shadow-sm'}`}>
+              <div>
+                <p className={`text-[10px] font-semibold uppercase tracking-[0.2em] mb-3 flex items-center gap-2 ${darkMode ? 'text-white/20' : 'text-slate-400'}`}>
+                  <span className="w-1.5 h-1.5 bg-rose-500 rounded-full" /> Group Invites
+                </p>
+                {groupInvites.map((inv, i) => (
+                  <div key={inv.id} className={`flex justify-between items-center py-3.5 ${i > 0 ? `border-t ${darkMode ? 'border-white/[0.04]' : 'border-slate-100'}` : ''}`}>
                     <div>
-                      <p className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-slate-800'}`}>{inv.group_name}</p>
-                      <p className={`text-[10px] font-medium ${darkMode ? 'text-white/30' : 'text-slate-400'}`}>Invited by {inv.inviter_name}</p>
+                      <p className={`text-[13px] font-semibold ${darkMode ? 'text-white/80' : 'text-slate-700'}`}>{inv.group_name}</p>
+                      <p className={`text-[10px] ${darkMode ? 'text-white/15' : 'text-slate-300'}`}>from {inv.inviter_name}</p>
                     </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => respondToGroupInvite(inv.id, inv.group_id, true)} className="p-2.5 bg-[#064e3b] text-white rounded-xl shadow-lg shadow-[#064e3b]/20 transition-all active:scale-90"><Check size={14} /></button>
-                      <button onClick={() => respondToGroupInvite(inv.id, inv.group_id, false)} className="p-2.5 bg-rose-500 text-white rounded-xl shadow-lg shadow-rose-500/20 transition-all active:scale-90"><X size={14} /></button>
+                    <div className="flex gap-1.5">
+                      <button onClick={() => respondToGroupInvite(inv.id, inv.group_id, true)} className={`p-2 rounded-lg transition-all active:scale-90 ${darkMode ? 'bg-white text-black' : 'bg-[#111] text-white'}`}><Check size={13} /></button>
+                      <button onClick={() => respondToGroupInvite(inv.id, inv.group_id, false)} className={`p-2 rounded-lg transition-all active:scale-90 ${darkMode ? 'bg-white/[0.06] text-white/40' : 'bg-slate-100 text-slate-400'}`}><X size={13} /></button>
                     </div>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Create Group - Premium */}
+            {/* Create */}
             <button
               onClick={() => setShowCreateGroup(!showCreateGroup)}
-              className={`w-full py-4 rounded-[20px] flex items-center justify-center gap-2 font-black text-[10px] uppercase tracking-[0.15em] transition-all active:scale-95 ${darkMode ? 'border border-dashed border-white/10 text-white/40 hover:bg-white/5 hover:text-white/60' : 'border border-dashed border-slate-200 text-slate-400 hover:bg-[#064e3b]/5 hover:text-[#064e3b] hover:border-[#064e3b]/20'}`}
+              className={`w-full py-3.5 rounded-xl text-[11px] font-bold uppercase tracking-[0.12em] transition-all active:scale-[0.98] ${darkMode ? 'border border-dashed border-white/[0.08] text-white/25 hover:text-white/50 hover:border-white/15' : 'border border-dashed border-slate-200 text-slate-400 hover:text-slate-600 hover:border-slate-300'}`}
             >
-              <Plus size={16} /> Create New Group
+              + New Group
             </button>
 
             {showCreateGroup && (
-              <div className={`p-5 rounded-[24px] space-y-3 ${darkMode ? 'bg-white/[0.03] border border-white/5' : 'bg-white shadow-lg border border-slate-100'}`}>
+              <div className={`p-4 rounded-xl space-y-3 ${darkMode ? 'bg-white/[0.03] border border-white/[0.06]' : 'bg-slate-50/80 border border-slate-100'}`}>
                 <input
                   type="text"
-                  placeholder="Group Name (e.g. Fajr Warriors)"
-                  className={`w-full p-4 rounded-2xl outline-none text-sm font-medium transition-all focus:ring-2 ${darkMode ? 'bg-black/30 text-white border border-white/5 focus:ring-emerald-500/20 placeholder:text-white/20' : 'bg-slate-50 focus:ring-[#064e3b]/10 placeholder:text-slate-300'}`}
+                  placeholder="Group name"
+                  className={`w-full p-3.5 rounded-xl text-[13px] outline-none transition-all ${darkMode ? 'bg-white/[0.04] text-white/80 border border-white/[0.04] placeholder:text-white/15 focus:border-white/10' : 'bg-white text-slate-700 border border-slate-200/60 placeholder:text-slate-300 focus:border-slate-300'}`}
                   value={newGroupName}
                   onChange={e => setNewGroupName(e.target.value)}
                 />
-                <button onClick={createGroup} className="w-full py-3 bg-gradient-to-r from-[#064e3b] to-[#0a6b52] text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.15em] shadow-lg shadow-[#064e3b]/20 hover:shadow-[#064e3b]/40 transition-all active:scale-[0.98]">Create</button>
+                <button onClick={createGroup} className={`w-full py-3 rounded-lg text-[10px] font-bold uppercase tracking-[0.1em] transition-all active:scale-[0.98] ${darkMode ? 'bg-white text-black hover:bg-white/90' : 'bg-[#111] text-white hover:bg-black'}`}>Create</button>
               </div>
             )}
 
-            {/* Search Groups */}
+            {/* Search */}
             <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+              <Search className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${darkMode ? 'text-white/15' : 'text-slate-300'}`} size={14} />
               <input
                 type="text"
-                placeholder="Search your groups..."
-                className={`w-full p-3.5 pl-11 rounded-2xl text-sm font-medium outline-none transition-all focus:ring-2 ${darkMode ? 'bg-white/5 text-white border border-white/5 focus:ring-emerald-500/20 placeholder:text-white/20' : 'bg-white shadow-sm border border-slate-100 focus:ring-[#064e3b]/10 placeholder:text-slate-300'}`}
+                placeholder="Search groups..."
+                className={`w-full p-3 pl-10 rounded-xl text-[13px] outline-none transition-all ${darkMode ? 'bg-white/[0.03] text-white/80 border border-white/[0.06] placeholder:text-white/15 focus:border-white/15' : 'bg-slate-50/80 text-slate-700 border border-slate-100 placeholder:text-slate-300 focus:border-slate-200'}`}
                 value={groupSearchQuery}
                 onChange={e => setGroupSearchQuery(e.target.value)}
               />
             </div>
 
-            {/* Group List - Premium */}
-            <div className="space-y-3">
+            {/* List */}
+            <div>
               {filteredGroups.length === 0 ? (
-                <div className="text-center py-14">
-                  <div className={`w-16 h-16 rounded-3xl mx-auto mb-4 flex items-center justify-center ${darkMode ? 'bg-white/5' : 'bg-slate-50'}`}>
-                    <Shield size={28} className={darkMode ? 'text-white/15' : 'text-slate-200'} />
-                  </div>
-                  <p className={`text-sm font-bold ${darkMode ? 'text-white/25' : 'text-slate-300'}`}>{groupSearchQuery ? 'No groups match' : 'No groups yet.'}</p>
-                </div>
+                <p className={`text-[13px] py-10 text-center ${darkMode ? 'text-white/15' : 'text-slate-300'}`}>{groupSearchQuery ? 'No matches.' : 'No groups yet.'}</p>
               ) : (
                 filteredGroups.map((g, i) => (
                   <div
                     key={g.id}
                     onClick={() => openGroup(g)}
-                    className={`group p-5 rounded-[24px] flex items-center justify-between cursor-pointer transition-all duration-300 hover:scale-[1.01] ${darkMode ? 'bg-white/[0.03] border border-white/5 hover:bg-white/[0.06] hover:border-white/10' : 'bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200'}`}
-                    style={{ animationDelay: `${i * 50}ms` }}
+                    className={`group flex items-center justify-between py-4 cursor-pointer transition-all ${i > 0 ? `border-t ${darkMode ? 'border-white/[0.04]' : 'border-slate-100'}` : ''}`}
                   >
-                    <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${darkMode ? 'bg-gradient-to-br from-[#d4af37]/20 to-[#d4af37]/5 border border-[#d4af37]/20' : 'bg-gradient-to-br from-[#d4af37]/15 to-[#d4af37]/5'}`}>
-                        <Shield size={22} className="text-[#d4af37]" />
+                    <div className="flex items-center gap-3">
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${darkMode ? 'bg-white/[0.04] text-white/25' : 'bg-slate-100 text-slate-400'}`}>
+                        <Shield size={16} />
                       </div>
                       <div>
-                        <h3 className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-slate-800'}`}>{g.name}</h3>
-                        <p className={`text-[10px] font-medium ${darkMode ? 'text-white/25' : 'text-slate-400'}`}>Tap to enter</p>
+                        <p className={`text-[13px] font-semibold ${darkMode ? 'text-white/80' : 'text-slate-700'}`}>{g.name}</p>
                       </div>
                     </div>
-                    <ChevronRight className={`transition-all group-hover:translate-x-1 ${darkMode ? 'text-white/20' : 'text-slate-300'}`} size={18} />
+                    <ChevronRight className={`transition-all group-hover:translate-x-0.5 ${darkMode ? 'text-white/10' : 'text-slate-200'}`} size={16} />
                   </div>
                 ))
               )}
@@ -958,92 +917,88 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
         {tab === 'groups' && activeGroup && (
           <div className="space-y-6 animate-in zoom-in-95 duration-500">
             {/* Back Button */}
-            <button onClick={() => { setActiveGroup(null); setShowInvitePanel(false); }} className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all hover:gap-3 ${darkMode ? 'text-white/40 hover:text-white/70' : 'text-slate-400 hover:text-[#064e3b]'}`}>
-              <ChevronRight className="rotate-180" size={12} /> Back to Groups
+            <button onClick={() => { setActiveGroup(null); setShowInvitePanel(false); }} className={`flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.15em] transition-all ${darkMode ? 'text-white/25 hover:text-white/50' : 'text-slate-400 hover:text-slate-600'}`}>
+              <ChevronRight className="rotate-180" size={11} /> Back
             </button>
 
-            {/* Group Header - Premium */}
-            <div className={`relative overflow-hidden p-6 rounded-[28px] text-center ${darkMode ? 'bg-gradient-to-br from-white/[0.04] to-transparent border border-white/5' : 'bg-gradient-to-br from-white to-slate-50 border border-slate-100 shadow-lg'}`}>
-              <div className="absolute -top-10 -right-10 w-28 h-28 rounded-full bg-[#d4af37]/5 blur-2xl" />
-              <div className="absolute -bottom-6 -left-6 w-20 h-20 rounded-full bg-[#064e3b]/5 blur-xl" />
-              <div className="relative z-10 space-y-4">
-                {isRenaming ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <input
-                      value={renameText}
-                      onChange={e => setRenameText(e.target.value)}
-                      className={`text-xl font-bold text-center bg-transparent border-b-2 outline-none w-2/3 ${darkMode ? 'text-white border-white/20' : 'text-slate-900 border-slate-200'}`}
-                      autoFocus
-                    />
-                    <button onClick={renameGroup} className="p-2.5 bg-[#064e3b] text-white rounded-xl shadow-lg shadow-[#064e3b]/20 transition-all active:scale-90"><Save size={14} /></button>
-                    <button onClick={() => setIsRenaming(false)} className="p-2.5 bg-rose-500 text-white rounded-xl shadow-lg shadow-rose-500/20 transition-all active:scale-90"><X size={14} /></button>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center gap-2 group/title">
-                    <h2 className={`text-xl font-black ${darkMode ? 'text-white' : 'text-slate-900'}`}>{activeGroup.name}</h2>
-                    {myRole === 'admin' && (
-                      <button
-                        onClick={() => { setRenameText(activeGroup.name); setIsRenaming(true); }}
-                        className={`opacity-0 group-hover/title:opacity-100 transition-all p-1.5 rounded-xl ${darkMode ? 'text-white/30 hover:bg-white/10 hover:text-white' : 'text-slate-300 hover:bg-slate-100 hover:text-slate-600'}`}
-                      >
-                        <Pencil size={12} />
-                      </button>
-                    )}
-                  </div>
-                )}
-                <div className="flex justify-center -space-x-2">
-                  {activeGroup.members?.map((m, i) => (
-                    <div
-                      key={i}
-                      className={`w-9 h-9 rounded-xl border-2 flex items-center justify-center text-[10px] font-black transition-all hover:scale-110 hover:z-10 ${darkMode ? 'bg-gradient-to-br from-white/10 to-white/5 border-[#050a09] text-white/60' : 'bg-gradient-to-br from-slate-100 to-white border-white text-slate-500'} ${m.role === 'admin' ? 'ring-2 ring-[#d4af37] ring-offset-1' : ''}`}
-                      title={`${m.username}${m.role === 'admin' ? ' (Admin)' : ''}`}
-                    >
-                      {m.username[0].toUpperCase()}
-                    </div>
-                  ))}
+            {/* Group Header */}
+            <div className="text-center space-y-4">
+              {isRenaming ? (
+                <div className="flex items-center justify-center gap-2">
+                  <input
+                    value={renameText}
+                    onChange={e => setRenameText(e.target.value)}
+                    className={`text-lg font-bold text-center bg-transparent border-b outline-none w-2/3 ${darkMode ? 'text-white border-white/10' : 'text-slate-900 border-slate-200'}`}
+                    autoFocus
+                  />
+                  <button onClick={renameGroup} className={`p-2 rounded-lg transition-all active:scale-90 ${darkMode ? 'bg-white text-black' : 'bg-[#111] text-white'}`}><Save size={13} /></button>
+                  <button onClick={() => setIsRenaming(false)} className={`p-2 rounded-lg transition-all active:scale-90 ${darkMode ? 'bg-white/[0.06] text-white/40' : 'bg-slate-100 text-slate-400'}`}><X size={13} /></button>
                 </div>
-                <p className={`text-[10px] font-bold tabular-nums ${darkMode ? 'text-white/30' : 'text-slate-400'}`}>{activeGroup.members?.length} members • {myRole === 'admin' ? '⭐ Admin' : 'Member'}</p>
+              ) : (
+                <div className="flex items-center justify-center gap-2 group/title">
+                  <h2 className={`text-xl font-black tracking-[-0.02em] ${darkMode ? 'text-white' : 'text-[#111]'}`}>{activeGroup.name}</h2>
+                  {myRole === 'admin' && (
+                    <button
+                      onClick={() => { setRenameText(activeGroup.name); setIsRenaming(true); }}
+                      className={`opacity-0 group-hover/title:opacity-100 transition-all p-1 rounded-md ${darkMode ? 'text-white/20 hover:text-white/50' : 'text-slate-300 hover:text-slate-500'}`}
+                    >
+                      <Pencil size={11} />
+                    </button>
+                  )}
+                </div>
+              )}
+              <div className="flex justify-center -space-x-1.5">
+                {activeGroup.members?.map((m, i) => (
+                  <div
+                    key={i}
+                    className={`w-7 h-7 rounded-full border-2 flex items-center justify-center text-[9px] font-bold ${darkMode ? 'bg-white/[0.06] border-[#0a0a0a] text-white/40' : 'bg-slate-100 border-white text-slate-400'} ${m.role === 'admin' ? `ring-1 ${darkMode ? 'ring-white/20' : 'ring-slate-300'}` : ''}`}
+                    title={`${m.username}${m.role === 'admin' ? ' (Admin)' : ''}`}
+                  >
+                    {m.username[0].toUpperCase()}
+                  </div>
+                ))}
               </div>
+              <p className={`text-[10px] ${darkMode ? 'text-white/15' : 'text-slate-300'}`}>{activeGroup.members?.length} members · {myRole === 'admin' ? 'Admin' : 'Member'}</p>
             </div>
 
-            {/* Admin Actions - Premium */}
+            {/* Actions */}
             <div className="flex gap-2 justify-center flex-wrap">
-              <button onClick={() => setShowInvitePanel(!showInvitePanel)} className={`px-5 py-2.5 rounded-2xl text-[9px] font-black uppercase tracking-[0.1em] flex items-center gap-1.5 transition-all active:scale-90 ${darkMode ? 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white border border-white/5' : 'bg-slate-50 text-slate-500 hover:bg-[#064e3b]/5 hover:text-[#064e3b] border border-slate-100'}`}>
-                <UserPlus size={11} /> Invite
+              <button onClick={() => setShowInvitePanel(!showInvitePanel)} className={`px-4 py-2 rounded-lg text-[9px] font-bold uppercase tracking-[0.1em] flex items-center gap-1.5 transition-all active:scale-95 ${darkMode ? 'bg-white/[0.04] text-white/40 hover:bg-white/[0.08] hover:text-white/60' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
+                <UserPlus size={10} /> Invite
               </button>
-              <button onClick={leaveGroup} className={`px-5 py-2.5 rounded-2xl text-[9px] font-black uppercase tracking-[0.1em] flex items-center gap-1.5 transition-all active:scale-90 ${darkMode ? 'bg-white/5 text-rose-400 hover:bg-rose-500/10 border border-white/5' : 'bg-slate-50 text-rose-500 hover:bg-rose-50 border border-slate-100'}`}>
-                <LogOut size={11} /> Leave
+              <button onClick={leaveGroup} className={`px-4 py-2 rounded-lg text-[9px] font-bold uppercase tracking-[0.1em] flex items-center gap-1.5 transition-all active:scale-95 ${darkMode ? 'bg-white/[0.04] text-rose-400/60 hover:text-rose-400' : 'bg-slate-100 text-rose-400 hover:text-rose-500'}`}>
+                <LogOut size={10} /> Leave
               </button>
               {myRole === 'admin' && (
-                <button onClick={deleteGroup} className={`px-5 py-2.5 rounded-2xl text-[9px] font-black uppercase tracking-[0.1em] flex items-center gap-1.5 transition-all active:scale-90 ${darkMode ? 'bg-white/5 text-rose-400 hover:bg-rose-500/10 border border-white/5' : 'bg-slate-50 text-rose-500 hover:bg-rose-50 border border-slate-100'}`}>
-                  <Trash2 size={11} /> Delete
+                <button onClick={deleteGroup} className={`px-4 py-2 rounded-lg text-[9px] font-bold uppercase tracking-[0.1em] flex items-center gap-1.5 transition-all active:scale-95 ${darkMode ? 'bg-white/[0.04] text-rose-400/60 hover:text-rose-400' : 'bg-slate-100 text-rose-400 hover:text-rose-500'}`}>
+                  <Trash2 size={10} /> Delete
                 </button>
               )}
             </div>
 
-            {/* Invite Panel - Premium */}
+            {/* Invite Panel */}
             {showInvitePanel && (
-              <div className={`p-5 rounded-[24px] space-y-3 animate-in fade-in slide-in-from-top-2 ${darkMode ? 'bg-white/[0.03] border border-white/5' : 'bg-white shadow-lg border border-slate-100'}`}>
+              <div className={`space-y-0 animate-in fade-in ${darkMode ? '' : ''}`}>
                 <input
                   type="text"
-                  placeholder="Search friends to invite..."
-                  className={`w-full p-3.5 rounded-2xl text-sm font-medium outline-none transition-all focus:ring-2 ${darkMode ? 'bg-black/30 text-white border border-white/5 focus:ring-emerald-500/20 placeholder:text-white/20' : 'bg-slate-50 focus:ring-[#064e3b]/10 placeholder:text-slate-300'}`}
+                  placeholder="Search friends..."
+                  className={`w-full p-3.5 rounded-xl text-[13px] outline-none transition-all mb-3 ${darkMode ? 'bg-white/[0.03] text-white/80 border border-white/[0.06] placeholder:text-white/15 focus:border-white/15' : 'bg-slate-50/80 text-slate-700 border border-slate-100 placeholder:text-slate-300 focus:border-slate-200'}`}
                   value={inviteFriendSearch}
                   onChange={e => setInviteFriendSearch(e.target.value)}
                 />
                 {invitableFriends.length === 0 ? (
-                  <p className={`text-xs font-medium text-center py-3 ${darkMode ? 'text-white/25' : 'text-slate-300'}`}>No friends to invite</p>
+                  <p className={`text-[13px] text-center py-4 ${darkMode ? 'text-white/15' : 'text-slate-300'}`}>No friends to invite</p>
                 ) : (
-                  invitableFriends.slice(0, 5).map(f => (
-                    <div key={f.id} className={`flex items-center justify-between p-3.5 rounded-2xl ${darkMode ? 'bg-black/20 border border-white/5' : 'bg-slate-50'}`}>
-                      <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black ${darkMode ? 'bg-emerald-900/40 text-emerald-400 border border-emerald-500/20' : 'bg-[#064e3b]/10 text-[#064e3b]'}`}>{f.username[0].toUpperCase()}</div>
-                        <span className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-slate-700'}`}>{f.username}</span>
+                  invitableFriends.slice(0, 5).map((f, i) => (
+                    <div key={f.id} className={`flex items-center justify-between py-3 ${i > 0 ? `border-t ${darkMode ? 'border-white/[0.04]' : 'border-slate-100'}` : ''}`}>
+                      <div className="flex items-center gap-2.5">
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold ${darkMode ? 'bg-white/[0.06] text-white/40' : 'bg-slate-100 text-slate-400'}`}>{f.username[0].toUpperCase()}</div>
+                        <span className={`text-[13px] font-medium ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>{f.username}</span>
                       </div>
                       {groupOutgoingInvites.includes(f.id) ? (
-                        <span className="text-[9px] font-black uppercase tracking-widest text-[#d4af37] bg-[#d4af37]/10 px-3 py-1.5 rounded-xl">Invited</span>
+                        <span className={`text-[9px] font-bold uppercase tracking-widest ${darkMode ? 'text-white/20' : 'text-slate-300'}`}>Sent</span>
                       ) : (
-                        <button onClick={() => sendGroupInvite(f.id)} className="p-2.5 bg-gradient-to-r from-[#064e3b] to-[#0a6b52] text-white rounded-xl shadow-lg shadow-[#064e3b]/20 transition-all active:scale-90">
+                        <button onClick={() => sendGroupInvite(f.id)} className={`p-2 rounded-lg transition-all active:scale-90 ${darkMode ? 'bg-white text-black' : 'bg-[#111] text-white'}`}>
                           <Send size={11} />
                         </button>
                       )}
