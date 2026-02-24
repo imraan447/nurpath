@@ -1437,7 +1437,7 @@ const App: React.FC = () => {
                       </svg>
                       <span className="text-[9px] font-bold text-slate-500 z-10 relative">{questsCompletedCount}</span>
                     </div>
-                    <button onClick={() => { loadUserData(user.id); }} className={`p-1.5 rounded-full transition-all active:scale-90 ${user.settings?.darkMode ? 'text-slate-400 hover:text-white hover:bg-white/10' : 'text-slate-400 hover:text-[#064e3b] hover:bg-slate-100'}`}>
+                    <button onClick={async () => { const { data: { session } } = await supabase.auth.getSession(); if (session) await fetchProfile(session.user.id, session.user.email!, session.user.created_at); }} className={`p-1.5 rounded-full transition-all active:scale-90 ${user.settings?.darkMode ? 'text-slate-400 hover:text-white hover:bg-white/10' : 'text-slate-400 hover:text-[#064e3b] hover:bg-slate-100'}`}>
                       <RefreshCcw size={14} />
                     </button>
                   </div>
