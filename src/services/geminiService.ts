@@ -1,7 +1,4 @@
-import { GoogleGenAI, Type } from "@google/genai";
 import { ReflectionItem } from "../types";
-
-let aiClient: GoogleGenAI | null = null;
 
 const PEXEL_IMAGES = [
   "/images/pexels-alohaphotostudio-10498909.jpg",
@@ -32,73 +29,24 @@ const PEXEL_IMAGES = [
   "/images/pexels-yide-sun-84747826-19461146.jpg"
 ];
 
-function getAiClient(): GoogleGenAI | null {
-  if (aiClient) return aiClient;
-
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  if (!apiKey) {
-    console.warn("Missing Gemini API Key - AI features will be disabled");
-    return null;
-  }
-
-  try {
-    aiClient = new GoogleGenAI({ apiKey });
-    return aiClient;
-  } catch (err) {
-    console.error("Failed to initialize Gemini client:", err);
-    return null;
-  }
-}
+// Helper to determine API URL
+const getApiUrl = () => {
+  // In Capacitor/Android, we might need a full URL. 
+  // For local web dev and Vercel, /api works.
+  return "/api/reflections";
+};
 
 export async function generateReflectionsStream(count: number = 3): Promise<ReflectionItem[]> {
   try {
-    const ai = getAiClient();
-    if (!ai) return [];
-
-    console.log("Requesting new reflections from Gemini...");
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash',
-      contents: `Generate ${count} profound Islamic spiritual reflection items.
-      
-      Output Format: JSON Array.
-      
-      Topic Mix:
-      - 1 Short Hadith (with reference like "Sahih Bukhari")
-      - 1 Short Quran Verse (with Surah:Verse)
-      - 1 "Wonder of Allah" (Short biological/cosmic fact connecting to Al-Khaliq)
-      - Or simple "Heart Softener" quotes/stories.
-
-      Constraints:
-      1. Content: Deep, meaningful, authentic Sunni sources.
-      2. 'details': Provide the FULL content here (2-3 paragraphs or the full Hadith text). Don't make it too long, but enough to read inline.
-      3. 'type': 'hadith' | 'verse' | 'wonder' | 'story'.
-      4. 'praise': One of ["Subhanallah", "Alhamdulillah", "Allahu Akbar"].
-      5. No humans/faces in description implied.
-
-      Schema:
-      [
-        {
-          "type": "string",
-          "content": "Title/Hook",
-          "summary": "One sentence teaser",
-          "details": "The full text/reflection/hadith content to show inline.",
-          "author": "Source Name",
-          "praise": "Praise Word",
-          "tags": ["tag1", "tag2"],
-          "readTime": "1 min read"
-        }
-      ]`,
-      config: {
-        responseMimeType: "application/json"
-      }
+    const response = await fetch(getApiUrl(), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "stream", count })
     });
 
-    const r = response as any;
-    const text = typeof r.text === 'function' ? r.text() : (r.text as string);
-    if (!text) return [];
+    if (!response.ok) throw new Error("API call failed");
 
-    const results = JSON.parse(text);
+    const results = await response.json();
 
     // Map random Pexel images
     return results.map((item: any) => ({
@@ -126,28 +74,16 @@ export async function generateReflections(count: number = 2): Promise<Reflection
 
 export async function generateReflectionDeepDive(item: ReflectionItem): Promise<string> {
   try {
-    const ai = getAiClient();
-    if (!ai) return item.summary || "AI content unavailable (API Key missing).";
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-1.5-pro',
-      contents: `Write a profound, soul-shaking Islamic spiritual essay based on this topic: "${item.content}".
-      
-      Context: ${item.summary}
-      
-      Strict Guidelines:
-      1. **Tone**: Deeply moving, poetic, and spiritual.
-      2. **Methodology**: Strictly Sunni/Salafi/Traditional.
-      3. **Content**: Connect the reader's daily modern struggles to Allah.
-      4. **Length**: 500-800 words.
-      5. **Output**: Plain text (paragraphs).
-      
-      Begin directly with the essay.`
+    const response = await fetch(getApiUrl(), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "deep-dive", item })
     });
 
-    const r = response as any;
-    const text = typeof r.text === 'function' ? r.text() : (r.text as string);
-    return text || item.summary || "Content unavailable.";
+    if (!response.ok) throw new Error("API call failed");
+
+    const result = await response.json();
+    return result.text || item.summary || "Content unavailable.";
   } catch (error) {
     console.error("Gemini Deep Dive Error:", error);
     return item.summary || "Content unavailable.";
