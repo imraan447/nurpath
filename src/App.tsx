@@ -65,6 +65,7 @@ import Community from './components/Community';
 import RoutineBuilder from './components/RoutineBuilder'; // Added import
 import Citadel from './components/Citadel';
 import { generateReflections, generateReflectionsStream } from './services/geminiService';
+import { schedulePrayerNotifications } from './services/notificationService';
 import { CURATED_REFLECTIONS } from './data/reflections';
 
 const DEFAULT_SETTINGS: UserSettings = {
@@ -157,6 +158,10 @@ const App: React.FC = () => {
   const [hideRoutine, setHideRoutine] = useState(true); // Default: Hide routine items from main list
   const [questTabView, setQuestTabView] = useState<'my' | 'citadel'>('my');
   const [jumuahCollapsed, setJumuahCollapsed] = useState(false);
+  const [pullRefreshing, setPullRefreshing] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
+  const touchStartY = useRef(0);
+  const mainScrollRef = useRef<HTMLElement>(null);
 
   const seerahScrollRef = useRef<HTMLDivElement>(null);
 
@@ -238,6 +243,13 @@ const App: React.FC = () => {
       });
     }
   };
+
+  // Schedule prayer notifications when times are loaded
+  useEffect(() => {
+    if (prayerTimes && user?.settings?.notifications) {
+      schedulePrayerNotifications(prayerTimes).catch(console.error);
+    }
+  }, [prayerTimes, user?.settings?.notifications]);
 
   useEffect(() => {
     fetchPrayerTimes();
@@ -1265,7 +1277,36 @@ const App: React.FC = () => {
         </header>
       )}
 
-      <main className={`flex-1 scrollbar-hide ${activeTab === 'reflect' || activeTab === 'community' || activeTab === 'guide' ? 'overflow-hidden p-0' : 'overflow-y-auto pb-40 px-6'}`}>
+      <main
+        ref={mainScrollRef}
+        className={`flex-1 scrollbar-hide ${activeTab === 'reflect' || activeTab === 'community' || activeTab === 'guide' ? 'overflow-hidden p-0' : 'overflow-y-auto pb-40 px-6'}`}
+        onTouchStart={(e) => { touchStartY.current = e.touches[0].clientY; }}
+        onTouchMove={(e) => {
+          if (mainScrollRef.current && mainScrollRef.current.scrollTop <= 0) {
+            const diff = e.touches[0].clientY - touchStartY.current;
+            if (diff > 0 && diff < 150) setPullDistance(diff);
+          }
+        }}
+        onTouchEnd={async () => {
+          if (pullDistance > 80 && !pullRefreshing) {
+            setPullRefreshing(true);
+            setPullDistance(0);
+            try {
+              const { data: { session } } = await supabase.auth.getSession();
+              if (session) await fetchProfile(session.user.id, session.user.email!, session.user.created_at);
+            } catch (e) { console.error(e); }
+            setPullRefreshing(false);
+          } else {
+            setPullDistance(0);
+          }
+        }}
+      >
+        {/* Pull to Refresh Indicator */}
+        {(pullDistance > 10 || pullRefreshing) && (
+          <div className="flex items-center justify-center py-4 transition-all" style={{ height: pullRefreshing ? 48 : Math.min(pullDistance, 80) }}>
+            <Loader2 className={`text-[#064e3b] dark:text-[#d4af37] ${pullRefreshing ? 'animate-spin' : ''}`} size={20} style={{ opacity: pullRefreshing ? 1 : Math.min(pullDistance / 80, 1) }} />
+          </div>
+        )}
         {activeTab === 'community' && <Community currentUser={user} darkMode={user.settings?.darkMode} onCompleteGroupQuest={(q) => completeQuest(q, 2)} onClose={() => setActiveTab(previousTabRef.current)} hasFriendRequests={hasFriendRequests} hasGroupInvites={hasGroupInvites} onTrackQuest={handleTrackGroupQuest} />}
 
         {activeTab === 'collect' && (
@@ -1864,6 +1905,9 @@ const App: React.FC = () => {
                     <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all shadow-sm ${pendingSettings.leaderboardEnabled ? 'left-7' : 'left-1'}`} />
                   </div>
                 </button>
+                {!pendingSettings.leaderboardEnabled && (
+                  <p className="text-[11px] text-amber-600 dark:text-amber-400 px-5 -mt-1">Your scores are hidden. Others cannot see your rank and you cannot view leaderboards.</p>
+                )}
               </div>
             </section>
 

@@ -17,16 +17,18 @@ interface LeaderboardProps {
   onClose: () => void;
   darkMode?: boolean;
   embedded?: boolean;
+  leaderboardEnabled?: boolean;
 }
 
-const Leaderboard: React.FC<LeaderboardProps> = ({ currentUserCountry, currentUserId, onClose, darkMode, embedded }) => {
+const Leaderboard: React.FC<LeaderboardProps> = ({ currentUserCountry, currentUserId, onClose, darkMode, embedded, leaderboardEnabled }) => {
   const [activeTab, setActiveTab] = useState<'global' | 'country' | 'friends'>('friends');
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchLeaderboard();
-  }, [activeTab]);
+    if (leaderboardEnabled) fetchLeaderboard();
+    else setLoading(false);
+  }, [activeTab, leaderboardEnabled]);
 
   const fetchLeaderboard = async () => {
     // Load from cache to prevent blank screen
@@ -146,7 +148,17 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentUserCountry, currentUs
 
         {/* List */}
         <div className="flex-1 overflow-y-auto p-6 pt-2 space-y-3 scrollbar-hide">
-          {loading ? (
+          {!leaderboardEnabled ? (
+            <div className="flex flex-col items-center justify-center h-60 gap-4 text-center px-6">
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center ${darkMode ? 'bg-white/5' : 'bg-slate-100'}`}>
+                <Trophy size={28} className="text-slate-300" />
+              </div>
+              <h3 className={`font-bold text-lg ${darkMode ? 'text-white' : 'text-slate-800'}`}>Leaderboard Disabled</h3>
+              <p className={`text-sm max-w-[260px] ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                Your scores are hidden from other users. Enable "Show on Leaderboard" in <span className="font-bold text-[#064e3b] dark:text-[#d4af37]">Settings</span> to see rankings and compete.
+              </p>
+            </div>
+          ) : loading ? (
             <div className="flex flex-col items-center justify-center h-40 gap-3 opacity-50">
               <Loader2 className="animate-spin text-[#064e3b] dark:text-emerald-400" size={32} />
               <span className="text-[10px] font-black uppercase tracking-widest">Loading Ranks...</span>

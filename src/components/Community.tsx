@@ -707,6 +707,7 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
             onClose={() => { }}
             darkMode={darkMode}
             embedded={true}
+            leaderboardEnabled={currentUser.settings?.leaderboardEnabled}
           />
         )}
 
