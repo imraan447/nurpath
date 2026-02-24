@@ -25,12 +25,14 @@ export interface Quest {
 
 export interface UserSettings {
   darkMode: boolean;
+  darkModePreference?: 'light' | 'dark' | 'system'; // system = follow device
   notifications: boolean;
   fontSize: 'small' | 'medium' | 'large';
   seerahBookmark?: number;
   calcMethod?: number; // 2 for ISNA, 1 for MWL etc
   madhab?: number; // 0 for Shafi/Standard, 1 for Hanafi
   ramadan_tracker?: number[]; // Array of completed Ramadan days (1-30)
+  leaderboardEnabled?: boolean; // opt-in to leaderboard
 }
 
 export interface User {

@@ -69,11 +69,13 @@ import { CURATED_REFLECTIONS } from './data/reflections';
 
 const DEFAULT_SETTINGS: UserSettings = {
   darkMode: false,
+  darkModePreference: 'light',
   notifications: true,
   fontSize: 'medium',
   seerahBookmark: 0,
   calcMethod: 2, // ISNA
-  madhab: 0 // Shafi/Standard
+  madhab: 0, // Shafi/Standard
+  leaderboardEnabled: false
 };
 
 const getLevelInfo = (xp: number) => {
@@ -275,13 +277,24 @@ const App: React.FC = () => {
     setNextPrayer(next);
   };
 
+  // Dark Mode: support system preference
   useEffect(() => {
-    if (user?.settings?.darkMode) {
-      document.body.classList.add('dark');
+    const pref = user?.settings?.darkModePreference || 'light';
+    const applyDark = (isDark: boolean) => {
+      if (isDark) document.body.classList.add('dark');
+      else document.body.classList.remove('dark');
+    };
+
+    if (pref === 'system') {
+      const mq = window.matchMedia('(prefers-color-scheme: dark)');
+      applyDark(mq.matches);
+      const handler = (e: MediaQueryListEvent) => applyDark(e.matches);
+      mq.addEventListener('change', handler);
+      return () => mq.removeEventListener('change', handler);
     } else {
-      document.body.classList.remove('dark');
+      applyDark(pref === 'dark');
     }
-  }, [user?.settings?.darkMode]);
+  }, [user?.settings?.darkModePreference, user?.settings?.darkMode]);
 
   // SUPABASE AUTH INIT
   useEffect(() => {
@@ -1313,15 +1326,23 @@ const App: React.FC = () => {
                 const isOpen = openCategories.includes(category);
                 const isCorrection = category === 'Correction Quests';
 
+                // Vibrant FlatUI-inspired colors per category
+                const categoryColors: Record<string, string> = {
+                  'The Five Pillars': 'from-[#2c3e50] to-[#34495e]',
+                  'Nafl Salaah': 'from-[#16a085] to-[#1abc9c]',
+                  'Daily Remembrance': 'from-[#2980b9] to-[#3498db]',
+                  'Sunnah & Character': 'from-[#8e44ad] to-[#9b59b6]',
+                  'Community & Charity': 'from-[#d35400] to-[#e67e22]',
+                  'Correction Quests': 'from-[#c0392b] to-[#e74c3c]'
+                };
+                const gradient = categoryColors[category] || 'from-slate-600 to-slate-500';
+
                 return (
-                  <section key={category} className={`space-y-4 rounded-[30px] transition-all ${isCorrection && isOpen ? (user.settings?.darkMode ? 'bg-rose-900/10 p-2 pb-6 border border-rose-500/20' : 'bg-rose-50/50 p-2 pb-6 border border-rose-100') : ''}`}>
-                    <button onClick={() => toggleCategory(category)} className={`sticky top-0 z-10 w-full flex items-center justify-between p-4 rounded-2xl border shadow-sm transition-all ${isCorrection
-                      ? (user.settings?.darkMode ? 'bg-rose-900/20 border-rose-500/30 text-rose-300' : 'bg-rose-100 border-rose-200 text-rose-700')
-                      : (user.settings?.darkMode ? 'bg-slate-900/95 border-white/10 text-slate-400' : 'bg-slate-50/95 border-slate-100 text-slate-500')
-                      } backdrop-blur-sm`}>
+                  <section key={category} className={`space-y-4 rounded-[30px] transition-all ${isCorrection && isOpen ? 'p-2 pb-6' : ''}`}>
+                    <button onClick={() => toggleCategory(category)} className={`sticky top-0 z-10 w-full flex items-center justify-between p-4 rounded-2xl shadow-lg transition-all bg-gradient-to-r ${gradient} text-white border-none backdrop-blur-sm hover:shadow-xl hover:scale-[1.01] active:scale-[0.99]`}>
                       <h2 className="text-[10px] font-black uppercase tracking-[0.4em]">{category}</h2>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold opacity-70">{availableToStart}/{displayQuests.length}</span>
+                        <span className="text-xs font-bold opacity-80">{availableToStart}/{displayQuests.length}</span>
                         <ChevronDown size={16} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                       </div>
                     </button>
@@ -1405,7 +1426,7 @@ const App: React.FC = () => {
               <>
                 {/* Header Section */}
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className={`text-[12px] font-black uppercase tracking-[0.5em] ${user.settings?.darkMode ? 'text-white' : 'text-[#064e3b]'}`}>Today's Focus</h2>
+                  <h2 className={`text-[12px] font-black uppercase tracking-[0.5em] ${user.settings?.darkMode ? 'text-white' : 'text-[#064e3b]'}`}>My Focus</h2>
                   {/* Stats on the right */}
                   <div className="flex items-center gap-3">
                     <span className="text-[10px] font-black uppercase tracking-widest text-[#d4af37]">+{xpGainedToday} XP</span>
@@ -1416,6 +1437,9 @@ const App: React.FC = () => {
                       </svg>
                       <span className="text-[9px] font-bold text-slate-500 z-10 relative">{questsCompletedCount}</span>
                     </div>
+                    <button onClick={() => { loadUserData(user.id); }} className={`p-1.5 rounded-full transition-all active:scale-90 ${user.settings?.darkMode ? 'text-slate-400 hover:text-white hover:bg-white/10' : 'text-slate-400 hover:text-[#064e3b] hover:bg-slate-100'}`}>
+                      <RefreshCcw size={14} />
+                    </button>
                   </div>
                 </div>
 
@@ -1773,24 +1797,36 @@ const App: React.FC = () => {
             <section className="space-y-4">
               <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Experience</h3>
               <div className="space-y-3">
-                <button
-                  onClick={() => setPendingSettings({ ...pendingSettings, darkMode: !pendingSettings.darkMode })}
-                  className="w-full p-5 bg-slate-50 dark:bg-white/5 rounded-[30px] flex items-center justify-between"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${pendingSettings.darkMode ? 'bg-indigo-500 text-white' : 'bg-orange-400 text-white'}`}>
-                      {pendingSettings.darkMode ? <Moon size={20} /> : <Sun size={20} />}
+                {/* Dark Mode: 3-way selector */}
+                <div className="w-full p-5 bg-slate-50 dark:bg-white/5 rounded-[30px]">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-10 h-10 rounded-full bg-indigo-500 text-white flex items-center justify-center">
+                      <Moon size={20} />
                     </div>
                     <div className="text-left">
-                      <h4 className="font-bold dark:text-white">Dark Mode</h4>
-                      <p className="text-xs text-slate-500">Easier on the eyes at night</p>
+                      <h4 className="font-bold dark:text-white">Appearance</h4>
+                      <p className="text-xs text-slate-500">Choose your theme preference</p>
                     </div>
                   </div>
-                  <div className={`w-14 h-8 rounded-full relative transition-colors ${pendingSettings.darkMode ? 'bg-[#064e3b]' : 'bg-slate-300'}`}>
-                    <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all shadow-sm ${pendingSettings.darkMode ? 'left-7' : 'left-1'}`} />
+                  <div className="grid grid-cols-3 gap-2">
+                    {(['light', 'dark', 'system'] as const).map(opt => (
+                      <button
+                        key={opt}
+                        onClick={() => setPendingSettings({ ...pendingSettings, darkMode: opt === 'dark', darkModePreference: opt })}
+                        className={`p-3 rounded-xl text-xs font-bold uppercase tracking-widest border-2 transition-all flex items-center justify-center gap-1.5 ${(pendingSettings.darkModePreference || (pendingSettings.darkMode ? 'dark' : 'light')) === opt
+                          ? 'border-[#064e3b] bg-[#064e3b]/10 text-[#064e3b] dark:border-[#d4af37] dark:bg-[#d4af37]/10 dark:text-[#d4af37]'
+                          : 'border-transparent bg-white dark:bg-black/20 text-slate-500'}`}
+                      >
+                        {opt === 'light' && <Sun size={14} />}
+                        {opt === 'dark' && <Moon size={14} />}
+                        {opt === 'system' && <Smartphone size={14} />}
+                        {opt}
+                      </button>
+                    ))}
                   </div>
-                </button>
+                </div>
 
+                {/* Notifications */}
                 <button
                   onClick={() => setPendingSettings({ ...pendingSettings, notifications: !pendingSettings.notifications })}
                   className="w-full p-5 bg-slate-50 dark:bg-white/5 rounded-[30px] flex items-center justify-between"
@@ -1808,11 +1844,30 @@ const App: React.FC = () => {
                     <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all shadow-sm ${pendingSettings.notifications ? 'left-7' : 'left-1'}`} />
                   </div>
                 </button>
+
+                {/* Leaderboard Toggle */}
+                <button
+                  onClick={() => setPendingSettings({ ...pendingSettings, leaderboardEnabled: !pendingSettings.leaderboardEnabled })}
+                  className="w-full p-5 bg-slate-50 dark:bg-white/5 rounded-[30px] flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-cyan-500 text-white flex items-center justify-center">
+                      <Users size={20} />
+                    </div>
+                    <div className="text-left">
+                      <h4 className="font-bold dark:text-white">Show on Leaderboard</h4>
+                      <p className="text-xs text-slate-500">Allow others to see your rank</p>
+                    </div>
+                  </div>
+                  <div className={`w-14 h-8 rounded-full relative transition-colors ${pendingSettings.leaderboardEnabled ? 'bg-[#064e3b]' : 'bg-slate-300'}`}>
+                    <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all shadow-sm ${pendingSettings.leaderboardEnabled ? 'left-7' : 'left-1'}`} />
+                  </div>
+                </button>
               </div>
             </section>
 
             {/* Section: Prayer Calc */}
-            < section className="space-y-4" >
+            <section className="space-y-4">
               <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Calculation Standards</h3>
               <div className="p-5 bg-slate-50 dark:bg-white/5 rounded-[30px] space-y-6">
                 <div className="space-y-2">
@@ -1851,26 +1906,7 @@ const App: React.FC = () => {
                   </div>
                 </div>
               </div>
-            </section >
-
-            {/* Section: Advanced / Other */}
-            < section className="space-y-4" >
-              <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Preferences</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <button className="p-4 bg-slate-50 dark:bg-white/5 rounded-3xl flex flex-col items-center justify-center gap-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
-                  <Smartphone size={24} />
-                  <span className="text-xs font-bold">Haptic Feedback</span>
-                </button>
-                <button className="p-4 bg-slate-50 dark:bg-white/5 rounded-3xl flex flex-col items-center justify-center gap-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
-                  <Target size={24} />
-                  <span className="text-xs font-bold">Daily Goal</span>
-                </button>
-              </div>
-              <button onClick={handleDownloadSource} className="w-full p-4 bg-slate-50 dark:bg-white/5 rounded-3xl flex items-center justify-center gap-2 text-[#064e3b] dark:text-[#d4af37] font-bold hover:bg-slate-100 transition-colors">
-                {isZipping ? <Loader2 className="animate-spin" size={20} /> : <Download size={20} />}
-                <span>Backup / Download Source</span>
-              </button>
-            </section >
+            </section>
 
             <button onClick={handleLogout} className="w-full py-4 text-rose-500 font-bold text-sm bg-rose-50 dark:bg-rose-900/10 rounded-2xl">
               Log Out
