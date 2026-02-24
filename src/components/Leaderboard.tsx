@@ -60,6 +60,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentUserCountry, currentUs
           .from('profiles')
           .select('id, username, xp, country')
           .in('id', friendIds)
+          .filter('settings->>leaderboardEnabled', 'eq', 'true')
           .order('xp', { ascending: false });
 
         data = res.data;
@@ -70,6 +71,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentUserCountry, currentUs
         let query = supabase
           .from('profiles')
           .select('id, username, xp, country')
+          .filter('settings->>leaderboardEnabled', 'eq', 'true')
           .order('xp', { ascending: false })
           .limit(50);
 

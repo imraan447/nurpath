@@ -37,25 +37,23 @@ const QuestCard: React.FC<QuestCardProps> = ({
   onCompleteRelated, isBundle, timeDisplay, isTracked,
   isGroupQuest, groupProgress, isLocked, deadline
 }) => {
-
   const getCategoryStyles = () => {
     switch (quest.category) {
       case QuestCategory.MAIN:
-        return darkMode ? 'bg-white/10 text-white' : 'bg-[#064e3b]/10 text-[#064e3b]';
+        return darkMode ? 'bg-white/10 text-white' : 'bg-[#156b57]/10 text-[#156b57]';
       case QuestCategory.SUNNAH:
-        // Sunnah is now Light Green
-        return darkMode ? 'bg-emerald-500/20 text-emerald-300' : 'bg-emerald-100 text-emerald-700';
+        // Match Sunnah & Character (Purple or the mint green in screenshot for sunnah quest)
+        // From screenshot: "SUNNAH QUEST" badge is mint green #cdfae1 with green text
+        return darkMode ? 'bg-[#d1fae5]/10 text-[#34d399]' : 'bg-[#d1fae5] text-[#059669]';
       case QuestCategory.CHARITY:
-        // Charity is now Light Gold
-        return darkMode ? 'bg-amber-500/20 text-amber-300' : 'bg-amber-100 text-amber-700';
+        // Match Community & Charity (Gold/Orange)
+        return darkMode ? 'bg-[#fef3c7]/10 text-[#fbbf24]' : 'bg-[#fef3c7] text-[#d97706]';
       case QuestCategory.CORRECTION:
-        // Correction is highlighted Red
-        return darkMode ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-rose-100 text-rose-700 border border-rose-200';
+        return darkMode ? 'bg-[#fee2e2]/10 text-[#f87171]' : 'bg-[#fee2e2] text-[#ef4444]';
       case QuestCategory.COMMUNITY:
-        // Community is Indigo
-        return darkMode ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'bg-indigo-100 text-indigo-700 border border-indigo-200';
+        return darkMode ? 'bg-indigo-500/20 text-indigo-300' : 'bg-indigo-100 text-indigo-700';
       default:
-        return 'bg-slate-100 text-slate-700';
+        return darkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-700';
     }
   };
 

@@ -45,6 +45,8 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
   const [groupOutgoingInvites, setGroupOutgoingInvites] = useState<string[]>([]);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameText, setRenameText] = useState('');
+  const [showMembersPanel, setShowMembersPanel] = useState(false);
+  const [memberSearchQuery, setMemberSearchQuery] = useState('');
   const [declinedQuests, setDeclinedQuests] = useState<string[]>([]);
   const [hiddenQuests, setHiddenQuests] = useState<string[]>([]);
 
@@ -562,6 +564,32 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
     }
   };
 
+  const makeGroupAdmin = async (userId: string) => {
+    if (!activeGroup || myRole !== 'admin') return;
+    if (!confirm('Make this user an admin?')) return;
+    try {
+      const { error } = await supabase.from('group_members').update({ role: 'admin' }).eq('group_id', activeGroup.id).eq('user_id', userId);
+      if (error) throw error;
+      setActiveGroup(prev => {
+        if (!prev) return null;
+        return { ...prev, members: prev.members?.map(m => m.id === userId ? { ...m, role: 'admin' } : m) };
+      });
+    } catch (e) { console.error(e); alert('Failed to make admin'); }
+  };
+
+  const removeGroupMember = async (userId: string) => {
+    if (!activeGroup || myRole !== 'admin') return;
+    if (!confirm('Remove this user from the group?')) return;
+    try {
+      const { error } = await supabase.from('group_members').delete().eq('group_id', activeGroup.id).eq('user_id', userId);
+      if (error) throw error;
+      setActiveGroup(prev => {
+        if (!prev) return null;
+        return { ...prev, members: prev.members?.filter(m => m.id !== userId) };
+      });
+    } catch (e) { console.error(e); alert('Failed to remove member'); }
+  };
+
   // Check if a quest was completed today
   const isQuestCompletedToday = (questId: string): boolean => {
     const todayStr = new Date().toISOString().split('T')[0];
@@ -572,6 +600,10 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
   const filteredGroups = groups.filter(g =>
     g.name.toLowerCase().includes(groupSearchQuery.toLowerCase())
   );
+
+  const filteredActiveMembers = activeGroup?.members?.filter(m =>
+    m.username.toLowerCase().includes(memberSearchQuery.toLowerCase())
+  ) || [];
 
   // Friends not in active group (for invite)
   const invitableFriends = friends.filter(f => {
@@ -610,9 +642,9 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
         <div className={`flex border-b ${darkMode ? 'border-white/5' : 'border-slate-100'}`}>
           {([
             { key: 'duas', label: 'Duas', badge: false },
-            { key: 'leaderboard', label: 'Ranks', badge: false },
             { key: 'friends', label: 'Friends', badge: hasFriendRequests },
             { key: 'groups', label: 'Groups', badge: hasGroupInvites },
+            { key: 'leaderboard', label: 'Ranks', badge: false },
           ] as const).map(t => (
             <button
               key={t.key}
@@ -642,21 +674,20 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
           <div className="space-y-5 animate-in fade-in duration-500">
 
             {/* POST DUA */}
-            <div className={`p-5 rounded-2xl ${darkMode ? 'bg-white/[0.03] border border-white/[0.06]' : 'bg-slate-50/80 border border-slate-100'}`}>
-              <p className={`text-[10px] font-bold uppercase tracking-[0.2em] mb-3 ${darkMode ? 'text-[#d4af37]/60' : 'text-[#b8960b]/60'}`}>🤲 Share a Dua</p>
+            <div className={`mb-6 pb-2 ${darkMode ? 'border-b border-white/[0.08]' : 'border-b border-slate-200'}`}>
               <textarea
-                placeholder="Ya Allah, I ask You for..."
-                className={`w-full p-4 rounded-xl text-[13px] leading-relaxed resize-none outline-none min-h-[80px] transition-all ${darkMode ? 'bg-white/[0.04] text-white/80 placeholder:text-white/15 border border-white/[0.04] focus:border-white/10' : 'bg-white text-slate-700 placeholder:text-slate-300 border border-slate-200/60 focus:border-slate-300'}`}
+                placeholder="Share a dua..."
+                className={`w-full bg-transparent text-[15px] leading-relaxed resize-none outline-none min-h-[50px] ${darkMode ? 'text-white/90 placeholder:text-white/25' : 'text-slate-800 placeholder:text-slate-400'}`}
                 value={newDuaText}
                 onChange={e => setNewDuaText(e.target.value)}
                 maxLength={500}
               />
-              <div className="flex items-center justify-between mt-3">
+              <div className="flex items-center justify-between mt-2">
                 <span className={`text-[10px] font-medium tabular-nums ${darkMode ? 'text-white/15' : 'text-slate-300'}`}>{newDuaText.length}/500</span>
                 <button
                   onClick={postDua}
                   disabled={!newDuaText.trim()}
-                  className={`px-5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-[0.1em] transition-all active:scale-95 disabled:opacity-20 ${darkMode ? 'bg-white text-black hover:bg-white/90' : 'bg-[#111] text-white hover:bg-black'}`}
+                  className={`px-5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-[0.1em] transition-all active:scale-95 disabled:opacity-20 ${darkMode ? 'bg-white text-black hover:bg-white/90' : 'bg-[#111] text-white hover:bg-black'}`}
                 >
                   Post
                 </button>
@@ -963,9 +994,14 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
 
             {/* Actions */}
             <div className="flex gap-2 justify-center flex-wrap">
-              <button onClick={() => setShowInvitePanel(!showInvitePanel)} className={`px-4 py-2 rounded-lg text-[9px] font-bold uppercase tracking-[0.1em] flex items-center gap-1.5 transition-all active:scale-95 ${darkMode ? 'bg-white/[0.04] text-white/40 hover:bg-white/[0.08] hover:text-white/60' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
+              <button onClick={() => { setShowInvitePanel(!showInvitePanel); setShowMembersPanel(false); }} className={`px-4 py-2 rounded-lg text-[9px] font-bold uppercase tracking-[0.1em] flex items-center gap-1.5 transition-all active:scale-95 ${darkMode ? 'bg-white/[0.04] text-white/40 hover:bg-white/[0.08] hover:text-white/60' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
                 <UserPlus size={10} /> Invite
               </button>
+              {myRole === 'admin' && (
+                <button onClick={() => { setShowMembersPanel(!showMembersPanel); setShowInvitePanel(false); }} className={`px-4 py-2 rounded-lg text-[9px] font-bold uppercase tracking-[0.1em] flex items-center gap-1.5 transition-all active:scale-95 ${darkMode ? 'bg-white/[0.04] text-white/40 hover:bg-white/[0.08] hover:text-white/60' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
+                  <Users size={10} /> Manage
+                </button>
+              )}
               <button onClick={leaveGroup} className={`px-4 py-2 rounded-lg text-[9px] font-bold uppercase tracking-[0.1em] flex items-center gap-1.5 transition-all active:scale-95 ${darkMode ? 'bg-white/[0.04] text-rose-400/60 hover:text-rose-400' : 'bg-slate-100 text-rose-400 hover:text-rose-500'}`}>
                 <LogOut size={10} /> Leave
               </button>
@@ -975,6 +1011,40 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
                 </button>
               )}
             </div>
+
+            {/* Manage Members Panel */}
+            {showMembersPanel && myRole === 'admin' && (
+              <div className={`space-y-0 animate-in fade-in`}>
+                <input
+                  type="text"
+                  placeholder="Search members..."
+                  className={`w-full p-3.5 rounded-xl text-[13px] outline-none transition-all mb-3 ${darkMode ? 'bg-white/[0.03] text-white/80 border border-white/[0.06] placeholder:text-white/15 focus:border-white/15' : 'bg-slate-50/80 text-slate-700 border border-slate-100 placeholder:text-slate-300 focus:border-slate-200'}`}
+                  value={memberSearchQuery}
+                  onChange={e => setMemberSearchQuery(e.target.value)}
+                />
+                {filteredActiveMembers.length === 0 ? (
+                  <p className={`text-[13px] text-center py-4 ${darkMode ? 'text-white/15' : 'text-slate-300'}`}>No members found.</p>
+                ) : (
+                  filteredActiveMembers.map((m, i) => (
+                    <div key={m.id} className={`flex items-center justify-between py-3 ${i > 0 ? `border-t ${darkMode ? 'border-white/[0.04]' : 'border-slate-100'}` : ''}`}>
+                      <div className="flex items-center gap-2.5">
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold ${darkMode ? 'bg-white/[0.06] text-white/40' : 'bg-slate-100 text-slate-400'}`}>{m.username[0].toUpperCase()}</div>
+                        <div>
+                          <span className={`text-[13px] font-medium ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>{m.username}</span>
+                          {m.role === 'admin' && <span className={`ml-2 text-[9px] font-bold uppercase tracking-widest ${darkMode ? 'text-[#d4af37]/60' : 'text-[#d4af37]'}`}>Admin</span>}
+                        </div>
+                      </div>
+                      {m.role !== 'admin' && m.id !== currentUser.id && (
+                        <div className="flex gap-1.5">
+                          <button onClick={() => makeGroupAdmin(m.id)} className={`px-2 py-1 rounded-md text-[9px] font-bold uppercase tracking-widest transition-all ${darkMode ? 'bg-white/[0.06] text-white/40 hover:text-[#d4af37]' : 'bg-slate-100 text-slate-400 hover:text-[#d4af37]'}`}>Admin</button>
+                          <button onClick={() => removeGroupMember(m.id)} className={`px-2 py-1 rounded-md text-[9px] font-bold uppercase tracking-widest transition-all ${darkMode ? 'bg-white/[0.06] text-white/40 hover:text-rose-400' : 'bg-slate-100 text-slate-400 hover:text-rose-500'}`}>Remove</button>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
 
             {/* Invite Panel */}
             {showInvitePanel && (

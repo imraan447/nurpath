@@ -112,7 +112,7 @@ const NavBtn = ({ active, label, icon, onClick, darkMode }: { active: boolean; l
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
-  const [activeTab, setActiveTab] = useState<'collect' | 'active' | 'reflect' | 'guide' | 'seerah' | 'community'>('collect');
+  const [activeTab, setActiveTab] = useState<'collect' | 'active' | 'reflect' | 'guide' | 'seerah' | 'community'>('active');
   const previousTabRef = useRef<'collect' | 'active' | 'reflect' | 'guide' | 'seerah'>('collect');
   const [showProfile, setShowProfile] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -1292,9 +1292,12 @@ const App: React.FC = () => {
           <div className="p-6 pb-4 flex items-center justify-between relative">
             <div className="flex flex-col z-10"><span className={`text-[12px] font-black uppercase tracking-[0.5em] ${user.settings?.darkMode ? 'text-white' : 'text-[#064e3b]'}`}>NurPath</span></div>
             <div className="flex items-center gap-2 z-10">
-              <button onClick={() => { previousTabRef.current = activeTab as any; setActiveTab('community'); }} className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all active:scale-95 shadow-md ${user.settings?.darkMode ? 'bg-gradient-to-r from-cyan-600 to-teal-500 hover:from-cyan-500 hover:to-teal-400' : 'bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400'}`}>
-                <HeartHandshake size={13} className="text-white" />
-                <span className="text-[10px] font-black uppercase tracking-wider text-white">Nur-Connect</span>
+              <button
+                onClick={() => { previousTabRef.current = activeTab as any; setActiveTab('community'); }}
+                className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all active:scale-95 border ${user.settings?.darkMode ? 'bg-white/[0.05] border-white/10 text-white hover:bg-white/10' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'}`}
+              >
+                <HeartHandshake size={13} className={user.settings?.darkMode ? 'text-white/60' : 'text-slate-500'} />
+                <span className="text-[10px] font-black uppercase tracking-wider">Nur-Connect</span>
                 {(hasFriendRequests || hasGroupInvites) && <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 border border-white dark:border-[#050a09]"></span></span>}
               </button>
               <button onClick={() => setShowSettings(true)} className={`p-2 rounded-full transition-colors ${user.settings?.darkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}><Settings size={18} /></button>
@@ -1344,45 +1347,40 @@ const App: React.FC = () => {
 
         {activeTab === 'collect' && (
           <div className="space-y-6 py-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            {/* Same collection content as before */}
-            <div className="px-6 mt-2 mb-6">
-              <h1 className={`text-2xl font-black tracking-tight ${user.settings?.darkMode ? 'text-white' : 'text-slate-900'}`}>
-                Salaam Alaykum, <span className="text-[#064e3b]">{user.name.split(' ')[0]}</span>
-              </h1>
-            </div>
 
             {/* ROUTINE BUILDER BUTTON */}
-            <div className="pt-2">
+            <div className="px-6 pt-2">
               <button
                 onClick={() => setShowRoutineBuilder(true)}
-                className={`w-full p-6 text-center rounded-[30px] border-2 border-dashed transition-all ${user.settings?.darkMode ? 'border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/40' : 'border-[#064e3b]/20 bg-[#064e3b]/5 hover:bg-[#064e3b]/10 hover:border-[#064e3b]/40'}`}
+                className={`w-full p-4 rounded-xl border border-dashed transition-all flex items-center justify-between group ${user.settings?.darkMode ? 'border-white/[0.15] bg-white/[0.02] hover:bg-white/[0.05]' : 'border-slate-200 bg-slate-50/50 hover:bg-slate-50'}`}
               >
-                <div className="flex flex-col items-center gap-3">
-                  <div className={`p-4 rounded-full ${user.settings?.darkMode ? 'bg-white/10 text-white' : 'bg-white text-[#064e3b] shadow-sm'}`}>
-                    <ListTodo size={24} />
+                <div className="flex items-center gap-3">
+                  <div className={`p-2.5 rounded-lg ${user.settings?.darkMode ? 'bg-white/10 text-white' : 'bg-white text-[#064e3b] shadow-sm'}`}>
+                    <ListTodo size={16} />
                   </div>
-                  <div>
-                    <h3 className={`font-bold text-lg mb-1 ${user.settings?.darkMode ? 'text-white' : 'text-[#064e3b]'}`}>{(user.pinnedQuests?.length || 0) > 0 ? 'Edit My Routine' : 'Build Your Daily Routine'}</h3>
-                    <p className={`text-xs max-w-xs mx-auto ${user.settings?.darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{(user.pinnedQuests?.length || 0) > 0 ? `${user.pinnedQuests!.length} quests in your routine.` : 'Select quests to automatically track every day.'}</p>
+                  <div className="text-left">
+                    <h3 className={`font-bold text-[13px] ${user.settings?.darkMode ? 'text-white' : 'text-slate-800'}`}>{(user.pinnedQuests?.length || 0) > 0 ? 'Edit Routine' : 'Build Your Routine'}</h3>
+                    <p className={`text-[10px] ${user.settings?.darkMode ? 'text-white/40' : 'text-slate-500'}`}>{(user.pinnedQuests?.length || 0) > 0 ? `${user.pinnedQuests!.length} quests configured.` : 'Set up your daily tasks.'}</p>
                   </div>
+                </div>
+                <div className={`p-1.5 rounded-full transition-all group-hover:translate-x-1 ${user.settings?.darkMode ? 'text-white/20' : 'text-slate-300'}`}>
+                  <ChevronRight size={16} />
                 </div>
               </button>
             </div>
 
-
-
             {/* STANDARD CATEGORIES */}
-            <div className="space-y-4 pt-4">
+            <div className="space-y-2 pt-2">
               {/* Filter Toggle */}
-              <div className="px-2 flex items-center justify-end">
+              <div className="px-6 flex items-center justify-end">
                 <button
                   onClick={() => setHideRoutine(!hideRoutine)}
-                  className={`text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 transition-opacity ${hideRoutine ? 'opacity-100' : 'opacity-50'} ${user.settings?.darkMode ? 'text-slate-400' : 'text-slate-500'}`}
+                  className={`text-[10px] font-bold uppercase tracking-[0.15em] flex items-center gap-2 transition-opacity ${hideRoutine ? 'opacity-100' : 'opacity-60'} ${user.settings?.darkMode ? 'text-slate-400' : 'text-slate-500'}`}
                 >
-                  <div className={`w-8 h-4 rounded-full relative transition-colors ${hideRoutine ? 'bg-[#064e3b] dark:bg-[#d4af37]' : 'bg-slate-300 dark:bg-white/20'}`}>
+                  <div className={`w-8 h-4 rounded-full relative transition-colors ${hideRoutine ? 'bg-[#064e3b] dark:bg-emerald-600' : 'bg-slate-200 dark:bg-white/10'}`}>
                     <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all shadow-sm ${hideRoutine ? 'left-4.5' : 'left-0.5'}`} style={{ left: hideRoutine ? '18px' : '2px' }} />
                   </div>
-                  Hide Routine Quests
+                  Hide Tracked Quests
                 </button>
               </div>
 
@@ -1401,20 +1399,20 @@ const App: React.FC = () => {
                 const isOpen = openCategories.includes(category);
                 const isCorrection = category === 'Correction Quests';
 
-                // Vibrant FlatUI-inspired colors per category
+                // Minimal colors per category, matching screenshot requests
                 const categoryColors: Record<string, string> = {
-                  'The Five Pillars': 'from-[#2c3e50] to-[#34495e]',
-                  'Nafl Salaah': 'from-[#16a085] to-[#1abc9c]',
-                  'Daily Remembrance': 'from-[#2980b9] to-[#3498db]',
-                  'Sunnah & Character': 'from-[#8e44ad] to-[#9b59b6]',
-                  'Community & Charity': 'from-[#d35400] to-[#e67e22]',
-                  'Correction Quests': 'from-[#c0392b] to-[#e74c3c]'
+                  'The Five Pillars': 'bg-[#156b57]', // Darker green
+                  'Nafl Salaah': 'bg-[#2b6a7a]', // Teal/Blue mixed
+                  'Daily Remembrance': 'bg-[#2d5a8b]', // Deep Blue
+                  'Sunnah & Character': 'bg-[#673a7c]', // Purple
+                  'Community & Charity': 'bg-[#d88c22]', // Gold/Orange
+                  'Correction Quests': 'bg-[#b63c3c]' // Red
                 };
-                const gradient = categoryColors[category] || 'from-slate-600 to-slate-500';
+                const bgColor = categoryColors[category] || 'bg-slate-700';
 
                 return (
                   <section key={category} className={`space-y-4 rounded-[30px] transition-all ${isCorrection && isOpen ? 'p-2 pb-6' : ''}`}>
-                    <button onClick={() => toggleCategory(category)} className={`sticky top-0 z-10 w-full flex items-center justify-between p-4 rounded-2xl shadow-lg transition-all bg-gradient-to-r ${gradient} text-white border-none backdrop-blur-sm hover:shadow-xl hover:scale-[1.01] active:scale-[0.99]`}>
+                    <button onClick={() => toggleCategory(category)} className={`sticky top-0 z-10 w-full flex items-center justify-between p-4 rounded-xl shadow-sm transition-all ${bgColor} text-white hover:opacity-90 active:scale-[0.99]`}>
                       <h2 className="text-[10px] font-black uppercase tracking-[0.4em]">{category}</h2>
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold opacity-80">{availableToStart}/{displayQuests.length}</span>
@@ -1498,61 +1496,43 @@ const App: React.FC = () => {
 
             {/* MY QUESTS VIEW */}
             {questTabView === 'my' && (
-              <>
-                {/* Header Section */}
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className={`text-[12px] font-black uppercase tracking-[0.5em] ${user.settings?.darkMode ? 'text-white' : 'text-[#064e3b]'}`}>My Focus</h2>
-                  {/* Stats on the right */}
-                  <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-[#d4af37]">+{xpGainedToday} XP</span>
-                    <div className="relative flex items-center justify-center w-7 h-7">
-                      <svg className="w-7 h-7 -rotate-90 absolute inset-0" viewBox="0 0 36 36">
-                        <path className="text-slate-200 dark:text-white/10" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" />
-                        <path className="text-[#064e3b] dark:text-[#d4af37]" strokeDasharray={`${Math.min(100, (questsCompletedCount / Math.max(1, user.activeQuests.length + questsCompletedCount)) * 100)}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" />
-                      </svg>
-                      <span className="text-[9px] font-bold text-slate-500 z-10 relative">{questsCompletedCount}</span>
-                    </div>
-                    <button onClick={async () => { const { data: { session } } = await supabase.auth.getSession(); if (session) await fetchProfile(session.user.id, session.user.email!, session.user.created_at); }} className={`p-1.5 rounded-full transition-all active:scale-90 ${user.settings?.darkMode ? 'text-slate-400 hover:text-white hover:bg-white/10' : 'text-slate-400 hover:text-[#064e3b] hover:bg-slate-100'}`}>
-                      <RefreshCcw size={14} />
-                    </button>
-                  </div>
-                </div>
-
+              <div className="space-y-4">
                 {/* Ramadan Tracker Card */}
                 <button
                   onClick={() => setShowRamadanTracker(true)}
-                  className={`w-full mb-6 p-5 rounded-[24px] border border-[#d4af37]/30 bg-gradient-to-r ${user.settings?.darkMode ? 'from-[#0a0f0d] to-[#1a1500]' : 'from-[#fffdf7] to-[#fffbed]'} shadow-lg flex items-center justify-between text-left transition-transform hover:scale-[1.01] active:scale-95`}
+                  className={`w-full p-5 rounded-[24px] transition-all hover:-translate-y-0.5 active:translate-y-0 border shadow-sm ${user.settings?.darkMode ? 'bg-[#1a1500] border-[#d4af37]/30 hover:shadow-[#d4af37]/10' : 'bg-white border-amber-200/60 hover:border-amber-300 hover:shadow-amber-100/50'}`}
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-[#d4af37]/20 flex items-center justify-center text-[#d4af37]">
-                      <Moon size={24} />
+                  <div className="flex items-center justify-between text-left">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-12 h-12 rounded-[14px] flex items-center justify-center ${user.settings?.darkMode ? 'bg-[#d4af37]/10 text-[#d4af37]' : 'bg-amber-50 text-amber-600'}`}>
+                        <Moon size={22} strokeWidth={2.5} />
+                      </div>
+                      <div>
+                        <h3 className={`font-black text-lg mb-0.5 tracking-tight ${user.settings?.darkMode ? 'text-white' : 'text-slate-800'}`}>Ramadan Tracker</h3>
+                        <p className={`text-[10px] font-black uppercase tracking-[0.15em] ${user.settings?.darkMode ? 'text-[#d4af37]/80' : 'text-amber-500'}`}>
+                          {(user.settings?.ramadan_tracker?.length || 0)}/30 Days • Earn 200XP per day
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className={`font-black text-lg ${user.settings?.darkMode ? 'text-white' : 'text-slate-800'}`}>Ramadan Tracker</h3>
-                      <p className={`text-[10px] font-bold uppercase tracking-widest ${user.settings?.darkMode ? 'text-[#d4af37]/80' : 'text-[#d4af37]'}`}>
-                        {(user.settings?.ramadan_tracker?.length || 0)}/30 Days • Earn 200XP per day
-                      </p>
+                    <div className={`p-1.5 rounded-full ${user.settings?.darkMode ? 'text-white/20' : 'text-slate-300'}`}>
+                      <ChevronRight size={18} />
                     </div>
-                  </div>
-                  <div className={`p-2 rounded-full ${user.settings?.darkMode ? 'bg-white/5 text-white/40' : 'bg-slate-100 text-slate-400'}`}>
-                    <ChevronRight size={20} />
                   </div>
                 </button>
 
                 {/* Hero Card - Next Main Goal */}
                 {heroQuest ? (
                   <div className="relative group">
-                    <div className="absolute inset-0 bg-[#064e3b] blur-xl opacity-20 group-hover:opacity-30 transition-opacity rounded-[30px]" />
-                    <div className="relative p-6 rounded-[30px] bg-gradient-to-br from-[#064e3b] to-[#043327] text-white overflow-hidden shadow-2xl">
-                      <div className="absolute top-0 right-0 p-6 opacity-10">
-                        <Zap size={100} />
+                    <div className={`relative p-8 rounded-[24px] overflow-hidden ${user.settings?.darkMode ? 'bg-emerald-900/40 border border-emerald-500/20' : 'bg-[#064e3b] shadow-xl'}`}>
+                      <div className="absolute top-0 right-0 p-6 opacity-5 mix-blend-overlay">
+                        <Zap size={140} />
                       </div>
-                      <div className="relative z-10">
+                      <div className="relative z-10 text-white">
                         <div className="flex items-center gap-2 mb-2">
                           <span className="bg-white/20 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest text-white/90">Main Priority</span>
                           {/* Time Badge in Hero */}
                           {heroTimeStatus && (
-                            <span className={`px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1 ${heroTimeStatus.status === 'now' ? 'bg-rose-500 text-white animate-pulse' : 'bg-slate-900/40 text-white'}`}>
+                            <span className={`px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1 ${heroTimeStatus.status === 'now' ? 'bg-rose-500 text-white animate-pulse' : 'bg-[#043327]/80'}`}>
                               <Clock size={10} />
                               {heroTimeStatus.status === 'now' ? `NOW • ${heroTimeStatus.time}` : heroTimeStatus.time}
                             </span>
@@ -1777,7 +1757,7 @@ const App: React.FC = () => {
                     <p className="text-xs text-slate-500 mt-1">Check back later or add more from the collection.</p>
                   </div>
                 )}
-              </>
+              </div>
             )}
           </div>
         )}
@@ -1818,8 +1798,8 @@ const App: React.FC = () => {
 
       <nav className={`fixed bottom-0 left-0 right-0 max-w-md mx-auto p-6 z-50 transition-all`}>
         <div className={`rounded-[40px] p-2 flex items-center justify-between shadow-2xl border ${user.settings?.darkMode ? 'bg-[#050a09]/90 border-white/10 backdrop-blur-xl' : 'bg-white/95 border-[#064e3b]/5 backdrop-blur-md'}`}>
-          <NavBtn active={activeTab === 'collect'} label="All Quests" icon={<LayoutGrid />} onClick={() => setActiveTab('collect')} darkMode={user.settings?.darkMode} />
           <NavBtn active={activeTab === 'active'} label="My Quests" icon={<Target />} onClick={() => setActiveTab('active')} darkMode={user.settings?.darkMode} />
+          <NavBtn active={activeTab === 'collect'} label="All Quests" icon={<LayoutGrid />} onClick={() => setActiveTab('collect')} darkMode={user.settings?.darkMode} />
           <NavBtn active={activeTab === 'reflect'} label="Reflect" icon={<Sparkles />} onClick={() => setActiveTab('reflect')} darkMode={user.settings?.darkMode} />
           <NavBtn active={activeTab === 'guide'} label="Citadel" icon={<BookOpen />} onClick={() => setActiveTab('guide')} darkMode={user.settings?.darkMode} />
         </div>
