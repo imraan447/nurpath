@@ -136,6 +136,7 @@ const App: React.FC = () => {
   // Settings Local State
   const [manualLocationInput, setManualLocationInput] = useState('');
   const [pendingSettings, setPendingSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
+  const [pendingPrayerAdjustments, setPendingPrayerAdjustments] = useState<Record<string, number>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -244,10 +245,35 @@ const App: React.FC = () => {
     }
   };
 
+  // Apply manual prayer time corrections
+  const applyPrayerAdjustments = (timings: any): any => {
+    if (!user?.settings?.manualPrayerCorrections || !user?.prayerTimeAdjustments) return timings;
+    const adjusted = { ...timings };
+    for (const [prayer, offset] of Object.entries(user.prayerTimeAdjustments)) {
+      if (adjusted[prayer] && typeof offset === 'number' && offset !== 0) {
+        const [h, m] = adjusted[prayer].split(':').map(Number);
+        const totalMin = h * 60 + m + offset;
+        const newH = Math.floor(((totalMin % 1440) + 1440) % 1440 / 60);
+        const newM = ((totalMin % 60) + 60) % 60;
+        adjusted[prayer] = `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
+      }
+    }
+    return adjusted;
+  };
+
+  // Auto-apply adjustments when prayer times or corrections change
+  useEffect(() => {
+    if (prayerTimes && user?.settings?.manualPrayerCorrections && user?.prayerTimeAdjustments) {
+      // Re-apply adjustments (the raw times from API are stored, adjustments overlay on display)
+      determineCurrentPhase(applyPrayerAdjustments(prayerTimes));
+    }
+  }, [user?.prayerTimeAdjustments, user?.settings?.manualPrayerCorrections]);
+
   // Schedule prayer notifications when times are loaded
   useEffect(() => {
     if (prayerTimes && user?.settings?.notifications) {
-      schedulePrayerNotifications(prayerTimes).catch(console.error);
+      const adjusted = applyPrayerAdjustments(prayerTimes);
+      schedulePrayerNotifications(adjusted).catch(console.error);
     }
   }, [prayerTimes, user?.settings?.notifications]);
 
@@ -606,6 +632,7 @@ const App: React.FC = () => {
         const dbSettings = {
           ...DEFAULT_SETTINGS,
           ...(localData.settings || {}),
+          ...(profileData.settings || {}), // merge full settings JSON from DB
           calcMethod: profileData.calc_method ?? 2,
           madhab: profileData.madhab ?? 0
         };
@@ -624,6 +651,8 @@ const App: React.FC = () => {
           completedDailyQuests: mergedDailyQuests,
           readReflections: profileData.read_reflections || [],
           settings: dbSettings,
+          prayerTimeAdjustments: profileData.prayer_time_adjustments || {},
+          ramadanFasting: profileData.ramadan_fasting || '',
           createdAt: createdAt
         };
         setUser(finalUserObj);
@@ -637,6 +666,7 @@ const App: React.FC = () => {
         }));
 
         setPendingSettings(dbSettings);
+        setPendingPrayerAdjustments(profileData.prayer_time_adjustments || {});
         setManualLocationInput(profileData.location || '');
       } else {
         // Fallback if self-healing completely failed (should not happen often)
@@ -809,6 +839,8 @@ const App: React.FC = () => {
           auto_add_pinned: u.autoAddPinned,
           pinned_quests: u.pinnedQuests,
           settings: u.settings,
+          prayer_time_adjustments: u.prayerTimeAdjustments,
+          ramadan_fasting: u.ramadanFasting,
           calc_method: u.settings?.calcMethod,
           madhab: u.settings?.madhab
         }).eq('id', u.id);
@@ -825,7 +857,8 @@ const App: React.FC = () => {
     const updatedUser = {
       ...user,
       location: manualLocationInput,
-      settings: pendingSettings
+      settings: pendingSettings,
+      prayerTimeAdjustments: pendingPrayerAdjustments
     };
 
     await saveUser(updatedUser);
@@ -1950,6 +1983,56 @@ const App: React.FC = () => {
                     </button>
                   </div>
                 </div>
+              </div>
+            </section>
+
+            {/* Section: Manual Prayer Corrections */}
+            <section className="space-y-4">
+              <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Prayer Time Corrections</h3>
+              <div className="p-5 bg-slate-50 dark:bg-white/5 rounded-[30px] space-y-5">
+                {/* Enable Toggle */}
+                <button
+                  onClick={() => setPendingSettings({ ...pendingSettings, manualPrayerCorrections: !pendingSettings.manualPrayerCorrections })}
+                  className="w-full flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-3">
+                    <Clock size={16} className="text-[#064e3b] dark:text-[#d4af37]" />
+                    <div className="text-left">
+                      <h4 className="text-sm font-bold dark:text-white">Manual Corrections</h4>
+                      <p className="text-[10px] text-slate-400">Add or subtract minutes from prayer times</p>
+                    </div>
+                  </div>
+                  <div className={`w-12 h-7 rounded-full relative transition-colors ${pendingSettings.manualPrayerCorrections ? 'bg-[#064e3b]' : 'bg-slate-300'}`}>
+                    <div className={`absolute top-0.5 w-6 h-6 bg-white rounded-full transition-all shadow-sm ${pendingSettings.manualPrayerCorrections ? 'left-[22px]' : 'left-0.5'}`} />
+                  </div>
+                </button>
+
+                {/* Per-Prayer Adjusters */}
+                {pendingSettings.manualPrayerCorrections && (
+                  <div className="space-y-3 pt-3 border-t border-slate-200 dark:border-white/10 animate-in fade-in slide-in-from-top-2">
+                    {['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].map(prayer => {
+                      const currentOffset = pendingPrayerAdjustments[prayer] || 0;
+                      return (
+                        <div key={prayer} className="flex items-center justify-between">
+                          <span className="text-sm font-bold dark:text-white w-20">{prayer}</span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => setPendingPrayerAdjustments(prev => ({ ...prev, [prayer]: (prev[prayer] || 0) - 1 }))}
+                              className="w-8 h-8 rounded-full bg-white dark:bg-black/30 border border-slate-200 dark:border-white/10 flex items-center justify-center text-slate-600 dark:text-slate-300 font-bold text-lg hover:bg-slate-100 active:scale-90 transition-all"
+                            >−</button>
+                            <span className={`w-16 text-center text-sm font-black tabular-nums ${currentOffset === 0 ? 'text-slate-400' : currentOffset > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}`}>
+                              {currentOffset > 0 ? '+' : ''}{currentOffset} min
+                            </span>
+                            <button
+                              onClick={() => setPendingPrayerAdjustments(prev => ({ ...prev, [prayer]: (prev[prayer] || 0) + 1 }))}
+                              className="w-8 h-8 rounded-full bg-white dark:bg-black/30 border border-slate-200 dark:border-white/10 flex items-center justify-center text-slate-600 dark:text-slate-300 font-bold text-lg hover:bg-slate-100 active:scale-90 transition-all"
+                            >+</button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </section>
 

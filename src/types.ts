@@ -33,6 +33,12 @@ export interface UserSettings {
   madhab?: number; // 0 for Shafi/Standard, 1 for Hanafi
   ramadan_tracker?: number[]; // Array of completed Ramadan days (1-30)
   leaderboardEnabled?: boolean; // opt-in to leaderboard
+  manualPrayerCorrections?: boolean; // enable manual prayer time adjustments
+}
+
+// Per-prayer minute offsets e.g. { Fajr: 5, Maghrib: -2 }
+export interface PrayerTimeAdjustments {
+  [prayer: string]: number;
 }
 
 export interface User {
@@ -47,6 +53,8 @@ export interface User {
   pinnedQuests?: string[];
   autoAddPinned?: boolean;
   settings?: UserSettings;
+  prayerTimeAdjustments?: PrayerTimeAdjustments;
+  ramadanFasting?: string; // "YYYY:count" e.g. "2026:4"
   completedDailyQuests?: { [questId: string]: string }; // e.g. { 'fajr': '2023-10-27' }
   readReflections?: string[]; // IDs of reflections read
   createdAt?: string;
