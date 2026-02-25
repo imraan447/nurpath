@@ -17,4 +17,7 @@ build/
 books*/
 
 # Agent
-.gemini/*.sql
+.gemini/
+.agent/
+.agents/
+*.sql
