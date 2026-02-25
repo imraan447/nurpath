@@ -23,12 +23,26 @@ Output Format: JSON Array.
 Schema: [{"type":"string","content":"string","summary":"string","details":"string","author":"string","praise":"string","tags":["string"],"readTime":"string"}]
 Strictly output ONLY valid JSON without any markdown formatting like \`\`\`json.`;
 
-            const result = await genAI.models.generateContent({
-                model: "gemini-1.5-flash",
-                contents: prompt,
-                config: { responseMimeType: "application/json" }
-            });
-            const text = (result as any).text || (result as any).response?.text() || "";
+            let text = "";
+            try {
+                // Try 2.5-pro first for higher quality reflections
+                const result = await genAI.models.generateContent({
+                    model: "gemini-2.5-pro",
+                    contents: prompt,
+                    config: { responseMimeType: "application/json" }
+                });
+                text = (result as any).text || (result as any).response?.text() || "";
+            } catch (proError) {
+                console.warn("Gemini 2.5 Pro failed, falling back to Flash:", proError);
+                // Fallback to flash if pro fails or hits limits
+                const result = await genAI.models.generateContent({
+                    model: "gemini-2.5-flash",
+                    contents: prompt,
+                    config: { responseMimeType: "application/json" }
+                });
+                text = (result as any).text || (result as any).response?.text() || "";
+            }
+
             // Clean up JSON if Gemini wraps it in markdown blocks
             const cleanJson = text.replace(/```json|```/g, "").trim();
             try {
@@ -42,7 +56,7 @@ Strictly output ONLY valid JSON without any markdown formatting like \`\`\`json.
 
         if (action === 'deep-dive') {
             const result = await genAI.models.generateContent({
-                model: "gemini-1.5-pro",
+                model: "gemini-2.5-pro",
                 contents: `Write a profound, soul-shaking Islamic spiritual essay based on: "${item.content}". Context: ${item.summary}. 500-800 words. Plain text paragraphs.`
             });
             const text = (result as any).text || (result as any).response?.text() || "";

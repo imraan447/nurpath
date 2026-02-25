@@ -171,14 +171,13 @@ const App: React.FC = () => {
 
   // IDs that are exclusively tied to salaah and should NEVER appear in All Quests
   const salahExclusiveIds = new Set([
-    ...fardSalahIds,
     ...naflPrayerQuestIds,
     'tahiyyatul_wudhu', 'tahiyyatul_masjid', 'dua_after_adhan',
     ...ALL_QUESTS.filter(q => q.isPackage).map(q => q.id)
   ]);
 
   const questSections = useMemo(() => ({
-    'The Five Pillars': ALL_QUESTS.filter(q => q.category === QuestCategory.MAIN && !q.isPackage && !fardSalahIds.includes(q.id)),
+    'The Five Pillars': ALL_QUESTS.filter(q => q.category === QuestCategory.MAIN && !q.isPackage && !salahExclusiveIds.has(q.id)),
     'Daily Remembrance': ALL_QUESTS.filter(q => q.category === QuestCategory.DHIKR && !q.isPackage),
     'Sunnah & Character': ALL_QUESTS.filter(q => q.category === QuestCategory.SUNNAH && !salahExclusiveIds.has(q.id) && !q.isPackage),
     'Community & Charity': ALL_QUESTS.filter(q => q.category === QuestCategory.CHARITY),
