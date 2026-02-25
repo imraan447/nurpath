@@ -36,12 +36,22 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({ currentRoutine, onSave,
         );
     };
 
+    const fardSalahOrder = ['tahajjud', 'fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+
     const filteredQuests = (activeCategory === 'All'
         ? ALL_QUESTS
         : ALL_QUESTS.filter(q => q.category === activeCategory))
         .filter(q => q.category !== QuestCategory.CORRECTION)
         .filter(q => !q.isPackage)
-        .filter(q => !EXCLUDED_IDS.includes(q.id));
+        .filter(q => !EXCLUDED_IDS.includes(q.id))
+        .sort((a, b) => {
+            const indexA = fardSalahOrder.indexOf(a.id);
+            const indexB = fardSalahOrder.indexOf(b.id);
+            if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+            if (indexA !== -1) return -1;
+            if (indexB !== -1) return 1;
+            return 0;
+        });
 
     const renderQuestItem = (q: Quest, isSubItem = false) => {
         const isSelected = selectedIds.includes(q.id);
@@ -72,27 +82,10 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({ currentRoutine, onSave,
                     </div>
                     <div className="flex items-center gap-3">
                         <div className="text-[10px] font-bold text-[#d4af37]">+{q.xp} XP</div>
-                        {isPackageParent && (
-                            <button
-                                onClick={(e) => togglePackage(q.id, e)}
-                                className={`p-1 rounded-full ${darkMode ? 'hover:bg-white/10' : 'hover:bg-slate-200'}`}
-                            >
-                                {isExpanded ? <ChevronUp size={16} className="text-slate-400" /> : <ChevronDown size={16} className="text-slate-400" />}
-                            </button>
-                        )}
                     </div>
                 </div>
 
-                {/* Render Package Sub-Items */}
-                {isPackageParent && isExpanded && (
-                    <div className="mt-1">
-                        {packageSubIds.map(subId => {
-                            const subQuest = ALL_QUESTS.find(sq => sq.id === subId);
-                            if (!subQuest) return null;
-                            return renderQuestItem(subQuest, true);
-                        })}
-                    </div>
-                )}
+                {/* Render Package Sub-Items - REMOVED per user request */}
             </div>
         );
     };

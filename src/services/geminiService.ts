@@ -36,8 +36,54 @@ const getApiUrl = () => {
   return "/api/reflections";
 };
 
+import { GoogleGenAI } from "@google/genai";
+
 export async function generateReflectionsStream(count: number = 3): Promise<ReflectionItem[]> {
   try {
+    // LOCAL DEV STAND-IN for /api/reflections (Vercel function)
+    if (import.meta.env.DEV) {
+      console.log("Local Dev: Calling Gemini directly from frontend...");
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      if (!apiKey) throw new Error("VITE_GEMINI_API_KEY is missing");
+      const genAI = new GoogleGenAI({ apiKey });
+
+      const prompt = `Generate ${count} profound Islamic spiritual reflection items. 
+Focus: Sahih Muslim, Sahih Bukhari, other sahih hadith, verses, and reflective quotes from companions of the Prophet ﷺ or Rumi (ensure quotes strictly avoid shirk, shia, or extreme sufi concepts that cross the line). 
+Target Audience: Today's everyday person of all genders. Make it highly reflective and applicable to modern struggles.
+Output Format: JSON Array. 
+Schema: [{"type":"string","content":"string","summary":"string","details":"string","author":"string","praise":"string","tags":["string"],"readTime":"string"}]
+Strictly output ONLY valid JSON without any markdown formatting like \`\`\`json.`;
+
+      let text = "";
+      try {
+        const result = await genAI.models.generateContent({
+          model: "gemini-2.5-pro",
+          contents: prompt,
+          config: { responseMimeType: "application/json" }
+        });
+        text = (result as any).text || (result as any).response?.text() || "";
+      } catch (e) {
+        console.warn("Pro failed, trying Flash...");
+        const result = await genAI.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents: prompt,
+          config: { responseMimeType: "application/json" }
+        });
+        text = (result as any).text || (result as any).response?.text() || "";
+      }
+
+      const cleanJson = text.replace(/```json|```/g, "").trim();
+      const results = JSON.parse(cleanJson);
+
+      return results.map((item: any) => ({
+        ...item,
+        id: Math.random().toString(36).substr(2, 9),
+        isAiGenerated: true,
+        mediaUrl: PexelImages_getRandom()
+      }));
+    }
+
+    // PRODUCTION / VERCEL: Call the serverless function
     const response = await fetch(getApiUrl(), {
       method: "POST",
       headers: { "Content-Type": "application/json" },

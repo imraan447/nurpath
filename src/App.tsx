@@ -1231,7 +1231,7 @@ const App: React.FC = () => {
   const activeMainQuests = (user?.activeQuests
     .filter(qid => !isCompletedToday(qid)) // Don't show completed-today quests
     .map(qid => ALL_QUESTS.find(q => q.id === qid))
-    .filter(q => q && q.id !== heroQuest?.id && (q.category === QuestCategory.MAIN || fardSalahIds.includes(q.id))) as Quest[] || [])
+    .filter(q => q && !q.isPackage && q.id !== heroQuest?.id && (q.category === QuestCategory.MAIN || fardSalahIds.includes(q.id))) as Quest[] || [])
     .sort((a, b) => {
       // Sort Salaah specifically by fardSalahIds order
       const indexA = fardSalahIds.indexOf(a.id);
