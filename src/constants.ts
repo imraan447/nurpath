@@ -20,9 +20,9 @@ export const ALL_QUESTS: Quest[] = [
 
   // NAFL PRAYERS (Standalone)
   { id: 'tahajjud', title: 'Pray Tahajjud', description: 'The arrow of the night that does not miss.', category: QuestCategory.SUNNAH, xp: 1000 },
-  { id: 'ishraq_salah', title: 'Pray Ishraq', description: 'Prayer after sunrise. Reward of a Hajj and Umrah.', category: QuestCategory.SUNNAH, xp: 500 },
-  { id: 'awwaabeen', title: 'Pray Awwaabeen', description: '6 Rakaats after Maghrib. The prayer of the oft-returning.', category: QuestCategory.SUNNAH, xp: 600 },
-  { id: 'salatul_tasbeeh', title: 'Pray Salatul Tasbeeh', description: 'The prayer of forgiveness. 300 Tasbeehs.', category: QuestCategory.SUNNAH, xp: 1500 },
+  { id: 'ishraq_salah', title: 'Pray Ishraq', description: 'Prayer after sunrise. Reward of a Hajj and Umrah.', category: QuestCategory.VOLUNTARY, xp: 500 },
+  { id: 'awwaabeen', title: 'Pray Awwaabeen', description: '6 Rakaats after Maghrib. The prayer of the oft-returning.', category: QuestCategory.VOLUNTARY, xp: 600, isPackage: true },
+  { id: 'salatul_tasbeeh', title: 'Pray Salatul Tasbeeh', description: 'The prayer of forgiveness. 300 Tasbeehs.', category: QuestCategory.VOLUNTARY, xp: 1500 },
 
   // PILLARS & FASTING
   { id: 'fasting_ramadan', title: 'Ramadan Fasting', description: 'The month of the Quran (Currently unavailable)', category: QuestCategory.MAIN, xp: 8000, isGreyed: true },
@@ -34,13 +34,13 @@ export const ALL_QUESTS: Quest[] = [
   { id: 'miswak', title: 'Use the Miswak', description: 'Sunnah of oral hygiene', category: QuestCategory.SUNNAH, xp: 200 },
   { id: 'right_side_sleep', title: 'Sleep on Your Right Side', description: 'Prophetic etiquette of rest', category: QuestCategory.SUNNAH, xp: 160 },
   { id: 'wudu_before_sleep', title: 'Make Wudu Before Sleep', description: 'Angels pray for you through the night', category: QuestCategory.SUNNAH, xp: 240 },
-  { id: 'duha', title: 'Pray Salat ad-Duha', description: 'Charity for every joint', category: QuestCategory.SUNNAH, xp: 600 },
+  { id: 'duha', title: 'Pray Salat ad-Duha', description: 'Charity for every joint', category: QuestCategory.VOLUNTARY, xp: 600 },
   { id: 'smile_sunnah', title: 'Smile at Others', description: 'Prophetic act of kindness', category: QuestCategory.SUNNAH, xp: 200 },
   { id: 'salawat_10', title: 'Send 10x Salawat', description: 'Sending peace upon the Messenger ﷺ', category: QuestCategory.SUNNAH, xp: 200 },
   { id: 'drink_water_3_breaths', title: 'Drink Water in 3 Breaths', description: 'Prophetic method of drinking', category: QuestCategory.SUNNAH, xp: 120 },
   { id: 'dua_after_adhan', title: 'Make Dua After Adhan', description: 'Intercession guaranteed', category: QuestCategory.SUNNAH, xp: 280 },
-  { id: 'tahiyyatul_wudhu', title: 'Pray Tahiyyatul Wudhu', description: '2 Rakaats after performing Wudhu, a key to Jannah.', category: QuestCategory.SUNNAH, xp: 250 },
-  { id: 'tahiyyatul_masjid', title: 'Pray Tahiyyatul Masjid', description: '2 Rakaats upon entering the Masjid, honoring Allah\'s house.', category: QuestCategory.SUNNAH, xp: 200 },
+  { id: 'tahiyyatul_wudhu', title: 'Pray Tahiyyatul Wudhu', description: '2 Rakaats after performing Wudhu, a key to Jannah.', category: QuestCategory.SUNNAH, xp: 250, isPackage: true },
+  { id: 'tahiyyatul_masjid', title: 'Pray Tahiyyatul Masjid', description: '2 Rakaats upon entering the Masjid, honoring Allah\'s house.', category: QuestCategory.SUNNAH, xp: 200, isPackage: true },
 
   // CHARACTER & COMMUNITY
   { id: 'forgive_someone', title: 'Forgive Someone', description: 'Release a grievance for the sake of Allah.', category: QuestCategory.SUNNAH, xp: 1600 },
@@ -148,7 +148,7 @@ export const PRAYER_PACKAGES: Record<string, string[]> = {
   'fajr': ['fajr-miswak', 'fajr-wudhu', 'fajr-tahiyyatul_wudhu', 'fajr-tahiyyatul_masjid', 'fajr-sunnah', 'fajr-tasbeeh_fatimi', 'fajr-ayatul_kursi', 'fajr-adhkar', 'fajr-surah'],
   'dhuhr': ['dhuhr-miswak', 'dhuhr-wudhu', 'dhuhr-tahiyyatul_wudhu', 'dhuhr-tahiyyatul_masjid', 'dhuhr-sunnah-pre', 'dhuhr-sunnah-post', 'dhuhr-tasbeeh_fatimi', 'dhuhr-ayatul_kursi', 'dhuhr-adhkar', 'dhuhr-surah'],
   'asr': ['asr-miswak', 'asr-wudhu', 'asr-tahiyyatul_wudhu', 'asr-tahiyyatul_masjid', 'asr-sunnah', 'asr-tasbeeh_fatimi', 'asr-ayatul_kursi', 'asr-adhkar', 'asr-surah'],
-  'maghrib': ['maghrib-miswak', 'maghrib-wudhu', 'maghrib-tahiyyatul_wudhu', 'maghrib-tahiyyatul_masjid', 'maghrib-sunnah', 'maghrib-tasbeeh_fatimi', 'maghrib-ayatul_kursi', 'maghrib-adhkar', 'maghrib-surah'],
+  'maghrib': ['maghrib-miswak', 'maghrib-wudhu', 'maghrib-tahiyyatul_wudhu', 'maghrib-tahiyyatul_masjid', 'maghrib-sunnah', 'maghrib-tasbeeh_fatimi', 'maghrib-ayatul_kursi', 'maghrib-adhkar', 'maghrib-surah', 'awwaabeen'],
   'isha': ['isha-miswak', 'isha-wudhu', 'isha-tahiyyatul_wudhu', 'isha-tahiyyatul_masjid', 'isha-sunnah', 'isha-tasbeeh_fatimi', 'isha-ayatul_kursi', 'isha-adhkar', 'isha-surah', 'isha-witr']
 };
 

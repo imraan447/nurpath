@@ -5,7 +5,8 @@ export enum QuestCategory {
   CORRECTION = 'Correction Quest',
   CHARITY = 'Charity Quest',
   DHIKR = 'Dhikr & Dua',
-  COMMUNITY = 'Community Challenge'
+  COMMUNITY = 'Community Challenge',
+  VOLUNTARY = 'Bonus Salaah'
 }
 
 export interface Quest {

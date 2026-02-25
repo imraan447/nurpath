@@ -45,6 +45,9 @@ const QuestCard: React.FC<QuestCardProps> = ({
         // Match Sunnah & Character (Purple or the mint green in screenshot for sunnah quest)
         // From screenshot: "SUNNAH QUEST" badge is mint green #cdfae1 with green text
         return darkMode ? 'bg-[#d1fae5]/10 text-[#34d399]' : 'bg-[#d1fae5] text-[#059669]';
+      case QuestCategory.VOLUNTARY:
+        // Deep Green for Bonus Salaah
+        return darkMode ? 'bg-[#064e3b]/30 text-[#34d399]' : 'bg-[#064e3b]/10 text-[#064e3b]';
       case QuestCategory.CHARITY:
         // Match Community & Charity (Gold/Orange)
         return darkMode ? 'bg-[#fef3c7]/10 text-[#fbbf24]' : 'bg-[#fef3c7] text-[#d97706]';

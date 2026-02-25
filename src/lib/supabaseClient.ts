@@ -63,6 +63,12 @@ startHeartbeat();
  * It ensures the token is valid and retries once if expired.
  */
 export const ensureSession = async (): Promise<boolean> => {
+    // Check if device is physically offline first
+    if (typeof window !== 'undefined' && !window.navigator.onLine) {
+        console.warn('Cannot ensure session: Device is offline');
+        return false;
+    }
+
     try {
         const { data } = await supabase.auth.getSession();
         if (!data.session) {

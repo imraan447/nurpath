@@ -181,6 +181,7 @@ const App: React.FC = () => {
   const questSections = useMemo(() => ({
     'The Five Pillars': ALL_QUESTS.filter(q => q.category === QuestCategory.MAIN && !q.isPackage && !salahExclusiveIds.has(q.id)),
     'Daily Remembrance': ALL_QUESTS.filter(q => q.category === QuestCategory.DHIKR && !q.isPackage),
+    'Bonus Salaah': ALL_QUESTS.filter(q => q.category === QuestCategory.VOLUNTARY && !q.isPackage),
     'Sunnah & Character': ALL_QUESTS.filter(q => q.category === QuestCategory.SUNNAH && !salahExclusiveIds.has(q.id) && !q.isPackage),
     'Community & Charity': ALL_QUESTS.filter(q => q.category === QuestCategory.CHARITY),
     'Correction Quests': ALL_QUESTS.filter(q => q.category === QuestCategory.CORRECTION)
@@ -1409,6 +1410,7 @@ const App: React.FC = () => {
                 const categoryColors: Record<string, string> = {
                   'The Five Pillars': 'bg-[#156b57]', // Darker green
                   'Daily Remembrance': 'bg-[#2d5a8b]', // Deep Blue
+                  'Bonus Salaah': 'bg-[#064e3b]', // Deep Forest Green
                   'Sunnah & Character': 'bg-[#673a7c]', // Purple
                   'Community & Charity': 'bg-[#d88c22]', // Gold/Orange
                   'Correction Quests': 'bg-[#b63c3c]' // Red

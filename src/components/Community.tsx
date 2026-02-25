@@ -26,6 +26,7 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
   const [friends, setFriends] = useState<Friend[]>([]);
   const [requests, setRequests] = useState<FriendRequest[]>([]);
   const [sentRequestIds, setSentRequestIds] = useState<string[]>([]);
+  const [sentRequests, setSentRequests] = useState<Friend[]>([]);
 
   // Groups State
   const [groups, setGroups] = useState<Group[]>([]);
@@ -271,7 +272,17 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
         .select('user_id_2')
         .eq('user_id_1', currentUser.id)
         .eq('status', 'pending');
-      setSentRequestIds(sent?.map(s => s.user_id_2) || []);
+      const sentIds = sent?.map(s => s.user_id_2) || [];
+      setSentRequestIds(sentIds);
+      if (sentIds.length > 0) {
+        const { data: sentProfiles } = await supabase
+          .from('profiles')
+          .select('id, username, xp, country, active_quests')
+          .in('id', sentIds);
+        setSentRequests(sentProfiles || []);
+      } else {
+        setSentRequests([]);
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -860,6 +871,27 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
                       <p className={`text-[13px] font-semibold ${darkMode ? 'text-white/80' : 'text-slate-700'}`}>{f.username}</p>
                       <p className={`text-[10px] ${darkMode ? 'text-white/15' : 'text-slate-300'}`}>{f.xp.toLocaleString()} XP · {f.country}</p>
                     </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Sent Requests */}
+            <div className="pt-6">
+              <p className={`text-[10px] font-semibold uppercase tracking-[0.2em] mb-3 ${darkMode ? 'text-white/20' : 'text-slate-400'}`}>Sent Requests</p>
+              {sentRequests.length === 0 ? (
+                <p className={`text-[13px] py-4 text-center ${darkMode ? 'text-white/15' : 'text-slate-300'}`}>None</p>
+              ) : (
+                sentRequests.map((s, i) => (
+                  <div key={s.id} className={`flex items-center justify-between py-3.5 ${i > 0 ? `border-t ${darkMode ? 'border-white/[0.04]' : 'border-slate-100'}` : ''}`}>
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ${darkMode ? 'bg-white/[0.06] text-white/40' : 'bg-slate-100 text-slate-400'}`}>{s.username[0].toUpperCase()}</div>
+                      <div>
+                        <p className={`text-[13px] font-semibold ${darkMode ? 'text-white/80' : 'text-slate-700'}`}>{s.username}</p>
+                        <p className={`text-[10px] ${darkMode ? 'text-white/15' : 'text-slate-300'}`}>Waiting for response</p>
+                      </div>
+                    </div>
+                    <span className={`text-[9px] font-bold uppercase tracking-widest ${darkMode ? 'text-white/15' : 'text-slate-300'}`}>Pending</span>
                   </div>
                 ))
               )}
