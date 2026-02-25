@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { supabase, ensureSession } from '../lib/supabaseClient';
 import { Trophy, Globe, MapPin, Loader2, Crown, Users } from 'lucide-react';
 
 interface LeaderboardEntry {
@@ -40,7 +40,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentUserCountry, currentUs
 
     setLoading(true);
     try {
-      await supabase.auth.getSession(); // Force token refresh if expired
+      await ensureSession(); // Robust session check before loading leaderboard
 
       let data: any[] | null = [];
       let error = null;

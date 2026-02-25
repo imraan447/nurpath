@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from './lib/supabaseClient';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { supabase, ensureSession } from './lib/supabaseClient';
 import { User, Quest, QuestCategory, ReflectionItem, UserSettings, GuideSection, NaflPrayerItem, AdhkarItem, GroupQuest } from './types';
 import { ALL_QUESTS, GUIDE_SECTIONS, SEERAH_CHAPTERS, NAFL_PRAYERS, PRAYER_RELATED_QUESTS, PRAYER_PACKAGES, JUMUAH_CHECKLIST } from './constants';
 import JSZip from 'jszip';
@@ -166,17 +166,25 @@ const App: React.FC = () => {
 
   const seerahScrollRef = useRef<HTMLDivElement>(null);
 
+  // Tahajjud is BEFORE Fajr in the prayer order
   const fardSalahIds = ['tahajjud', 'fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
-  const naflPrayerQuestIds = ['ishraq_salah', 'awwaabeen', 'salatul_tasbeeh', 'duha', 'tahiyyatul_wudhu', 'tahiyyatul_masjid'];
+  const naflPrayerQuestIds = ['ishraq_salah', 'awwaabeen', 'salatul_tasbeeh', 'duha'];
 
-  const questSections = {
-    'The Five Pillars': ALL_QUESTS.filter(q => q.category === QuestCategory.MAIN && !q.isPackage),
-    'Nafl Salaah': ALL_QUESTS.filter(q => naflPrayerQuestIds.includes(q.id)),
+  // IDs that are exclusively tied to salaah and should NEVER appear in All Quests
+  const salahExclusiveIds = new Set([
+    ...fardSalahIds,
+    ...naflPrayerQuestIds,
+    'tahiyyatul_wudhu', 'tahiyyatul_masjid', 'dua_after_adhan',
+    ...ALL_QUESTS.filter(q => q.isPackage).map(q => q.id)
+  ]);
+
+  const questSections = useMemo(() => ({
+    'The Five Pillars': ALL_QUESTS.filter(q => q.category === QuestCategory.MAIN && !q.isPackage && !fardSalahIds.includes(q.id)),
     'Daily Remembrance': ALL_QUESTS.filter(q => q.category === QuestCategory.DHIKR && !q.isPackage),
-    'Sunnah & Character': ALL_QUESTS.filter(q => q.category === QuestCategory.SUNNAH && !naflPrayerQuestIds.includes(q.id) && !fardSalahIds.includes(q.id) && !q.isPackage),
+    'Sunnah & Character': ALL_QUESTS.filter(q => q.category === QuestCategory.SUNNAH && !salahExclusiveIds.has(q.id) && !q.isPackage),
     'Community & Charity': ALL_QUESTS.filter(q => q.category === QuestCategory.CHARITY),
     'Correction Quests': ALL_QUESTS.filter(q => q.category === QuestCategory.CORRECTION)
-  };
+  }), []);
 
   const toggleCategory = (category: string) => {
     setOpenCategories(prev =>
@@ -710,7 +718,7 @@ const App: React.FC = () => {
 
     const refreshQuests = async () => {
       try {
-        await supabase.auth.getSession(); // Force token refresh on tab change if expired
+        await ensureSession(); // Robust session refresh before sync
 
         const todayKey = new Date().toISOString().split('T')[0];
         const startOfUtcDay = new Date();
@@ -743,10 +751,14 @@ const App: React.FC = () => {
         let mergedActive = [...dbActive, ...localOnly].filter(id => !freshCompletions[id]);
 
         // 3.5. Ensure Routine/Pinned quests are continually added for the new day
+        // ONLY add pinned quests that are ALSO in the DB pinned list (i.e. not explicitly removed)
         const pinned: string[] = profileData?.pinned_quests || [];
         const toAddFromPinned = pinned.filter(pid => !mergedActive.includes(pid) && !freshCompletions[pid]);
+        // Only add if DB also has them as active OR they were never removed (pinned === source of truth)
         if (toAddFromPinned.length > 0) {
-          mergedActive = [...mergedActive, ...toAddFromPinned];
+          // Respect DB active_quests: don't add back if it was explicitly removed (not in dbActive and not in freshCompletions)
+          const safeToAdd = toAddFromPinned.filter(pid => dbActive.includes(pid) || !freshCompletions[pid]);
+          mergedActive = [...mergedActive, ...safeToAdd];
         }
 
         // 4. Only update if something actually changed (prevents infinite re-renders)
@@ -939,7 +951,10 @@ const App: React.FC = () => {
 
   const removeQuest = (quest: Quest) => {
     if (!user) return;
-    const updated = { ...user, activeQuests: user.activeQuests.filter(id => id !== quest.id) };
+    // Remove from active AND unpin so refresh logic doesn't re-add it
+    const newActive = user.activeQuests.filter(id => id !== quest.id);
+    const newPinned = (user.pinnedQuests || []).filter(id => id !== quest.id);
+    const updated = { ...user, activeQuests: newActive, pinnedQuests: newPinned };
     saveUser(updated);
   };
 
@@ -947,7 +962,7 @@ const App: React.FC = () => {
     if (!user || !user.id || quests.length === 0) return;
 
     try {
-      await supabase.auth.getSession(); // Force token refresh on completion to prevent silent failures
+      await ensureSession(); // Robust session check before critical DB write
 
       let totalXp = 0;
       const questIds = quests.map(q => q.id);
@@ -1402,7 +1417,6 @@ const App: React.FC = () => {
                 // Minimal colors per category, matching screenshot requests
                 const categoryColors: Record<string, string> = {
                   'The Five Pillars': 'bg-[#156b57]', // Darker green
-                  'Nafl Salaah': 'bg-[#2b6a7a]', // Teal/Blue mixed
                   'Daily Remembrance': 'bg-[#2d5a8b]', // Deep Blue
                   'Sunnah & Character': 'bg-[#673a7c]', // Purple
                   'Community & Charity': 'bg-[#d88c22]', // Gold/Orange
@@ -1421,11 +1435,6 @@ const App: React.FC = () => {
                     </button>
                     {isOpen && (
                       <div className="grid grid-cols-1 gap-4 pt-2 animate-in fade-in slide-in-from-top-2 px-1">
-                        {category === 'The Five Pillars' && (
-                          <button onClick={addAllSalah} className={`w-full text-[9px] font-black uppercase tracking-widest px-3 py-3 rounded-2xl flex items-center justify-center gap-2 border transition-all mb-2 ${user.settings?.darkMode ? 'text-white bg-white/5 border-white/10 hover:bg-white/10' : 'text-[#064e3b] bg-[#064e3b]/5 border-[#064e3b]/10 hover:bg-[#064e3b]/10'} ${availableToStart < quests.length ? 'opacity-50 pointer-events-none' : ''}`}>
-                            <Plus size={12} /> Add All 5 Salah
-                          </button>
-                        )}
                         {displayQuests.map(q => (
                           <React.Fragment key={q.id}>
                             <QuestCard

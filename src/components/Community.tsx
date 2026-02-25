@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { supabase, ensureSession } from '../lib/supabaseClient';
 import { User, Group, GroupMember, Friend, FriendRequest, Quest, GroupQuest, GroupInvite, GroupQuestItem, Dua } from '../types';
 import { ALL_QUESTS } from '../constants';
 import { HeartHandshake, Users, UserPlus, Search, Trophy, Crown, Globe, MapPin, Loader2, Plus, Check, X, Shield, Star, Sparkles, ChevronRight, ChevronDown, Heart, Send, Trash2, LogOut, Settings, Mail, Pin, CheckCircle2, Clock, Lock, Pencil, Save } from 'lucide-react';
@@ -79,7 +79,7 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
   useEffect(() => {
     const loadTab = async () => {
       // Force token refresh if expired (fixes issue where tab goes to sleep)
-      await supabase.auth.getSession();
+      await ensureSession();
       if (tab === 'friends') fetchFriendsAndRequests();
       else if (tab === 'groups') { fetchGroups(); fetchGroupInvites(); }
       else if (tab === 'duas') fetchDuas();
