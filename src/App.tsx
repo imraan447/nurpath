@@ -156,7 +156,6 @@ const App: React.FC = () => {
   const [initialized, setInitialized] = useState(false);
   const [isZipping, setIsZipping] = useState(false);
   const [showRoutineBuilder, setShowRoutineBuilder] = useState(false);
-  const [hideRoutine, setHideRoutine] = useState(true); // Default: Hide routine items from main list
   const [questTabView, setQuestTabView] = useState<'my' | 'citadel'>('my');
   const [jumuahCollapsed, setJumuahCollapsed] = useState(false);
   const [pullRefreshing, setPullRefreshing] = useState(false);
@@ -1386,24 +1385,15 @@ const App: React.FC = () => {
 
             {/* STANDARD CATEGORIES */}
             <div className="space-y-2 pt-2">
-              {/* Filter Toggle */}
-              <div className="px-6 flex items-center justify-end">
-                <button
-                  onClick={() => setHideRoutine(!hideRoutine)}
-                  className={`text-[10px] font-bold uppercase tracking-[0.15em] flex items-center gap-2 transition-opacity ${hideRoutine ? 'opacity-100' : 'opacity-60'} ${user.settings?.darkMode ? 'text-slate-400' : 'text-slate-500'}`}
-                >
-                  <div className={`w-8 h-4 rounded-full relative transition-colors ${hideRoutine ? 'bg-[#064e3b] dark:bg-emerald-600' : 'bg-slate-200 dark:bg-white/10'}`}>
-                    <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all shadow-sm ${hideRoutine ? 'left-4.5' : 'left-0.5'}`} style={{ left: hideRoutine ? '18px' : '2px' }} />
-                  </div>
-                  Hide Tracked Quests
-                </button>
-              </div>
-
               {Object.entries(questSections).map(([category, quests]) => {
-                // FILTER: Hide if in Routine (Pinned) AND hideRoutine is true
-                // Note: Correction Quests are never part of routine usually, but logic holds.
+                // FILTER: Hide if in Routine (Pinned) or actively tracked
+                // Re-add them if they are completed today
                 const displayQuests = quests.filter(q => {
-                  if (hideRoutine && user.pinnedQuests?.includes(q.id)) return false;
+                  const isTracked = user.activeQuests.includes(q.id);
+                  const isPinned = user.pinnedQuests?.includes(q.id);
+                  const isCompleted = isCompletedToday(q.id);
+
+                  if ((isTracked || isPinned) && !isCompleted) return false;
                   return true;
                 });
 

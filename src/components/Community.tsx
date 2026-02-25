@@ -467,8 +467,13 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
   const renameGroup = async () => {
     if (!activeGroup || !renameText.trim()) return;
     try {
-      const { error } = await supabase.from('groups').update({ name: renameText.trim() }).eq('id', activeGroup.id);
+      const { data, error } = await supabase.from('groups').update({ name: renameText.trim() }).eq('id', activeGroup.id).select();
       if (error) throw error;
+
+      if (!data || data.length === 0) {
+        alert('Permission denied by Database. Please run the provided SQL migration in Supabase to allow Admins to rename groups.');
+        return;
+      }
 
       const newName = renameText.trim();
       setActiveGroup(prev => prev ? { ...prev, name: newName } : null);
@@ -568,8 +573,9 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
     if (!activeGroup || myRole !== 'admin') return;
     if (!confirm('Make this user an admin?')) return;
     try {
-      const { error } = await supabase.from('group_members').update({ role: 'admin' }).eq('group_id', activeGroup.id).eq('user_id', userId);
+      const { data, error } = await supabase.from('group_members').update({ role: 'admin' }).eq('group_id', activeGroup.id).eq('user_id', userId).select();
       if (error) throw error;
+      if (!data || data.length === 0) return alert('Permission denied! Please run the SQL migration for group_members UPDATE.');
       setActiveGroup(prev => {
         if (!prev) return null;
         return { ...prev, members: prev.members?.map(m => m.id === userId ? { ...m, role: 'admin' } : m) };
@@ -581,8 +587,9 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
     if (!activeGroup || myRole !== 'admin') return;
     if (!confirm('Remove this user from the group?')) return;
     try {
-      const { error } = await supabase.from('group_members').delete().eq('group_id', activeGroup.id).eq('user_id', userId);
+      const { data, error } = await supabase.from('group_members').delete().eq('group_id', activeGroup.id).eq('user_id', userId).select();
       if (error) throw error;
+      if (!data || data.length === 0) return alert('Permission denied! Please run the SQL migration for group_members DELETE.');
       setActiveGroup(prev => {
         if (!prev) return null;
         return { ...prev, members: prev.members?.filter(m => m.id !== userId) };

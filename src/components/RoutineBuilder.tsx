@@ -17,12 +17,8 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({ currentRoutine, onSave,
     const [expandedPackages, setExpandedPackages] = useState<string[]>(Object.keys(PRAYER_PACKAGES));
 
     // Quests to exclude from Routine Builder
-    // Salaah quests are managed by prayer time logic, not routine
     const EXCLUDED_IDS = [
         'hajj', 'zakaat', 'fasting_ramadan',                            // Non-daily / Seasonal
-        'tahajjud', 'fajr', 'dhuhr', 'asr', 'maghrib', 'isha',         // Fard prayers (auto-managed)
-        'ishraq_salah', 'awwaabeen', 'salatul_tasbeeh', 'duha',         // Nafl prayers (attached to prayer cards)
-        'tahiyyatul_wudhu', 'tahiyyatul_masjid', 'dua_after_adhan',     // Salah-exclusive actions
     ];
 
     const categories = ['All', ...Object.values(QuestCategory).filter(c => c !== QuestCategory.CORRECTION)];

@@ -190,7 +190,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentUserCountry, currentUs
                   </div>
 
                   <div className="flex-1">
-                    <h3 className={`font-bold text-sm ${isMe ? 'text-[#064e3b] dark:text-emerald-400' : 'dark:text-white'}`}>
+                    <h3 className={`font-bold text-sm ${isMe ? 'text-[#064e3b] dark:text-emerald-400' : 'text-slate-800 dark:text-white'}`}>
                       {entry.username} {isMe && '(You)'}
                     </h3>
                     <p className="text-[10px] text-slate-400 uppercase tracking-wider">{entry.country}</p>
