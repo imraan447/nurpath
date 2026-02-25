@@ -3,7 +3,7 @@ import { GoogleGenAI } from "@google/genai";
 
 export default async function handler(req: any, res: any) {
     // 1. Check for API Key (On Vercel, this is a secret, NOT VITE_ prefixed)
-    const apiKey = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
         return res.status(500).json({ error: "Gemini API Key not configured on server." });
@@ -31,16 +31,16 @@ Strictly output ONLY valid JSON without any markdown formatting like \`\`\`json.
             try {
                 // Try 2.5-pro first for higher quality reflections
                 const result = await genAI.models.generateContent({
-                    model: "gemini-2.5-pro",
+                    model: "gemini-2.5-flash",
                     contents: prompt,
                     config: { responseMimeType: "application/json" }
                 });
                 text = (result as any).text || (result as any).response?.text() || "";
             } catch (proError) {
-                console.warn("Gemini 2.5 Pro failed, falling back to Flash:", proError);
-                // Fallback to flash if pro fails or hits limits
+                console.warn("Gemini 2.5 Flash failed, falling back to Flash Lite:", proError);
+                // Fallback to flash lite if flash fails or hits limits
                 const result = await genAI.models.generateContent({
-                    model: "gemini-2.5-flash",
+                    model: "gemini-2.5-flash-lite",
                     contents: prompt,
                     config: { responseMimeType: "application/json" }
                 });

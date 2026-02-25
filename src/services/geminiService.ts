@@ -61,15 +61,15 @@ Strictly output ONLY valid JSON without any markdown formatting like \`\`\`json.
       let text = "";
       try {
         const result = await genAI.models.generateContent({
-          model: "gemini-2.5-pro",
+          model: "gemini-2.5-flash",
           contents: prompt,
           config: { responseMimeType: "application/json" }
         });
         text = (result as any).text || (result as any).response?.text() || "";
       } catch (e) {
-        console.warn("Pro failed, trying Flash...");
+        console.warn("Flash failed, trying Flash Lite...");
         const result = await genAI.models.generateContent({
-          model: "gemini-2.5-flash",
+          model: "gemini-2.5-flash-lite",
           contents: prompt,
           config: { responseMimeType: "application/json" }
         });
