@@ -119,7 +119,7 @@ const App: React.FC = () => {
   const [showRamadanTracker, setShowRamadanTracker] = useState(false);
   const [confirmQuest, setConfirmQuest] = useState<Quest | null>(null);
   const [selectedSubQuests, setSelectedSubQuests] = useState<string[]>([]);
-  const [showTasbeehGuide, setShowTasbeehGuide] = useState(false);
+  const [infoModalQuest, setInfoModalQuest] = useState<Quest | null>(null);
   const [openCategories, setOpenCategories] = useState<string[]>([]);
   const [hasFriendRequests, setHasFriendRequests] = useState(false);
   const [hasGroupInvites, setHasGroupInvites] = useState(false);
@@ -150,7 +150,9 @@ const App: React.FC = () => {
   const [selectedHeroRelated, setSelectedHeroRelated] = useState<string[]>([]);
 
   // Initialize with Curated Content ("Brainrot Replacer")
-  const [reflections, setReflections] = useState<ReflectionItem[]>(CURATED_REFLECTIONS);
+  const [reflections, setReflections] = useState<ReflectionItem[]>(() => {
+    return [...CURATED_REFLECTIONS].sort(() => Math.random() - 0.5);
+  });
   const [loadingReflections, setLoadingReflections] = useState(false);
   const [hasMoreReflections, setHasMoreReflections] = useState(true);
   const [initialized, setInitialized] = useState(false);
@@ -167,7 +169,7 @@ const App: React.FC = () => {
 
   // Tahajjud is BEFORE Fajr in the prayer order
   const fardSalahIds = ['tahajjud', 'fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
-  const naflPrayerQuestIds = ['ishraq_salah', 'awwaabeen', 'salatul_tasbeeh', 'duha'];
+  const naflPrayerQuestIds = ['awwaabeen'];
 
   // IDs that are exclusively tied to salaah and should NEVER appear in All Quests
   const salahExclusiveIds = new Set([
@@ -1432,6 +1434,7 @@ const App: React.FC = () => {
                               isTracked={user.activeQuests.includes(q.id)}
                               darkMode={user.settings?.darkMode}
                               isGreyed={q.isGreyed || isCompletedToday(q.id)}
+                              onShowInfo={() => setInfoModalQuest(q)}
                             />
                             {q.id === 'fasting_ramadan' && (
                               <button
@@ -1697,6 +1700,7 @@ const App: React.FC = () => {
                                 onPin={togglePinQuest}
                                 isPinned={user.pinnedQuests?.includes(q.id)}
                                 darkMode={user.settings?.darkMode}
+                                onShowInfo={() => setInfoModalQuest(q)}
                               />
                             </div>
                           );
@@ -1720,6 +1724,7 @@ const App: React.FC = () => {
                             onPin={togglePinQuest}
                             isPinned={user.pinnedQuests?.includes(q.id)}
                             darkMode={user.settings?.darkMode}
+                            onShowInfo={() => setInfoModalQuest(q)}
                           />
                         ))}
                       </div>
@@ -1736,11 +1741,13 @@ const App: React.FC = () => {
                             key={q.id}
                             quest={q}
                             isActive
-                            onComplete={(q) => completeQuest(q)}
-                            onRemove={removeQuest}
-                            onPin={togglePinQuest}
-                            isPinned={true}
+                            onComplete={() => completeGroupQuest(q.id)}
+                            onRemove={() => removeTrackedGroupQuest(q.id)}
+                            isGroupQuest
+                            groupProgress={activeCompletions}
+                            isLocked={!canUserComplete}
                             darkMode={user.settings?.darkMode}
+                            onShowInfo={() => setInfoModalQuest(q as unknown as Quest)}
                           />
                         ))}
                       </div>
@@ -2073,6 +2080,28 @@ const App: React.FC = () => {
           onToggleDay={toggleRamadanDay}
           darkMode={user.settings?.darkMode}
         />
+      )}
+
+      {/* QUEST INFO MODAL (Tasbeeh, Ishraq, Duha) */}
+      {infoModalQuest && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className={`w-full max-w-sm p-6 rounded-[30px] space-y-4 shadow-2xl ${user.settings?.darkMode ? 'bg-slate-900 border border-white/10 text-white' : 'bg-white text-slate-900'}`}>
+            <div className="flex justify-between items-start">
+              <h3 className="text-xl font-bold">{infoModalQuest.title}</h3>
+              <button onClick={() => setInfoModalQuest(null)} className="p-2 rounded-full bg-slate-100 dark:bg-white/10 hover:opacity-80"><X size={16} /></button>
+            </div>
+            <p className="text-sm opacity-80 leading-relaxed font-medium">
+              Please reference the <strong>"Key to the Treasures of Jannah"</strong> book for the complete guide, rak'aat breakdown, and specific recitations required for this prayer.
+            </p>
+            {infoModalQuest.id === 'salatul_tasbeeh' && (
+              <p className="text-xs opacity-60 italic border-t pt-3 dark:border-white/10">Quick reminder: 4 Rakaats, reading the tasbeeh 300 times in total (75 times per rakaat) in the specific postures.</p>
+            )}
+            {infoModalQuest.id === 'ishraq_salah' && (
+              <p className="text-xs opacity-60 italic border-t pt-3 dark:border-white/10">Quick reminder: Prayed approx 15-20 minutes after sunrise. Sit doing dhikr from Fajr until then.</p>
+            )}
+            <button onClick={() => setInfoModalQuest(null)} className="w-full py-3 mt-4 rounded-2xl bg-[#064e3b] text-white font-bold tracking-widest uppercase text-xs">Got it</button>
+          </div>
+        </div>
       )}
 
     </div>

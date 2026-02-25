@@ -13,7 +13,7 @@ interface QuestCardProps {
   isCompleted?: boolean;
   isPinned?: boolean;
   darkMode?: boolean;
-  onShowTasbeehGuide?: () => void;
+  onShowInfo?: () => void;
   isGreyed?: boolean;
   relatedQuests?: Quest[]; // For Bundles
   isTracked?: boolean;
@@ -33,7 +33,7 @@ interface QuestCardProps {
 const QuestCard: React.FC<QuestCardProps> = ({
   quest, onAction, onComplete, onRemove, onPin,
   isActive, isCompleted, isPinned, darkMode,
-  onShowTasbeehGuide, isGreyed, relatedQuests,
+  onShowInfo, isGreyed, relatedQuests,
   onCompleteRelated, isBundle, timeDisplay, isTracked,
   isGroupQuest, groupProgress, isLocked, deadline
 }) => {
@@ -199,11 +199,11 @@ const QuestCard: React.FC<QuestCardProps> = ({
             >
               Complete
             </button>
-            {quest.id === 'salatul_tasbeeh' && (
+            {['salatul_tasbeeh', 'ishraq_salah', 'duha'].includes(quest.id) && (
               <button
-                onClick={(e) => { e.stopPropagation(); onShowTasbeehGuide?.(); }}
+                onClick={(e) => { e.stopPropagation(); onShowInfo?.(); }}
                 className={`p-3 border rounded-2xl transition-colors ${darkMode ? 'bg-white/10 border-white/20 text-white/80 hover:bg-white/20' : 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200'}`}
-                title="How to Pray Salatul Tasbeeh"
+                title="View Info / How to Pray"
               >
                 <BookOpen size={18} />
               </button>

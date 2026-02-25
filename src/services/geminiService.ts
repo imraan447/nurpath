@@ -48,9 +48,13 @@ export async function generateReflectionsStream(count: number = 3): Promise<Refl
       const genAI = new GoogleGenAI({ apiKey });
 
       const prompt = `Generate ${count} profound Islamic spiritual reflection items. 
-Focus: Sahih Muslim, Sahih Bukhari, other sahih hadith, verses, and reflective quotes from companions of the Prophet ﷺ or Rumi (ensure quotes strictly avoid shirk, shia, or extreme sufi concepts that cross the line). 
+Format Requirements:
+- ${Math.max(1, count - 1)} of these items MUST be short, powerful quotes (from Sahih Hadith, Rumi, or Sahaba). Leave their "details" field completely empty "".
+- Exactly 1 of these items MUST be a longer, deep-dive article, with the "details" field fully populated with a reflective essay (minimum 200 words).
+Focus: Sahih Hadith (Bukhari/Muslim), Quran verses, or quotes from early scholars/Rumi.
+Strict constraint: Absolutely NO shia, shirk, or extreme sufi concepts. Keep it grounded in mainstream Sunni Islam.
 Target Audience: Today's everyday person of all genders. Make it highly reflective and applicable to modern struggles.
-Output Format: JSON Array. 
+Output Format: JSON Array.
 Schema: [{"type":"string","content":"string","summary":"string","details":"string","author":"string","praise":"string","tags":["string"],"readTime":"string"}]
 Strictly output ONLY valid JSON without any markdown formatting like \`\`\`json.`;
 
