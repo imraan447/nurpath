@@ -1734,20 +1734,20 @@ const App: React.FC = () => {
                   )}
 
                   {/* Tracked Group Challenges */}
-                  {trackedGroupQuests.filter(q => !q.completed && !isCompletedToday(q.id)).length > 0 && (
+                  {trackedGroupQuests.filter(q => !q.completed && !isQuestCompletedToday(q.id)).length > 0 && (
                     <div>
                       <h3 className="text-xs font-black uppercase tracking-widest text-[#d4af37] mb-3 ml-2 flex items-center gap-2"><Shield size={12} /> Group Challenges</h3>
                       <div className="space-y-3">
-                        {trackedGroupQuests.filter(q => !q.completed && !isCompletedToday(q.id)).map(q => (
+                        {trackedGroupQuests.filter(q => !q.completed && !isQuestCompletedToday(q.id)).map(q => (
                           <QuestCard
                             key={q.id}
-                            quest={q}
+                            quest={q as unknown as Quest}
                             isActive
-                            onComplete={() => completeGroupQuest(q.id)}
-                            onRemove={() => removeTrackedGroupQuest(q.id)}
+                            onComplete={(quest) => completeQuest(quest, 2)}
+                            onRemove={(quest) => removeQuest(quest)}
                             isGroupQuest
-                            groupProgress={activeCompletions}
-                            isLocked={!canUserComplete}
+                            groupProgress={{ current: q.completionCount || 0, total: q.totalMembers || 0 }}
+                            isLocked={q.isLocked}
                             darkMode={user.settings?.darkMode}
                             onShowInfo={() => setInfoModalQuest(q as unknown as Quest)}
                           />

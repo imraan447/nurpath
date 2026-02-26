@@ -21,3 +21,5 @@ books*/
 .agent/
 .agents/
 *.sql
+*.md
+!README.md
