@@ -1469,13 +1469,6 @@ const App: React.FC = () => {
               }}
               onMarkAsRead={handleMarkReflectionAsRead}
             />
-            {/* Back Button for Reflect Mode */}
-            <button
-              onClick={() => setActiveTab('collect')}
-              className="absolute top-6 left-6 z-[60] text-white/50 hover:text-white transition-colors bg-black/20 backdrop-blur-md p-2 rounded-full"
-            >
-              <ChevronLeft size={24} />
-            </button>
           </div>
         )}
 
@@ -1555,44 +1548,56 @@ const App: React.FC = () => {
                   const isOpen = openCategories.includes(category);
                   const isCorrection = category === 'Correction Quests';
 
-                  // Using sophisticated Flat UI Colors
-                  const categoryColors: Record<string, string> = {
-                    'The Five Pillars': 'bg-[#16a085]',      // Green Sea
-                    'Daily Remembrance': 'bg-[#2980b9]',    // Belize Hole
-                    'Bonus Salaah': 'bg-[#064e3b]',         // Deep Forest Green
-                    'Sunnah & Character': 'bg-[#8e44ad]',   // Wisteria
-                    'Community & Charity': 'bg-[#d35400]',  // Pumpkin
-                    'Correction Quests': 'bg-[#c0392b]'     // Pomegranate
+                  // Define atmospheric backgrounds for each category
+                  const categoryBackgrounds: Record<string, string> = {
+                    'The Five Pillars': 'url("/images/pexels-mohamedbinzayed-8233715.jpg")',
+                    'Daily Remembrance': 'url("/images/pexels-grisentig-4215100.jpg")',
+                    'Bonus Salaah': 'url("/images/pexels-taryn-elliott-3889659.jpg")',
+                    'Sunnah & Character': 'url("/images/pexels-samrana3003-1883409.jpg")',
+                    'Community & Charity': 'url("/images/pexels-ikbalphoto-7469648.jpg")',
+                    'Correction Quests': 'url("/images/routine.jpeg")'
                   };
 
-                  // Bonus Salaah fix to use class if hex isn't intended for direct injection
-                  const bgClass = categoryColors[category]?.startsWith('bg-') ? categoryColors[category] : 'bg-[#064e3b]';
-                  const customStyle = categoryColors[category]?.startsWith('#') ? { backgroundColor: categoryColors[category] } : {};
-                  const bgColor = categoryColors[category] || 'bg-slate-700';
+                  const bgImage = categoryBackgrounds[category] || 'url("/images/routine.jpeg")';
 
                   return (
-                    <section key={category} className="space-y-2 transition-all">
+                    <section key={category} className="space-y-4 transition-all">
+                      {/* Elegant Minimalist Card Container */}
                       <button
                         onClick={() => toggleCategory(category)}
-                        className={`w-full flex items-center justify-between p-5 rounded-2xl shadow-sm transition-all border border-white/5 ${bgClass} text-white hover:brightness-110 active:scale-[0.98] outline-none`}
-                        style={customStyle}
+                        className={`w-full relative overflow-hidden rounded-[24px] border transition-all duration-500 active:scale-[0.98] outline-none group ${user.settings?.darkMode ? 'border-white/10 bg-[#121212]' : 'border-[#e0dcd3] bg-[#f9f8f6]'}`}
+                        style={{ boxShadow: user.settings?.darkMode ? 'inset 0 2px 10px rgba(255,255,255,0.02)' : 'inset 0 2px 10px rgba(0,0,0,0.02)' }}
                       >
-                        <div className="flex items-center gap-3">
-                          {category === 'The Five Pillars' && <div className="p-1.5 rounded-lg bg-white/10"><Shield size={16} /></div>}
-                          {category === 'Daily Remembrance' && <div className="p-1.5 rounded-lg bg-white/10"><Sparkles size={16} /></div>}
-                          {category === 'Bonus Salaah' && <div className="p-1.5 rounded-lg bg-white/10"><Target size={16} /></div>}
-                          {category === 'Sunnah & Character' && <div className="p-1.5 rounded-lg bg-white/10"><UserIcon size={16} /></div>}
-                          {category === 'Community & Charity' && <div className="p-1.5 rounded-lg bg-white/10"><Users size={16} /></div>}
-                          {category === 'Correction Quests' && <div className="p-1.5 rounded-lg bg-white/10"><AlertTriangle size={16} /></div>}
-                          <h2 className="text-sm font-black uppercase tracking-widest">{category}</h2>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-xs font-bold bg-black/20 px-2 py-1 rounded-lg">{availableToStart}/{displayQuests.length}</span>
-                          <ChevronDown size={18} className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+                        {/* Atmospheric Image Background with Grain */}
+                        <div
+                          className="absolute inset-0 z-0 bg-cover bg-center opacity-30 group-hover:opacity-40 transition-opacity duration-700 mix-blend-overlay filter contrast-125"
+                          style={{ backgroundImage: bgImage }}
+                        />
+                        {/* Gradient Fade & Noise Texture Overlay */}
+                        <div className={`absolute inset-0 z-0 bg-gradient-to-r ${user.settings?.darkMode ? 'from-[#0a0a0a]/90 to-[#0a0a0a]/60' : 'from-[#fffdfa]/95 to-[#fffdfa]/70'}`} />
+                        <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}></div>
+
+                        {/* Content Container */}
+                        <div className="relative z-10 p-6 flex items-center justify-between">
+                          <div className="flex flex-col text-left gap-1">
+                            {/* Serif High-End Heading */}
+                            <h2 className={`font-['Playfair_Display',serif] text-xl italic tracking-wide ${user.settings?.darkMode ? 'text-[#e0dcd3]' : 'text-[#2c2b29]'} drop-shadow-sm`}>
+                              {category}
+                            </h2>
+                            {/* Clean Sans-Serif Subtext */}
+                            <p className={`text-[11px] font-medium tracking-[0.1em] uppercase ${user.settings?.darkMode ? 'text-white/40' : 'text-[#8a8782]'}`}>
+                              {availableToStart} of {displayQuests.length} available
+                            </p>
+                          </div>
+
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center border transition-all duration-500 shadow-sm ${isOpen ? 'bg-[#064e3b] border-[#064e3b] text-white rotate-180' : user.settings?.darkMode ? 'bg-white/5 border-white/10 text-white/60 group-hover:bg-white/10 group-hover:text-white' : 'bg-white border-[#e0dcd3] text-[#8a8782] group-hover:text-[#2c2b29] group-hover:border-[#d4af37]'}`}>
+                            <ChevronDown size={18} />
+                          </div>
                         </div>
                       </button>
+
                       {isOpen && (
-                        <div className="grid grid-cols-1 gap-4 pt-2 animate-in fade-in slide-in-from-top-2 px-1">
+                        <div className="grid grid-cols-1 gap-4 pt-1 pb-4 animate-in fade-in slide-in-from-top-4 px-1">
                           {displayQuests.map(q => (
                             <React.Fragment key={q.id}>
                               <QuestCard
@@ -2062,13 +2067,6 @@ const App: React.FC = () => {
               }}
               onMarkAsRead={handleMarkReflectionAsRead}
             />
-            {/* Back Button for Reflect Mode */}
-            <button
-              onClick={() => setActiveTab('collect')}
-              className="absolute top-6 left-6 z-[60] text-white/50 hover:text-white transition-colors bg-black/20 backdrop-blur-md p-2 rounded-full"
-            >
-              <ChevronLeft size={24} />
-            </button>
           </div>
         )}
 
