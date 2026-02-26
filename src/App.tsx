@@ -1524,10 +1524,10 @@ const App: React.FC = () => {
                       <ListTodo size={28} />
                     </div>
                     <div className="text-left flex flex-col gap-1">
-                      <h3 className={`font-['Playfair_Display',serif] text-2xl italic tracking-wide ${user.settings?.darkMode ? 'text-[#e0dcd3]' : 'text-[#2c2b29]'} drop-shadow-sm`}>
+                      <h3 className={`font-['Playfair_Display',serif] text-2xl italic font-bold tracking-wide ${user.settings?.darkMode ? 'text-[#e0dcd3]' : 'text-[#2c2b29]'} drop-shadow-sm`}>
                         {(user.pinnedQuests?.length || 0) > 0 ? 'Edit Routine' : 'Build Routine'}
                       </h3>
-                      <p className={`text-[11px] font-medium tracking-[0.1em] uppercase ${user.settings?.darkMode ? 'text-white/40' : 'text-[#8a8782]'}`}>
+                      <p className={`text-[11px] font-bold tracking-[0.1em] uppercase ${user.settings?.darkMode ? 'text-white/40' : 'text-[#8a8782]'}`}>
                         {(user.pinnedQuests?.length || 0) > 0 ? `${user.pinnedQuests!.length} active daily duties.` : 'Configure your daily habits.'}
                       </p>
                     </div>
@@ -1539,7 +1539,7 @@ const App: React.FC = () => {
 
                 {/* Bottom Section: Subtext */}
                 <div className="relative z-10 mt-6 text-left w-full">
-                  <p className={`text-[11px] font-medium tracking-wide ${user.settings?.darkMode ? 'text-white/60' : 'text-[#2c2b29]/60'} normal-case`}>
+                  <p className={`text-[11px] font-bold tracking-wide ${user.settings?.darkMode ? 'text-white/60' : 'text-[#2c2b29]/60'} normal-case`}>
                     Quests added to your routine will automatically be tracked daily!
                   </p>
                 </div>
