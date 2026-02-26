@@ -1505,42 +1505,47 @@ const App: React.FC = () => {
             <div className="pt-2"> {/* Removed px-6 to make it wider/bleed to edges */}
               <button
                 onClick={() => setShowRoutineBuilder(true)}
-                className={`w-full p-6 min-h-[160px] rounded-[24px] border transition-all duration-500 active:scale-[0.98] outline-none group relative overflow-hidden ${user.settings?.darkMode ? 'border-white/10 bg-[#121212]' : 'border-[#e0dcd3] bg-[#f9f8f6]'}`}
-                style={{ boxShadow: user.settings?.darkMode ? 'inset 0 2px 10px rgba(255,255,255,0.02)' : 'inset 0 2px 10px rgba(0,0,0,0.02)' }}
+                className="w-full text-left transition-all duration-500 active:scale-[0.98] outline-none group flex flex-col"
               >
-                {/* Atmospheric Image Background */}
-                <div
-                  className="absolute inset-0 z-0 bg-cover bg-center opacity-[67%] group-hover:opacity-[79%] transition-opacity duration-700"
-                  style={{ backgroundImage: "url('/images/routine.jpeg')" }}
-                />
-                {/* Gradient Fade & Noise Texture Overlay */}
-                <div className={`absolute inset-0 z-0 bg-gradient-to-r ${user.settings?.darkMode ? 'from-[#0a0a0a]/80 to-[#0a0a0a]/40' : 'from-[#fffdfa]/85 to-[#fffdfa]/40'}`} />
-                <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}></div>
-
-                {/* Top Section: Icon & Title */}
-                <div className="w-full flex items-center justify-between relative z-10 transition-transform group-hover:translate-x-1">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border shadow-sm transition-all duration-500 ${user.settings?.darkMode ? 'bg-white/5 border-white/10 text-[#d4af37]' : 'bg-white border-[#e0dcd3] text-[#064e3b]'}`}>
-                      <ListTodo size={28} />
+                {/* Top Image Box */}
+                <div 
+                  className={`w-full p-6 min-h-[120px] rounded-t-[24px] border border-b-0 relative overflow-hidden ${user.settings?.darkMode ? 'border-white/10 bg-[#121212]' : 'border-[#e0dcd3] bg-[#f9f8f6]'}`}
+                  style={{ boxShadow: user.settings?.darkMode ? 'inset 0 2px 10px rgba(255,255,255,0.02)' : 'inset 0 2px 10px rgba(0,0,0,0.02)' }}
+                >
+                  {/* Atmospheric Image Background */}
+                  <div
+                    className="absolute inset-0 z-0 bg-cover bg-center opacity-[67%] group-hover:opacity-[79%] transition-opacity duration-700"
+                    style={{ backgroundImage: "url('/images/routine.jpeg')" }}
+                  />
+                  {/* Gradient Fade & Noise Texture Overlay */}
+                  <div className={`absolute inset-0 z-0 bg-gradient-to-r ${user.settings?.darkMode ? 'from-[#0a0a0a]/80 to-[#0a0a0a]/40' : 'from-[#fffdfa]/85 to-[#fffdfa]/40'}`} />
+                  <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}></div>
+  
+                  {/* Top Section: Icon & Title */}
+                  <div className="w-full flex items-center justify-between relative z-10 transition-transform group-hover:translate-x-1">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border shadow-sm transition-all duration-500 ${user.settings?.darkMode ? 'bg-white/5 border-white/10 text-[#d4af37]' : 'bg-white border-[#e0dcd3] text-[#064e3b]'}`}>
+                        <ListTodo size={28} />
+                      </div>
+                      <div className="text-left flex flex-col gap-1">
+                        <h3 className={`font-['Playfair_Display',serif] text-2xl italic tracking-wide ${user.settings?.darkMode ? 'text-[#e0dcd3]' : 'text-black'} drop-shadow-sm`}>
+                          {(user.pinnedQuests?.length || 0) > 0 ? 'Edit Routine' : 'Build Routine'}
+                        </h3>
+                        <p className={`text-[11px] font-bold tracking-[0.1em] uppercase ${user.settings?.darkMode ? 'text-white/40' : 'text-black'}`}>
+                          {(user.pinnedQuests?.length || 0) > 0 ? `${user.pinnedQuests!.length} active daily duties.` : 'Configure your daily habits.'}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-left flex flex-col gap-1">
-                      <h3 className={`font-['Playfair_Display',serif] text-2xl italic tracking-wide ${user.settings?.darkMode ? 'text-[#e0dcd3]' : 'text-black'} drop-shadow-sm`}>
-                        {(user.pinnedQuests?.length || 0) > 0 ? 'Edit Routine' : 'Build Routine'}
-                      </h3>
-                      <p className={`text-[11px] font-bold tracking-[0.1em] uppercase ${user.settings?.darkMode ? 'text-white/40' : 'text-black'}`}>
-                        {(user.pinnedQuests?.length || 0) > 0 ? `${user.pinnedQuests!.length} active daily duties.` : 'Configure your daily habits.'}
-                      </p>
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center relative z-10 border shadow-sm transition-all duration-500 ${user.settings?.darkMode ? 'bg-white/5 border-white/10 text-white/60 group-hover:text-white' : 'bg-white border-[#e0dcd3] text-[#8a8782] group-hover:text-[#2c2b29] group-hover:border-[#d4af37]'}`}>
+                      <ChevronRight size={24} />
                     </div>
-                  </div>
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center relative z-10 border shadow-sm transition-all duration-500 ${user.settings?.darkMode ? 'bg-white/5 border-white/10 text-white/60 group-hover:text-white' : 'bg-white border-[#e0dcd3] text-[#8a8782] group-hover:text-[#2c2b29] group-hover:border-[#d4af37]'}`}>
-                    <ChevronRight size={24} />
                   </div>
                 </div>
 
-                {/* Bottom Section: Subtext */}
-                <div className="relative z-10 mt-6 text-left w-full">
-                  <p className={`text-[11px] font-bold tracking-wide ${user.settings?.darkMode ? 'text-white/60' : 'text-black'} normal-case`}>
-                    Quests added to your routine will automatically be tracked daily!
+                {/* Attached Gold Bottom Box */}
+                <div className={`w-full bg-[#d4af37] py-3.5 px-6 rounded-b-[24px] border-t-0 text-center shadow-sm relative z-20 ${user.settings?.darkMode ? 'border border-white/10' : 'border border-[#d4af37] border-t-0'}`}>
+                  <p className="text-[12px] font-extrabold tracking-wide text-white">
+                    Quests in daily routine will automatically be tracked.
                   </p>
                 </div>
               </button>
