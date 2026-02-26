@@ -892,7 +892,7 @@ const App: React.FC = () => {
           location: u.location,
           auto_add_pinned: u.autoAddPinned,
           settings: u.settings,
-          prayer_time_adjustments: u.prayerTimeAdjustments || u.settings?.prayer_time_adjustments || {},
+          prayer_time_adjustments: u.prayerTimeAdjustments || {},
           ramadan_fasting: u.ramadanFasting,
           calc_method: u.settings?.calcMethod,
           madhab: u.settings?.madhab
@@ -1225,17 +1225,16 @@ const App: React.FC = () => {
   let heroTimeStatus = null;
 
   // STRICT HERO LOGIC: Only allow Current or Next Prayer
-  // Plus: 1 Hour Buffer after Sunrise before showing Dhuhr
+  // Map 'duha' to allow 'dhuhr' as the next trackable fard prayer
   let allowedPrayerIds: string[] = [currentPrayer, nextPrayer].filter((p): p is string => !!p);
 
-  if (currentPrayer === 'duha' && nextPrayer === 'dhuhr' && prayerTimes) {
-    const sunriseMins = getMinutesFromTime(prayerTimes.Sunrise);
-    const now = new Date();
-    const currentMins = now.getHours() * 60 + now.getMinutes();
-    if (currentMins < sunriseMins + 60) {
-      // Still in buffer period, hide Dhuhr
-      allowedPrayerIds = allowedPrayerIds.filter(id => id !== 'dhuhr');
-    }
+  // During Duha period (sunrise→dhuhr), always allow Dhuhr
+  if (currentPrayer === 'duha') {
+    if (!allowedPrayerIds.includes('dhuhr')) allowedPrayerIds.push('dhuhr');
+  }
+  // When current is 'sunrise', allow fajr (in case it was missed) and dhuhr
+  if (currentPrayer === 'sunrise' || nextPrayer === 'sunrise') {
+    if (!allowedPrayerIds.includes('fajr')) allowedPrayerIds.push('fajr');
   }
 
   if (bundle && user?.activeQuests.includes(bundle.mainQuest.id) && !isCompletedToday(bundle.mainQuest.id)) {
@@ -1753,15 +1752,24 @@ const App: React.FC = () => {
                           const timeStatus = getQuestTimeStatus(q.id);
                           const isCompleted = isCompletedToday(q.id);
 
-                          // SALAAH ROTATION: current/next prayer is active, completed shows done, others locked
+                          // SALAAH ROTATION LOGIC:
+                          // - Completed prayers → show as completed (greyed with checkmark)
+                          // - Current/next prayer → active and completable
+                          // - Past prayers (missed) → still active and completable (not locked!)
+                          // - Future prayers → locked and greyed out
                           let isFuture = false;
                           let isLocked = false;
-                          if (isSalaah && !isCompleted) {
-                            // If prayer times are missing, treat all as UNLOCKED so user isn't seeing a transparent list 
-                            const isCurrentOrNext = !prayerTimes || allowedPrayerIds.includes(q.id);
+                          if (isSalaah && !isCompleted && prayerTimes) {
+                            const isCurrentOrNext = allowedPrayerIds.includes(q.id);
                             if (!isCurrentOrNext) {
-                              isFuture = true;
-                              isLocked = true;
+                              // Check if this prayer has PASSED (user missed it)
+                              const questTimeStatus = getQuestTimeStatus(q.id);
+                              const isPast = questTimeStatus?.status === 'past';
+                              // Past prayers should still be completable, only FUTURE ones are locked
+                              if (!isPast) {
+                                isFuture = true;
+                                isLocked = true;
+                              }
                             }
                           }
 
@@ -1769,7 +1777,7 @@ const App: React.FC = () => {
                             <div key={q.id} className={`rounded-[24px] overflow-hidden transition-all ${user.settings?.darkMode ? 'bg-white/5' : 'bg-white'} ${isLocked ? 'opacity-30' : ''} ${isCompleted ? 'opacity-50' : ''}`}>
                               <QuestCard
                                 quest={q}
-                                isActive={(!isFuture && !isCompleted) || !prayerTimes}
+                                isActive={!isFuture && !isCompleted}
                                 isGreyed={isFuture || isCompleted}
                                 isCompleted={isCompleted}
                                 timeDisplay={timeStatus as any}
