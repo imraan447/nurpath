@@ -754,7 +754,13 @@ const App: React.FC = () => {
 
         // 3.5. Ensure Routine/Pinned quests are continually added for the new day
         // ONLY add pinned quests that are ALSO in the DB pinned list (i.e. not explicitly removed)
-        const pinned: string[] = profileData?.pinned_quests || [];
+        let pinned: string[] = profileData?.pinned_quests || [];
+
+        // BACKWARD COMPATIBILITY: If a user has no routine set up, automatically default to the 5 daily prayers
+        if (pinned.length === 0) {
+          pinned = ["tahajjud", "fajr", "dhuhr", "asr", "maghrib", "isha"];
+        }
+
         const toAddFromPinned = pinned.filter(pid => !mergedActive.includes(pid) && !freshCompletions[pid]);
         // Only add if DB also has them as active OR they were never removed (pinned === source of truth)
         if (toAddFromPinned.length > 0) {
@@ -776,7 +782,7 @@ const App: React.FC = () => {
             ...user,
             activeQuests: mergedActive,
             completedDailyQuests: { ...freshCompletions }, // DB is source of truth for today
-            pinnedQuests: profileData?.pinned_quests || user.pinnedQuests
+            pinnedQuests: pinned // Use the fallback-applied pinned array if it was empty
           };
           setUser(updated);
           // Update localStorage (but don't trigger DB write since we just read from DB)
