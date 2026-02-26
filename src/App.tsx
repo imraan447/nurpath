@@ -1486,13 +1486,13 @@ const App: React.FC = () => {
             {/* ROUTINE BUILDER BUTTON */}
             <div className="pt-2"> {/* Removed px-6 to make it wider/bleed to edges */}
               <button
-                onClick={() => setRoutineBuilderOpen(true)}
+                onClick={() => setShowRoutineBuilder(true)}
                 className={`w-full p-6 min-h-[160px] rounded-[24px] border transition-all duration-500 active:scale-[0.98] outline-none group relative overflow-hidden ${user.settings?.darkMode ? 'border-white/10 bg-[#121212]' : 'border-[#e0dcd3] bg-[#f9f8f6]'}`}
                 style={{ boxShadow: user.settings?.darkMode ? 'inset 0 2px 10px rgba(255,255,255,0.02)' : 'inset 0 2px 10px rgba(0,0,0,0.02)' }}
               >
                 {/* Atmospheric Image Background with Grain */}
                 <div
-                  className="absolute inset-0 z-0 bg-cover bg-center opacity-30 group-hover:opacity-40 transition-opacity duration-700 mix-blend-overlay filter contrast-125"
+                  className="absolute inset-0 z-0 bg-cover bg-center opacity-60 group-hover:opacity-70 transition-opacity duration-700 mix-blend-overlay filter contrast-125 saturate-50"
                   style={{ backgroundImage: "url('/images/routine.jpeg')" }}
                 />
                 {/* Gradient Fade & Noise Texture Overlay */}
@@ -1706,27 +1706,44 @@ const App: React.FC = () => {
 
                 {/* Hero Card - Next Main Goal */}
                 {heroQuest ? (
-                  <div className="relative group">
-                    <div className={`relative p-8 rounded-[24px] overflow-hidden ${user.settings?.darkMode ? 'bg-emerald-900/40 border border-emerald-500/20' : 'bg-[#064e3b] shadow-xl'}`}>
-                      <div className="absolute top-0 right-0 p-6 opacity-5 mix-blend-overlay">
-                        <Zap size={140} />
-                      </div>
-                      <div className="relative z-10 text-white">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="bg-white/20 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest text-white/90">Main Priority</span>
+                  <div className="relative group mb-8">
+                    <div className={`relative p-8 rounded-[24px] border transition-all duration-500 overflow-hidden ${user.settings?.darkMode ? 'bg-[#121212] border-white/10' : 'bg-[#f9f8f6] border-[#e0dcd3] shadow-sm'}`}>
+                      {/* Atmospheric Image Background with Grain */}
+                      <div
+                        className="absolute inset-0 z-0 bg-cover bg-center opacity-20 group-hover:opacity-30 transition-opacity duration-700 mix-blend-overlay filter contrast-125"
+                        style={{ backgroundImage: 'url("/images/pexels-grisentig-4215100.jpg")' }}
+                      />
+                      {/* Gradient Fade & Noise Texture Overlay */}
+                      <div className={`absolute inset-0 z-0 bg-gradient-to-r ${user.settings?.darkMode ? 'from-[#0a0a0a]/95 to-[#0a0a0a]/80' : 'from-[#fffdfa]/95 to-[#fffdfa]/80'}`} />
+                      <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}></div>
+
+                      <div className="relative z-10">
+                        <div className="flex items-center gap-2 mb-4 flex-wrap">
+                          <span className={`text-[9px] font-medium uppercase tracking-widest px-2.5 py-1 rounded-full border shadow-sm ${user.settings?.darkMode ? 'bg-white/5 border-white/5 text-[#d4af37]' : 'bg-white border-[#e0dcd3]/50 text-[#064e3b]'}`}>
+                            MAIN PRIORITY
+                          </span>
                           {/* Time Badge in Hero */}
                           {heroTimeStatus && (
-                            <span className={`px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1 ${heroTimeStatus.status === 'now' ? 'bg-rose-500 text-white animate-pulse' : 'bg-[#043327]/80'}`}>
+                            <span className={`text-[9px] font-medium uppercase tracking-widest px-2.5 py-1 rounded-full border shadow-sm flex items-center gap-1.5 ${heroTimeStatus.status === 'now'
+                              ? 'bg-rose-500/10 border-rose-500/20 text-rose-500 animate-pulse'
+                              : user.settings?.darkMode ? 'bg-white/5 border-white/5 text-slate-400' : 'bg-slate-100 border-slate-200 text-slate-500'
+                              }`}>
                               <Clock size={10} />
                               {heroTimeStatus.status === 'now' ? `NOW • ${heroTimeStatus.time}` : heroTimeStatus.time}
                             </span>
                           )}
-                          <span className="text-[10px] text-[#d4af37] font-black">+{totalHeroXP} XP</span>
+                          <span className={`text-[9px] font-medium uppercase tracking-widest px-2.5 py-1 rounded-full border shadow-sm flex items-center gap-1.5 ${user.settings?.darkMode ? 'bg-[#d4af37]/10 border-[#d4af37]/20 text-[#d4af37]' : 'bg-white border-[#e0dcd3] text-[#a1811a]'}`}>
+                            +{totalHeroXP} XP
+                          </span>
                         </div>
-                        <h3 className="text-2xl font-bold mb-2">{heroQuest.title}</h3>
-                        <p className="text-sm text-white/80 mb-6 max-w-[80%]">{heroQuest.description}</p>
+                        <h3 className={`font-['Playfair_Display',serif] text-3xl italic tracking-wide mb-3 drop-shadow-sm ${user.settings?.darkMode ? 'text-[#e0dcd3]' : 'text-[#2c2b29]'}`}>
+                          {heroQuest.title}
+                        </h3>
+                        <p className={`text-[13px] mb-8 leading-relaxed font-medium max-w-[85%] ${user.settings?.darkMode ? 'text-white/60' : 'text-[#8a8782]'}`}>
+                          {heroQuest.description}
+                        </p>
 
-                        {/* Interactive Checklist inside Green Card */}
+                        {/* Interactive Checklist inside Cream Card */}
                         {heroRelatedQuests.length > 0 && (() => {
                           const isPreSalah = (id: string) => ['miswak', 'wudhu', 'tahiyyatul_wudhu', 'tahiyyatul_masjid', 'sunnah-pre'].some(k => id.includes(k));
                           const preSalahQuests = heroRelatedQuests.filter(rq => isPreSalah(rq.id));
@@ -1735,27 +1752,29 @@ const App: React.FC = () => {
                           const renderHeroChecklist = (title: string, items: typeof heroRelatedQuests) => {
                             if (!items.length) return null;
                             return (
-                              <div className="mb-4 last:mb-0">
-                                <h4 className="text-[10px] font-black uppercase tracking-widest text-white/60 mb-2 flex items-center gap-1"><CheckSquare size={12} /> {title}</h4>
+                              <div className="mb-5 last:mb-0">
+                                <h4 className={`text-[10px] font-bold uppercase tracking-widest mb-3 flex items-center gap-2 ${user.settings?.darkMode ? 'text-white/60' : 'text-[#8a8782]'}`}>
+                                  <BookOpen size={12} /> {title}
+                                </h4>
                                 <div className="space-y-2">
                                   {items.map(rq => (
                                     <button
                                       key={rq.id}
                                       onClick={() => !rq.completed && toggleHeroRelated(rq.id)}
                                       disabled={!!rq.completed}
-                                      className={`w-full flex items-center justify-between p-2 rounded-xl text-left transition-all ${rq.completed ? 'opacity-50' : 'hover:bg-white/10 active:scale-95'}`}
+                                      className="w-full flex items-center justify-between group/rq outline-none"
                                     >
-                                      <div className="flex items-center gap-3">
-                                        <div className={`w-5 h-5 rounded flex items-center justify-center border transition-all ${rq.completed ? 'bg-emerald-500 border-emerald-500' :
-                                          selectedHeroRelated.includes(rq.id) ? 'bg-[#d4af37] border-[#d4af37]' :
-                                            'border-white/40'
-                                          }`}>
-                                          {rq.completed && <Check size={12} />}
-                                          {!rq.completed && selectedHeroRelated.includes(rq.id) && <Check size={12} className="text-white" />}
+                                      <div className="flex items-center gap-3 flex-1 text-left">
+                                        <div className={`w-5 h-5 rounded-[6px] border flex items-center justify-center transition-all duration-300 ${rq.completed ? (user.settings?.darkMode ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' : 'bg-emerald-50 border-emerald-200 text-emerald-600') : (user.settings?.darkMode ? 'border-white/20 group-hover/rq:border-white/40' : 'border-[#d4af37]/30 group-hover/rq:border-[#d4af37]/60 bg-white')}`}>
+                                          {(rq.completed || selectedHeroRelated.includes(rq.id)) && <Check size={12} strokeWidth={2.5} className={(rq.completed === false && selectedHeroRelated.includes(rq.id)) ? (user.settings?.darkMode ? 'text-white/40' : 'text-[#d4af37]') : ''} />}
                                         </div>
-                                        <span className={`text-xs font-bold ${rq.completed ? 'line-through text-white/50' : 'text-white'}`}>{rq.title}</span>
+                                        <span className={`text-[13px] font-medium transition-colors ${rq.completed ? (user.settings?.darkMode ? 'text-white/40 line-through' : 'text-[#8a8782] line-through') : (user.settings?.darkMode ? 'text-[#e0dcd3] group-hover/rq:text-white' : 'text-[#2c2b29]')}`}>
+                                          {rq.title}
+                                        </span>
                                       </div>
-                                      <span className="text-[9px] font-black text-[#d4af37]">{rq.completed ? 'Done' : `+${rq.xp}`}</span>
+                                      <span className={`text-[10px] font-bold transition-colors ${rq.completed ? (user.settings?.darkMode ? 'text-white/20' : 'text-[#e0dcd3]') : (user.settings?.darkMode ? 'text-[#d4af37]/80' : 'text-[#d4af37]')}`}>
+                                        {rq.completed ? 'Done' : `+${rq.xp}`}
+                                      </span>
                                     </button>
                                   ))}
                                 </div>
@@ -1764,9 +1783,9 @@ const App: React.FC = () => {
                           };
 
                           return (
-                            <div className="mb-6 bg-black/20 p-4 rounded-2xl backdrop-blur-sm border border-white/5">
-                              {renderHeroChecklist('Pre-Salah Checklist', preSalahQuests)}
-                              {renderHeroChecklist('Post-Salah Checklist', postSalahQuests)}
+                            <div className={`mb-8 p-5 rounded-[20px] border shadow-sm ${user.settings?.darkMode ? 'bg-white/5 border-white/5' : 'bg-white/60 border-[#e0dcd3]'} backdrop-blur-sm`}>
+                              {renderHeroChecklist('Pre-Salah Actions', preSalahQuests)}
+                              {renderHeroChecklist('Post-Salah Actions', postSalahQuests)}
                             </div>
                           );
                         })()}
@@ -1774,23 +1793,23 @@ const App: React.FC = () => {
                         {heroTimeStatus?.status === 'future' ? (
                           <button
                             disabled
-                            className="w-full py-3 bg-white/20 text-white/70 rounded-2xl font-black text-xs uppercase tracking-widest cursor-not-allowed flex items-center justify-center gap-2"
+                            className={`w-full py-4 rounded-2xl font-bold text-[11px] uppercase tracking-widest border flex items-center justify-center gap-2 cursor-not-allowed ${user.settings?.darkMode ? 'bg-white/5 border-white/10 text-white/40' : 'bg-slate-100 border-slate-200 text-slate-400'}`}
                           >
                             <Lock size={16} /> Starts in {heroTimeStatus.timeLeft}
                           </button>
                         ) : (
                           <button
                             onClick={() => handleHeroComplete(heroQuest!, heroRelatedQuests)}
-                            className="w-full py-3 bg-white text-[#064e3b] rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
+                            className={`w-full py-4 rounded-2xl font-bold text-[11px] uppercase tracking-widest transition-all duration-300 border flex items-center justify-center gap-2 shadow-sm ${user.settings?.darkMode ? 'bg-white/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20' : 'bg-white border-[#064e3b]/30 text-[#064e3b] hover:bg-[#064e3b]/5 active:scale-[0.98]'}`}
                           >
-                            Complete Mission <Check size={16} />
+                            Complete Mission <Check size={16} strokeWidth={2.5} />
                           </button>
                         )}
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="p-8 rounded-[30px] bg-slate-100 dark:bg-white/5 border-2 border-dashed border-slate-200 dark:border-white/10 text-center">
+                  <div className="p-8 rounded-[30px] bg-slate-100 dark:bg-white/5 border-2 border-dashed border-slate-200 dark:border-white/10 text-center mb-6">
                     <p className="text-slate-400 font-bold text-sm">No active focus. Start a quest!</p>
                   </div>
                 )}
