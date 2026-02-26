@@ -486,18 +486,9 @@ const App: React.FC = () => {
         localData = { activeQuests: [], completedDailyQuests: {}, settings: DEFAULT_SETTINGS };
       }
 
-      // CLEAN STALE: Only keep today's completions from localStorage to prevent ghost data
-      const cleanedLocalCompletions: { [key: string]: string } = {};
-      if (localData.completedDailyQuests) {
-        Object.entries(localData.completedDailyQuests).forEach(([qid, date]) => {
-          if (date === todayKey) {
-            cleanedLocalCompletions[qid] = date;
-          }
-        });
-      }
-
-      // DB completions are authoritative, overlay on cleaned local
-      const mergedDailyQuests = { ...cleanedLocalCompletions, ...dbDailyCompletions };
+      // DB completions are the SOLE source of truth. Do NOT merge localStorage completions!
+      // This prevents ghost "done" states from stale/buggy localStorage data.
+      const mergedDailyQuests = { ...dbDailyCompletions };
 
       // DB is source of truth for activeQuests, merge any localStorage-only additions
       const dbActiveQuests: string[] = profileData?.active_quests || [];
@@ -507,13 +498,10 @@ const App: React.FC = () => {
       const localAdditions = localActiveQuests.filter(id => !dbActiveQuests.includes(id) && !mergedDailyQuests[id]);
       let activeQuests = [...dbActiveQuests, ...localAdditions];
 
-      // HANDLE AUTO-ADD PINNED
+      // HANDLE AUTO-ADD PINNED: Always add pinned quests to active, even if completed today
       if (profileData?.pinned_quests) {
         const pinned: string[] = profileData.pinned_quests;
-        const toAdd = pinned.filter(pid => {
-          const quest = ALL_QUESTS.find(q => q.id === pid);
-          return quest && !activeQuests.includes(pid) && !mergedDailyQuests[pid];
-        });
+        const toAdd = pinned.filter(pid => !activeQuests.includes(pid));
         if (toAdd.length > 0) {
           activeQuests = [...activeQuests, ...toAdd];
         }
