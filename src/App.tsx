@@ -1190,7 +1190,34 @@ const App: React.FC = () => {
     const currentMins = now.getHours() * 60 + now.getMinutes();
     const prayerMins = getMinutesFromTime(prayerTimeStr);
 
-    if (questId === 'tahajjud') return { time: 'Last Third', status: currentPrayer === 'tahajjud' ? 'now' : 'upcoming' };
+    if (questId === 'tahajjud') {
+      const ishaMins = getMinutesFromTime(prayerTimes['Isha']);
+      const fajrMins = getMinutesFromTime(prayerTimes['Fajr']);
+      const startMins = (ishaMins + 60) % 1440;
+
+      let tStatus: 'now' | 'future' | 'past' = 'future';
+      let isActive = false;
+
+      if (startMins > fajrMins) {
+        isActive = currentMins >= startMins || currentMins < fajrMins;
+      } else {
+        isActive = currentMins >= startMins && currentMins < fajrMins;
+      }
+
+      if (isActive) tStatus = 'now';
+
+      let tTimeLeft = '';
+      if (tStatus === 'future') {
+        let diff = startMins - currentMins;
+        if (diff < 0) diff += 1440;
+        const h = Math.floor(diff / 60);
+        const m = diff % 60;
+        if (h > 0) tTimeLeft = `${h}h ${m}m`;
+        else tTimeLeft = `${m}m`;
+      }
+
+      return { time: 'Night', status: tStatus, timeLeft: tTimeLeft };
+    }
 
     let status: 'now' | 'future' | 'past' = 'future';
     if (currentPrayer === questId) status = 'now';
@@ -1232,18 +1259,25 @@ const App: React.FC = () => {
         const q = ALL_QUESTS.find(q => q.id === id);
         return q && q.category === QuestCategory.MAIN && !isCompletedToday(id);
       });
+      // Wrap around to tomorrow's Fajr if all tracked fard salah are completed today
+      if (!intendedHeroId && trackedFard.length > 0 && trackedFard.includes('fajr')) {
+        intendedHeroId = 'fajr';
+      }
     }
 
     if (intendedHeroId) {
       heroQuest = ALL_QUESTS.find(q => q.id === intendedHeroId);
       if (heroQuest) {
+        // Force completion mathematically false if we wrapped around to tomorrow's fajr
+        const forceIncomplete = intendedHeroId === 'fajr' && isCompletedToday('fajr') && trackedFard.every(id => isCompletedToday(id));
+
         const relIds = PRAYER_RELATED_QUESTS[heroQuest.id] || [];
         heroRelatedQuests = relIds
           .map(id => ALL_QUESTS.find(q => q.id === id))
           .filter((q): q is Quest => !!q)
           .map(q => ({
             ...q,
-            completed: isCompletedToday(q.id)
+            completed: isCompletedToday(q.id) && !forceIncomplete
           }));
       }
     }
@@ -1251,6 +1285,13 @@ const App: React.FC = () => {
 
   if (heroQuest) {
     heroTimeStatus = getQuestTimeStatus(heroQuest.id);
+    // If it's a wrapped-around Fajr, force it into the future locked state
+    if (user && heroQuest.id === 'fajr' && isCompletedToday('fajr') && fardSalahIds.filter(id => user.activeQuests.includes(id)).every(id => isCompletedToday(id))) {
+      if (heroTimeStatus) {
+        heroTimeStatus.status = 'future';
+        heroTimeStatus.timeLeft = heroTimeStatus.timeLeft || 'Tomorrow';
+      }
+    }
   }
 
   const totalHeroXP = heroQuest ? heroQuest.xp + heroRelatedQuests
