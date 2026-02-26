@@ -1510,11 +1510,11 @@ const App: React.FC = () => {
               >
                 {/* Atmospheric Image Background */}
                 <div
-                  className="absolute inset-0 z-0 bg-cover bg-center opacity-[53%] group-hover:opacity-[66%] transition-opacity duration-700"
+                  className="absolute inset-0 z-0 bg-cover bg-center opacity-[83%] group-hover:opacity-[95%] transition-opacity duration-700"
                   style={{ backgroundImage: "url('/images/routine.jpeg')" }}
                 />
                 {/* Gradient Fade & Noise Texture Overlay */}
-                <div className={`absolute inset-0 z-0 bg-gradient-to-r ${user.settings?.darkMode ? 'from-[#0a0a0a]/90 to-[#0a0a0a]/60' : 'from-[#fffdfa]/95 to-[#fffdfa]/70'}`} />
+                <div className={`absolute inset-0 z-0 bg-gradient-to-r ${user.settings?.darkMode ? 'from-[#0a0a0a]/80 to-[#0a0a0a]/40' : 'from-[#fffdfa]/85 to-[#fffdfa]/40'}`} />
                 <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}></div>
 
                 {/* Top Section: Icon & Title */}
