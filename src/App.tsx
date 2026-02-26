@@ -1956,13 +1956,13 @@ const App: React.FC = () => {
                             <>
                               <button
                                 onClick={() => setCompletedSalahExpanded(!completedSalahExpanded)}
-                                className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all ${user.settings?.darkMode ? 'bg-white/5 text-emerald-400/80 hover:bg-white/10' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}`}
+                                className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl text-[11px] uppercase tracking-widest font-bold border transition-all duration-300 ${user.settings?.darkMode ? 'bg-transparent border-emerald-500/20 text-emerald-400/80 hover:bg-emerald-500/5' : 'bg-transparent border-emerald-200 text-[#064e3b] hover:bg-emerald-50'}`}
                               >
-                                <span className="flex items-center gap-2">
-                                  <CheckCircle2 size={14} />
+                                <span className="flex items-center gap-2.5">
+                                  <CheckCircle2 size={14} strokeWidth={2.5} />
                                   {completedPrayers.length} completed prayer{completedPrayers.length > 1 ? 's' : ''}
                                 </span>
-                                <ChevronDown size={14} className={`transition-transform ${completedSalahExpanded ? 'rotate-180' : ''}`} />
+                                <ChevronDown size={14} className={`transition-transform duration-500 ${completedSalahExpanded ? 'rotate-180' : ''}`} />
                               </button>
 
                               {completedSalahExpanded && completedPrayers.map(q => {
@@ -1993,13 +1993,13 @@ const App: React.FC = () => {
                             <>
                               <button
                                 onClick={() => setUpcomingSalahExpanded(!upcomingSalahExpanded)}
-                                className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all ${user.settings?.darkMode ? 'bg-white/5 text-white/40 hover:bg-white/10' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
+                                className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl text-[11px] uppercase tracking-widest font-bold border transition-all duration-300 ${user.settings?.darkMode ? 'bg-transparent border-white/10 text-white/40 hover:bg-white/5' : 'bg-transparent border-[#e0dcd3] text-[#8a8782] hover:bg-[#8a8782]/5'}`}
                               >
-                                <span className="flex items-center gap-2">
-                                  <Lock size={12} />
+                                <span className="flex items-center gap-2.5">
+                                  <Lock size={12} strokeWidth={2.5} />
                                   {upcomingPrayers.length} upcoming prayer{upcomingPrayers.length > 1 ? 's' : ''}
                                 </span>
-                                <ChevronDown size={14} className={`transition-transform ${upcomingSalahExpanded ? 'rotate-180' : ''}`} />
+                                <ChevronDown size={14} className={`transition-transform duration-500 ${upcomingSalahExpanded ? 'rotate-180' : ''}`} />
                               </button>
 
                               {upcomingSalahExpanded && upcomingPrayers.map(q => {

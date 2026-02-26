@@ -61,28 +61,28 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({ currentRoutine, onSave,
         const isExpanded = expandedPackages.includes(q.id);
 
         return (
-            <div key={q.id} className={`${isSubItem ? 'mt-2 pl-4 border-l-2 border-slate-100 dark:border-white/5 ml-4' : ''}`}>
+            <div key={q.id} className={`${isSubItem ? 'mt-2 pl-4 border-l border-[#e0dcd3] dark:border-white/10 ml-4' : ''}`}>
                 <div
                     onClick={() => toggleSelection(q.id)}
-                    className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all cursor-pointer ${isSelected
-                        ? (darkMode ? 'bg-[#064e3b]/20 border-[#064e3b]/50' : 'bg-emerald-50 border-emerald-500/50')
-                        : (darkMode ? 'bg-white/5 border-transparent hover:border-white/10' : 'bg-slate-50 border-slate-100 hover:border-slate-200')
+                    className={`flex items-center justify-between p-5 rounded-[20px] border transition-all duration-300 cursor-pointer ${isSelected
+                        ? (darkMode ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-emerald-50 border-emerald-200 shadow-inner')
+                        : (darkMode ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-white border-[#e0dcd3] shadow-sm hover:shadow-md')
                         } ${isSubItem ? 'py-3' : ''}`}
                 >
-                    <div className="flex items-center gap-3">
-                        <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-colors ${isSelected
-                            ? 'bg-emerald-500 border-emerald-500 text-white'
-                            : (darkMode ? 'border-white/20' : 'border-slate-300')
+                    <div className="flex items-center gap-4">
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all duration-300 ${isSelected
+                            ? (darkMode ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' : 'bg-white border-emerald-500 text-emerald-600 shadow-sm')
+                            : (darkMode ? 'border-white/20' : 'border-[#e0dcd3]')
                             }`}>
-                            {isSelected && <Check size={12} strokeWidth={4} />}
+                            {isSelected && <Check size={12} strokeWidth={isSubItem ? 2.5 : 2} />}
                         </div>
                         <div>
-                            <h3 className={`font-bold ${isSubItem ? 'text-xs' : 'text-sm'} ${darkMode ? 'text-white' : 'text-slate-900'}`}>{q.title}</h3>
-                            {!isSubItem && <p className={`text-[10px] uppercase tracking-widest ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>{q.category}</p>}
+                            <h3 className={`font-medium text-[15px] ${isSubItem ? 'text-[13px]' : ''} ${darkMode ? 'text-[#e0dcd3]' : 'text-[#2c2b29]'}`}>{q.title}</h3>
+                            {!isSubItem && <p className={`text-[9px] uppercase tracking-widest mt-0.5 ${darkMode ? 'text-white/40' : 'text-[#8a8782]'}`}>{q.category}</p>}
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
-                        <div className="text-[10px] font-bold text-[#d4af37]">+{q.xp} XP</div>
+                        <div className={`text-[10px] font-bold ${darkMode ? 'text-[#d4af37]/80' : 'text-[#d4af37]'}`}>+{q.xp} XP</div>
                     </div>
                 </div>
 
@@ -92,29 +92,29 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({ currentRoutine, onSave,
     };
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style={{ zIndex: 9999 }}>
-            <div className={`w-full max-w-lg h-[85vh] flex flex-col rounded-[40px] shadow-2xl overflow-hidden ${darkMode ? 'bg-[#050a09] border border-white/10' : 'bg-white'}`}>
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4 bg-black/80 backdrop-blur-md" style={{ zIndex: 9999 }}>
+            <div className={`w-full max-w-lg h-[85vh] flex flex-col rounded-[32px] shadow-2xl overflow-hidden border ${darkMode ? 'bg-[#121212] border-white/10' : 'bg-[#f9f8f6] border-[#e0dcd3]'}`}>
 
                 {/* Header */}
-                <div className={`p-6 border-b shrink-0 ${darkMode ? 'border-white/5' : 'border-slate-100'}`}>
+                <div className={`p-6 border-b shrink-0 ${darkMode ? 'border-white/5' : 'border-[#e0dcd3]/50'}`}>
                     <div className="flex items-center justify-between mb-2">
-                        <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>Build Your Routine</h2>
-                        <button onClick={onClose} className={`p-2 rounded-full ${darkMode ? 'bg-white/5 hover:bg-white/10 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'}`}>
+                        <h2 className={`font-['Playfair_Display',serif] text-3xl italic tracking-wide ${darkMode ? 'text-[#e0dcd3]' : 'text-[#2c2b29]'}`}>Build Your Routine</h2>
+                        <button onClick={onClose} className={`p-2 rounded-full border transition-colors ${darkMode ? 'bg-white/5 border-white/10 hover:bg-white/10 text-white/70' : 'bg-white border-[#e0dcd3] hover:border-[#d4af37] text-[#8a8782]'}`}>
                             <X size={20} />
                         </button>
                     </div>
-                    <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Select the quests you want to do every day. These will be automatically added to your list.</p>
+                    <p className={`text-[13px] font-medium leading-relaxed ${darkMode ? 'text-white/60' : 'text-[#8a8782]'}`}>Select the quests you want to do every day. These will be automatically added to your list.</p>
                 </div>
 
                 {/* Categories */}
-                <div className={`px-6 py-3 border-b flex gap-2 overflow-x-auto shrink-0 ${darkMode ? 'border-white/5' : 'border-slate-50'}`} style={{ scrollbarWidth: 'none' }}>
+                <div className={`px-6 py-4 border-b flex gap-2 overflow-x-auto shrink-0 ${darkMode ? 'border-white/5' : 'border-[#e0dcd3]/50'}`} style={{ scrollbarWidth: 'none' }}>
                     {categories.map(cat => (
                         <button
                             key={cat}
                             onClick={() => setActiveCategory(cat)}
-                            className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-colors flex-shrink-0 ${activeCategory === cat
-                                ? (darkMode ? 'bg-white text-black' : 'bg-slate-900 text-white')
-                                : (darkMode ? 'bg-white/5 text-slate-400 hover:bg-white/10' : 'bg-slate-100 text-slate-500 hover:bg-slate-200')
+                            className={`px-4 py-2 rounded-full text-[10px] font-medium uppercase tracking-widest whitespace-nowrap transition-all border flex-shrink-0 ${activeCategory === cat
+                                ? (darkMode ? 'bg-white/10 border-white/20 text-white shadow-sm' : 'bg-white border-[#e0dcd3] text-[#2c2b29] shadow-sm')
+                                : (darkMode ? 'bg-transparent border-transparent text-white/40 hover:text-white/70' : 'bg-transparent border-transparent text-[#8a8782] hover:text-[#2c2b29]')
                                 }`}
                         >
                             {cat}
@@ -123,14 +123,14 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({ currentRoutine, onSave,
                 </div>
 
                 {/* List */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-2">
+                <div className="flex-1 overflow-y-auto p-6 space-y-3">
                     {filteredQuests.map(q => renderQuestItem(q))}
                 </div>
 
                 {/* Footer */}
-                <div className={`p-6 border-t shrink-0 ${darkMode ? 'border-white/5 bg-black/20' : 'border-slate-100 bg-slate-50'}`}>
+                <div className={`p-6 border-t shrink-0 ${darkMode ? 'border-white/5 bg-[#0a0a0a]' : 'border-[#e0dcd3]/50 bg-[#f9f8f6]'}`}>
                     <div className="flex items-center justify-between mb-4">
-                        <span className={`text-xs font-bold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{selectedIds.length} quests selected</span>
+                        <span className={`text-[11px] font-medium uppercase tracking-widest ${darkMode ? 'text-white/40' : 'text-[#8a8782]'}`}>{selectedIds.length} quests selected</span>
                     </div>
                     <button
                         onClick={() => {
@@ -141,9 +141,9 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({ currentRoutine, onSave,
                                 onSave(selectedIds, []);
                             }
                         }}
-                        className="w-full py-4 bg-[#064e3b] text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl hover:bg-[#059669] active:scale-95 transition-all flex items-center justify-center gap-2"
+                        className={`w-full py-4 rounded-full font-bold text-[11px] uppercase tracking-widest transition-all duration-300 border flex items-center justify-center gap-2 ${darkMode ? 'bg-white/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20' : 'bg-white border-[#064e3b]/30 text-[#064e3b] shadow-sm hover:shadow-md hover:bg-[#064e3b]/5 active:scale-[0.98]'}`}
                     >
-                        <Save size={18} /> Save Routine
+                        <Save size={16} strokeWidth={2.5} /> Save Routine
                     </button>
                 </div>
 

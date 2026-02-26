@@ -124,11 +124,6 @@ const QuestCard: React.FC<QuestCardProps> = ({
           </div>
           <h3 className={`font-['Playfair_Display',serif] text-2xl italic tracking-wide drop-shadow-sm flex items-center gap-2 ${darkMode ? 'text-[#e0dcd3]' : 'text-[#2c2b29]'}`}>
             {quest.title}
-            {isCompleted && (
-              <span className={`ml-2 text-[9px] not-italic font-medium uppercase tracking-widest px-2 py-1 rounded-full border shadow-sm flex items-center gap-1 inline-flex align-middle ${darkMode ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-emerald-50 border-emerald-200 text-emerald-600'}`}>
-                Done <CheckCircle2 size={10} /> {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-              </span>
-            )}
           </h3>
         </div>
         <div className="flex flex-col items-end gap-2 shrink-0">
