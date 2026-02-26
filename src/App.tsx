@@ -167,6 +167,8 @@ const App: React.FC = () => {
   const [pullRefreshing, setPullRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const [upcomingSalahExpanded, setUpcomingSalahExpanded] = useState(false);
+  const [incompleteSalahExpanded, setIncompleteSalahExpanded] = useState(false);
+  const [qadhaPromptQuest, setQadhaPromptQuest] = useState<Quest | null>(null);
   const [completedSalahExpanded, setCompletedSalahExpanded] = useState(false);
   const touchStartY = useRef(0);
   const mainScrollRef = useRef<HTMLElement>(null);
@@ -1010,6 +1012,20 @@ const App: React.FC = () => {
     saveUser(updated);
   };
 
+  const confirmQadhaTracking = () => {
+    if (!qadhaPromptQuest || !user) return;
+    const newOwed = (user.settings?.qadha_owed || 0) + 1;
+    updateSettings({ qadha_owed: newOwed });
+    removeQuest(qadhaPromptQuest);
+    setQadhaPromptQuest(null);
+  };
+
+  const skipQadhaTracking = () => {
+    if (!qadhaPromptQuest) return;
+    removeQuest(qadhaPromptQuest);
+    setQadhaPromptQuest(null);
+  };
+
   const completeQuests = async (quests: Quest[], xpMultiplier: number = 1) => {
     if (!user || !user.id || quests.length === 0) return;
 
@@ -1494,7 +1510,7 @@ const App: React.FC = () => {
               >
                 {/* Atmospheric Image Background */}
                 <div
-                  className="absolute inset-0 z-0 bg-cover bg-center opacity-40 group-hover:opacity-50 transition-opacity duration-700"
+                  className="absolute inset-0 z-0 bg-cover bg-center opacity-[53%] group-hover:opacity-[66%] transition-opacity duration-700"
                   style={{ backgroundImage: "url('/images/routine.jpeg')" }}
                 />
                 {/* Gradient Fade & Noise Texture Overlay */}
@@ -1867,6 +1883,7 @@ const App: React.FC = () => {
                     const visiblePrayers: Quest[] = [];
                     const upcomingPrayers: Quest[] = [];
                     const completedPrayers: Quest[] = [];
+                    const incompletePrayers: Quest[] = [];
 
                     // Gather all main quests and calculate their status
                     const allMainQuests = user.activeQuests
@@ -1885,6 +1902,8 @@ const App: React.FC = () => {
                           // If it hasn't started, it goes to upcoming 
                           if (timeStatus?.status === 'future') {
                             upcomingPrayers.push(q);
+                          } else if (timeStatus?.status === 'missed') {
+                            incompletePrayers.push(q);
                           } else {
                             visiblePrayers.push(q);
                           }
@@ -1905,16 +1924,17 @@ const App: React.FC = () => {
                     visiblePrayers.sort((a, b) => fardSalahIds.indexOf(a.id) - fardSalahIds.indexOf(b.id));
                     upcomingPrayers.sort((a, b) => fardSalahIds.indexOf(a.id) - fardSalahIds.indexOf(b.id));
                     completedPrayers.sort((a, b) => fardSalahIds.indexOf(a.id) - fardSalahIds.indexOf(b.id));
+                    incompletePrayers.sort((a, b) => fardSalahIds.indexOf(a.id) - fardSalahIds.indexOf(b.id));
 
-                    if (visiblePrayers.length === 0 && upcomingPrayers.length === 0 && completedPrayers.length === 0) return null;
+                    if (visiblePrayers.length === 0 && upcomingPrayers.length === 0 && completedPrayers.length === 0 && incompletePrayers.length === 0) return null;
 
                     return (
                       <div>
-                        <h3 className={`text-[11px] font-medium uppercase tracking-[0.15em] mb-4 ml-1 flex items-center gap-2 ${user.settings?.darkMode ? 'text-white/40' : 'text-[#8a8782]'}`}>
+                        <h3 className={`text-[13px] font-bold uppercase tracking-[0.15em] mb-4 ml-1 flex items-center gap-2 ${user.settings?.darkMode ? 'text-white/40' : 'text-[#8a8782]'}`}>
                           <Star size={12} className={user.settings?.darkMode ? 'text-[#d4af37]' : 'text-[#d4af37]'} /> Sacred Duties
                         </h3>
                         <div className="space-y-3">
-                          {/* Active / Missed prayers — always visible */}
+                          {/* Active prayers — always visible */}
                           {visiblePrayers.map(q => {
                             const timeStatus = getQuestTimeStatus(q.id);
                             return (
@@ -1926,7 +1946,14 @@ const App: React.FC = () => {
                                   isCompleted={false}
                                   timeDisplay={timeStatus as any}
                                   onComplete={() => completeQuest(q)}
-                                  onRemove={removeQuest}
+                                  onRemove={(quest) => {
+                                      const status = getQuestTimeStatus(quest.id);
+                                      if (fardSalahIds.includes(quest.id) && status?.status === 'missed') {
+                                        setQadhaPromptQuest(quest);
+                                      } else {
+                                        removeQuest(quest);
+                                      }
+                                  }}
                                   onPin={togglePinQuest}
                                   isPinned={user.pinnedQuests?.includes(q.id)}
                                   darkMode={user.settings?.darkMode}
@@ -1935,6 +1962,71 @@ const App: React.FC = () => {
                               </div>
                             );
                           })}
+
+                          {/* Qadha Owed Virtual Quest (Only shown if owed > 0) */}
+                          {(user.settings?.qadha_owed ?? 0) > 0 && (
+                            <div className={`rounded-[24px] overflow-hidden transition-all ${user.settings?.darkMode ? 'bg-amber-500/5' : 'bg-amber-50'}`}>
+                              <QuestCard
+                                quest={{
+                                  id: 'qadha_tracker',
+                                  title: `Make up Qadha Prayer (${user.settings!.qadha_owed} owed)`,
+                                  description: 'Every missed prayer remains a debt until performed. Make it up to reduce your owed balance.',
+                                  category: QuestCategory.CORRECTION,
+                                  xp: 250
+                                }}
+                                isActive={true}
+                                isGreyed={false}
+                                isCompleted={false}
+                                timeDisplay={undefined}
+                                onComplete={() => {
+                                  completeQuest({ id: 'qadha_tracker', title: 'Make up Qadha Prayer', category: QuestCategory.CORRECTION, xp: 250, description: '' } as Quest);
+                                  const newVal = Math.max(0, (user.settings?.qadha_owed || 0) - 1);
+                                  updateSettings({ qadha_owed: newVal });
+                                }}
+                                onRemove={undefined}
+                                onPin={undefined}
+                                isPinned={false}
+                                darkMode={user.settings?.darkMode}
+                              />
+                            </div>
+                          )}
+
+                          {/* Incomplete prayers — collapsible, separated */}
+                          {incompletePrayers.length > 0 && (
+                            <>
+                              <button
+                                onClick={() => setIncompleteSalahExpanded(!incompleteSalahExpanded)}
+                                className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl text-[11px] uppercase tracking-widest font-bold border transition-all duration-300 ${user.settings?.darkMode ? 'bg-transparent border-rose-500/20 text-rose-400/90 hover:bg-white/5' : 'bg-transparent border-rose-200 text-rose-600 hover:bg-rose-50'}`}
+                              >
+                                <span className="flex items-center gap-2.5">
+                                  <Clock size={14} className={user.settings?.darkMode ? 'text-rose-400' : 'text-rose-600'} strokeWidth={2.5} />
+                                  {incompletePrayers.length} incomplete prayer{incompletePrayers.length > 1 ? 's' : ''}
+                                </span>
+                                <ChevronDown size={14} className={`transition-transform duration-500 text-slate-400 ${incompleteSalahExpanded ? 'rotate-180' : ''}`} />
+                              </button>
+
+                              {incompleteSalahExpanded && incompletePrayers.map(q => {
+                                const timeStatus = getQuestTimeStatus(q.id);
+                                return (
+                                  <div key={q.id} className={`rounded-[24px] overflow-hidden transition-all ${user.settings?.darkMode ? 'bg-white/5' : 'bg-rose-50'}`}>
+                                    <QuestCard
+                                      quest={q}
+                                      isActive={true}
+                                      isGreyed={false}
+                                      isCompleted={false}
+                                      timeDisplay={timeStatus as any}
+                                      onComplete={() => completeQuest(q)}
+                                      onRemove={() => setQadhaPromptQuest(q)}
+                                      onPin={togglePinQuest}
+                                      isPinned={user.pinnedQuests?.includes(q.id)}
+                                      darkMode={user.settings?.darkMode}
+                                      onShowInfo={() => setInfoModalQuest(q)}
+                                    />
+                                  </div>
+                                );
+                              })}
+                            </>
+                          )}
 
                           {/* Completed prayers — collapsible, separated */}
                           {completedPrayers.length > 0 && (
@@ -2017,7 +2109,7 @@ const App: React.FC = () => {
                   {/* Side Quests (Voluntary) */}
                   {activeSideQuests.length > 0 && (
                     <div>
-                      <h3 className={`text-[11px] font-medium uppercase tracking-[0.15em] mb-4 ml-1 flex items-center gap-2 mt-4 ${user.settings?.darkMode ? 'text-white/40' : 'text-[#8a8782]'}`}>
+                      <h3 className={`text-[13px] font-bold uppercase tracking-[0.15em] mb-4 ml-1 flex items-center gap-2 mt-4 ${user.settings?.darkMode ? 'text-white/40' : 'text-[#8a8782]'}`}>
                         <Sparkles size={12} className={user.settings?.darkMode ? 'text-[#d4af37]' : 'text-[#d4af37]'} /> Voluntary Acts
                       </h3>
                       <div className="space-y-3">
@@ -2401,6 +2493,38 @@ const App: React.FC = () => {
           />
         )
       }
+
+      {/* Qadha Prompt Modal */}
+      {qadhaPromptQuest && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className={`w-full max-w-sm rounded-[32px] overflow-hidden border ${user.settings?.darkMode ? 'bg-[#121212] border-white/10' : 'bg-[#f9f8f6] border-[#e0dcd3]'}`}>
+            <div className={`p-8 pb-6 border-b ${user.settings?.darkMode ? 'border-white/5 bg-[#1a1500]' : 'border-[#d4af37]/20 bg-[#fffbeb]'} flex flex-col items-center text-center relative`}>
+              <div className="absolute top-0 right-0 p-4 opacity-5"><Moon size={100} /></div>
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 ${user.settings?.darkMode ? 'bg-amber-500/20 text-amber-500' : 'bg-white text-[#d4af37] shadow-sm'}`}>
+                <Moon size={28} />
+              </div>
+              <h3 className={`font-['Playfair_Display',serif] text-2xl italic tracking-wide mb-2 ${user.settings?.darkMode ? 'text-[#d4af37]' : 'text-[#8b6914]'}`}>Missed Prayer</h3>
+              <p className={`text-sm ${user.settings?.darkMode ? 'text-white/70' : 'text-[#8a8782]'}`}>
+                You are removing "{qadhaPromptQuest.title}" from your daily duties. Would you like to track this as a <span className="font-bold">Qadha</span> (makeup prayer) debt instead?
+              </p>
+            </div>
+            <div className="p-6 space-y-3">
+              <button
+                onClick={confirmQadhaTracking}
+                className="w-full py-4 rounded-2xl font-bold text-white bg-slate-900 dark:bg-white dark:text-black hover:scale-[0.98] transition-all shadow-lg"
+              >
+                Yes, Add to Qadha Tracker
+              </button>
+              <button
+                onClick={skipQadhaTracking}
+                className={`w-full py-4 rounded-2xl font-bold transition-all border ${user.settings?.darkMode ? 'text-white/60 border-white/10 hover:bg-white/5' : 'text-slate-500 border-slate-200 hover:bg-slate-50'}`}
+              >
+                No, Just Remove It
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* QUEST INFO MODAL (Tasbeeh, Ishraq, Duha) */}
       {

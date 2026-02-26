@@ -35,6 +35,7 @@ export interface UserSettings {
   ramadan_tracker?: number[]; // Array of completed Ramadan days (1-30)
   leaderboardEnabled?: boolean; // opt-in to leaderboard
   manualPrayerCorrections?: boolean; // enable manual prayer time adjustments
+  qadha_owed?: number; // Count of missed prayers owed for Qadha
 }
 
 // Per-prayer minute offsets e.g. { Fajr: 5, Maghrib: -2 }
