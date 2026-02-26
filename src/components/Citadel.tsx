@@ -242,7 +242,7 @@ const Citadel: React.FC<CitadelProps> = ({ user }) => {
                 <div className="relative h-full bg-[#050a09] text-slate-300 overflow-hidden flex justify-center">
                     <div className="w-full h-full bg-[#050a09] flex flex-col animate-in fade-in duration-500 shadow-2xl">
                         {/* Header */}
-                        <div className="flex items-center justify-between p-6 border-b border-[#d4af37]/20 bg-[#050a09]/90 backdrop-blur z-20">
+                        <div className="flex items-center justify-between px-6 pt-[max(1.5rem,env(safe-area-inset-top))] pb-6 border-b border-[#d4af37]/20 bg-[#050a09]/90 backdrop-blur z-20">
                             <button onClick={() => setLibrarySubView('hub')} className="flex items-center gap-2 text-[#d4af37] hover:text-[#d4af37]/80 transition-colors group">
                                 <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
                                 <span className="text-xs font-black uppercase tracking-widest">Library</span>
@@ -295,7 +295,7 @@ const Citadel: React.FC<CitadelProps> = ({ user }) => {
             <div className="relative h-full bg-[#050a09] text-slate-300 overflow-hidden flex justify-center">
                 <div className="w-full h-full bg-[#050a09] flex flex-col animate-in fade-in zoom-in duration-700 shadow-2xl">
                     {/* Header / Nav */}
-                    <div className="flex items-center justify-between p-6 border-b border-[#d4af37]/20 bg-[#050a09]/90 backdrop-blur z-20">
+                    <div className="flex items-center justify-between px-6 pt-[max(1.5rem,env(safe-area-inset-top))] pb-6 border-b border-[#d4af37]/20 bg-[#050a09]/90 backdrop-blur z-20">
                         <button onClick={handleReturnToMap} className="flex items-center gap-2 text-[#d4af37] hover:text-[#d4af37]/80 transition-colors group">
                             <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
                             <span className="text-xs font-black uppercase tracking-widest">Map</span>

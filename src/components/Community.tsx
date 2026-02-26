@@ -661,7 +661,7 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
     <div className={`h-full flex flex-col ${darkMode ? 'bg-[#0a0a0a]' : 'bg-white'} overflow-hidden`}>
 
       {/* ─── MINIMAL HEADER ─── */}
-      <div className={`shrink-0 px-6 pt-6 pb-0 ${darkMode ? '' : ''}`}>
+      <div className={`shrink-0 px-6 pt-[max(1.5rem,env(safe-area-inset-top))] pb-0 ${darkMode ? '' : ''}`}>
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className={`text-2xl font-black tracking-[-0.03em] ${darkMode ? 'text-white' : 'text-[#111]'}`}>Nur-Connect</h2>
@@ -701,7 +701,7 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
       </div>
 
       {/* ─── CONTENT ─── */}
-      <div className="flex-1 overflow-y-auto px-6 pt-6 pb-24 scrollbar-hide">
+      <div className="flex-1 overflow-y-auto px-6 pt-6 pb-[max(6rem,env(safe-area-inset-bottom))] scrollbar-hide">
 
         {/* ═══════════════ DUAS TAB ═══════════════ */}
         {tab === 'duas' && (

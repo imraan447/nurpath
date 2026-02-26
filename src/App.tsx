@@ -1385,15 +1385,15 @@ const App: React.FC = () => {
       return total + (q ? q.xp : 0);
     }, 0);
 
-  if (loadingAuth) return <div className="h-screen w-full flex items-center justify-center bg-[#fdfbf7]"><Loader2 className="animate-spin text-[#064e3b]" size={48} /></div>;
+  if (loadingAuth) return <div className="h-[100dvh] w-full flex items-center justify-center bg-[#fdfbf7]"><Loader2 className="animate-spin text-[#064e3b]" size={48} /></div>;
   if (!user) return <Auth onLoginSuccess={() => { }} />;
 
   return (
-    <div className={`max-w-md mx-auto h-screen overflow-hidden flex flex-col relative shadow-2xl transition-all ${activeTab === 'reflect' ? '' : 'border-x border-slate-100'} ${user.settings?.darkMode ? 'bg-[#050a09]' : 'bg-[#fdfbf7]'}`}>
+    <div className={`max-w-md mx-auto h-[100dvh] overflow-hidden flex flex-col relative shadow-2xl transition-all ${activeTab === 'reflect' ? '' : 'border-x border-slate-100'} ${user.settings?.darkMode ? 'bg-[#050a09]' : 'bg-[#fdfbf7]'}`}>
 
       {activeTab !== 'reflect' && activeTab !== 'community' && (
         <header className={`z-20 backdrop-blur-md ${user.settings?.darkMode ? 'bg-[#050a09]/90' : 'bg-[#fdfbf7]/90'}`}>
-          <div className="p-6 pb-4 flex items-center justify-between relative">
+          <div className="pt-[max(1.5rem,env(safe-area-inset-top))] px-6 pb-4 flex items-center justify-between relative">
             <div className="flex flex-col z-10"><span className={`text-[12px] font-black uppercase tracking-[0.5em] ${user.settings?.darkMode ? 'text-white' : 'text-[#064e3b]'}`}>NurPath</span></div>
             <div className="flex items-center gap-2 z-10">
               <button
@@ -2085,7 +2085,7 @@ const App: React.FC = () => {
       </main>
 
       {/* FIXED: Moving Nav out of Main, and properly matching tags */}
-      <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-6 z-50 transition-all">
+      <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto px-6 pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] z-50 transition-all">
         <div className={`rounded-[40px] p-2 flex items-center justify-between shadow-2xl border ${user.settings?.darkMode ? 'bg-[#050a09]/90 border-white/10 backdrop-blur-xl' : 'bg-white/95 border-[#064e3b]/5 backdrop-blur-md'}`}>
           <NavBtn active={activeTab === 'active'} label="My Quests" icon={<Target />} onClick={() => setActiveTab('active')} darkMode={user.settings?.darkMode} />
           <NavBtn active={activeTab === 'collect'} label="All Quests" icon={<LayoutGrid />} onClick={() => setActiveTab('collect')} darkMode={user.settings?.darkMode} />
@@ -2098,7 +2098,7 @@ const App: React.FC = () => {
       {showSettings && (
         <div className="fixed inset-0 z-[100] bg-white dark:bg-slate-900 animate-in slide-in-from-bottom-10 duration-300 flex flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-white/10">
+          <div className="flex items-center justify-between px-6 pt-[max(1.5rem,env(safe-area-inset-top))] pb-6 border-b border-slate-100 dark:border-white/10">
             <h2 className="text-2xl font-bold dark:text-white">Settings</h2>
             <button onClick={() => setShowSettings(false)} className="p-3 bg-slate-50 dark:bg-white/5 rounded-full hover:bg-slate-100 dark:hover:bg-white/10">
               <X size={24} className="text-slate-600 dark:text-slate-300" />
