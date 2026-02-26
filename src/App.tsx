@@ -1486,39 +1486,42 @@ const App: React.FC = () => {
             {/* ROUTINE BUILDER BUTTON */}
             <div className="pt-2"> {/* Removed px-6 to make it wider/bleed to edges */}
               <button
-                onClick={() => setShowRoutineBuilder(true)}
-                className={`w-full p-6 min-h-[160px] rounded-[32px] border transition-all flex flex-col justify-between group relative overflow-hidden ${user.settings?.darkMode ? 'border-white/10' : 'border-slate-300 shadow-xl'}`}
+                onClick={() => setRoutineBuilderOpen(true)}
+                className={`w-full p-6 min-h-[160px] rounded-[24px] border transition-all duration-500 active:scale-[0.98] outline-none group relative overflow-hidden ${user.settings?.darkMode ? 'border-white/10 bg-[#121212]' : 'border-[#e0dcd3] bg-[#f9f8f6]'}`}
+                style={{ boxShadow: user.settings?.darkMode ? 'inset 0 2px 10px rgba(255,255,255,0.02)' : 'inset 0 2px 10px rgba(0,0,0,0.02)' }}
               >
-                {/* Background Image & Ambient Overlay */}
+                {/* Atmospheric Image Background with Grain */}
                 <div
-                  className="absolute inset-0 z-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+                  className="absolute inset-0 z-0 bg-cover bg-center opacity-30 group-hover:opacity-40 transition-opacity duration-700 mix-blend-overlay filter contrast-125"
                   style={{ backgroundImage: "url('/images/routine.jpeg')" }}
                 />
-                <div className="absolute inset-0 z-0 bg-black/40 backdrop-blur-[1px]" /> {/* Less blur/darkness to make musallah more visible */}
+                {/* Gradient Fade & Noise Texture Overlay */}
+                <div className={`absolute inset-0 z-0 bg-gradient-to-r ${user.settings?.darkMode ? 'from-[#0a0a0a]/90 to-[#0a0a0a]/60' : 'from-[#fffdfa]/95 to-[#fffdfa]/70'}`} />
+                <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}></div>
 
                 {/* Top Section: Icon & Title */}
                 <div className="w-full flex items-center justify-between relative z-10 transition-transform group-hover:translate-x-1">
                   <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-white shadow-xl flex items-center justify-center">
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border shadow-sm transition-all duration-500 ${user.settings?.darkMode ? 'bg-white/5 border-white/10 text-[#d4af37]' : 'bg-white border-[#e0dcd3] text-[#064e3b]'}`}>
                       <ListTodo size={28} />
                     </div>
-                    <div className="text-left">
-                      <h3 className="font-extrabold text-[28px] uppercase leading-none tracking-tight text-white drop-shadow-md"> {/* Added uppercase here */}
-                        {(user.pinnedQuests?.length || 0) > 0 ? 'EDIT ROUTINE' : 'BUILD ROUTINE'}
+                    <div className="text-left flex flex-col gap-1">
+                      <h3 className={`font-['Playfair_Display',serif] text-2xl italic tracking-wide ${user.settings?.darkMode ? 'text-[#e0dcd3]' : 'text-[#2c2b29]'} drop-shadow-sm`}>
+                        {(user.pinnedQuests?.length || 0) > 0 ? 'Edit Routine' : 'Build Routine'}
                       </h3>
-                      <p className="text-[14px] text-white/90 font-medium mt-1.5 drop-shadow-sm">
+                      <p className={`text-[11px] font-medium tracking-[0.1em] uppercase ${user.settings?.darkMode ? 'text-white/40' : 'text-[#8a8782]'}`}>
                         {(user.pinnedQuests?.length || 0) > 0 ? `${user.pinnedQuests!.length} active daily duties.` : 'Configure your daily habits.'}
                       </p>
                     </div>
                   </div>
-                  <div className="w-12 h-12 rounded-full flex items-center justify-center relative z-10 bg-white/10 backdrop-blur-md text-white border border-white/20 shadow-md">
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center relative z-10 border shadow-sm transition-all duration-500 ${user.settings?.darkMode ? 'bg-white/5 border-white/10 text-white/60 group-hover:text-white' : 'bg-white border-[#e0dcd3] text-[#8a8782] group-hover:text-[#2c2b29] group-hover:border-[#d4af37]'}`}>
                     <ChevronRight size={24} />
                   </div>
                 </div>
 
                 {/* Bottom Section: Subtext */}
                 <div className="relative z-10 mt-6 text-left w-full">
-                  <p className="text-[13px] font-bold tracking-normal text-[#f7f1e3] drop-shadow-md normal-case">
+                  <p className={`text-[11px] font-medium tracking-wide ${user.settings?.darkMode ? 'text-white/60' : 'text-[#2c2b29]/60'} normal-case`}>
                     Quests added to your routine will automatically be tracked daily!
                   </p>
                 </div>
@@ -1635,23 +1638,27 @@ const App: React.FC = () => {
           <div className="space-y-6 py-6 animate-in fade-in slide-in-from-right-4 duration-500">
 
             {/* TAB SWITCHER: My Quests / Citadel Quests */}
-            <div className={`flex rounded-2xl p-1 ${user.settings?.darkMode ? 'bg-white/5' : 'bg-slate-100'}`}>
+            <div className={`flex rounded-full p-1 border shadow-sm ${user.settings?.darkMode ? 'bg-[#121212] border-white/10' : 'bg-[#f9f8f6] border-[#e0dcd3]'}`} style={{ boxShadow: user.settings?.darkMode ? 'inset 0 2px 10px rgba(255,255,255,0.02)' : 'inset 0 2px 10px rgba(0,0,0,0.02)' }}>
               <button
                 onClick={() => setQuestTabView('my')}
-                className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${questTabView === 'my'
-                  ? (user.settings?.darkMode ? 'bg-white/10 text-white shadow' : 'bg-white text-[#064e3b] shadow')
+                className={`flex-1 py-3 rounded-full transition-all duration-300 ${questTabView === 'my'
+                  ? (user.settings?.darkMode ? 'bg-white/10 text-white shadow-sm border border-white/10' : 'bg-white text-[#2c2b29] border border-[#d4af37]/30 shadow-sm')
                   : 'text-slate-400'}`}
               >
-                My Quests
+                <span className={`${questTabView === 'my' ? "font-['Playfair_Display',serif] italic text-lg tracking-wide" : "text-[11px] font-medium uppercase tracking-widest"} leading-none`}>
+                  My Quests
+                </span>
               </button>
               <button
                 onClick={() => levelInfo.level >= 10 ? setQuestTabView('citadel') : null}
-                className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 ${questTabView === 'citadel'
-                  ? (user.settings?.darkMode ? 'bg-white/10 text-white shadow' : 'bg-white text-[#064e3b] shadow')
+                className={`flex-1 py-3 rounded-full transition-all duration-300 flex items-center justify-center gap-2 ${questTabView === 'citadel'
+                  ? (user.settings?.darkMode ? 'bg-white/10 text-white shadow-sm border border-white/10' : 'bg-white text-[#2c2b29] border border-[#d4af37]/30 shadow-sm')
                   : 'text-slate-400'} ${levelInfo.level < 10 ? 'opacity-40 cursor-not-allowed' : ''}`}
               >
-                {levelInfo.level < 10 && <Lock size={10} />}
-                Citadel Quests
+                {levelInfo.level < 10 && <Lock size={12} className={questTabView === 'citadel' ? 'hidden' : ''} />}
+                <span className={`${questTabView === 'citadel' ? "font-['Playfair_Display',serif] italic text-lg tracking-wide" : "text-[11px] font-medium uppercase tracking-widest"} leading-none`}>
+                  Citadel Quests
+                </span>
               </button>
             </div>
 
@@ -1674,21 +1681,24 @@ const App: React.FC = () => {
                 {/* Ramadan Tracker Card */}
                 <button
                   onClick={() => setShowRamadanTracker(true)}
-                  className={`w-full p-5 rounded-[24px] transition-all hover:-translate-y-0.5 active:translate-y-0 border shadow-sm ${user.settings?.darkMode ? 'bg-[#1a1500] border-[#d4af37]/30 hover:shadow-[#d4af37]/10' : 'bg-white border-amber-200/60 hover:border-amber-300 hover:shadow-amber-100/50'}`}
+                  className={`w-full p-6 rounded-[24px] border transition-all duration-500 hover:-translate-y-0.5 active:translate-y-0 outline-none group ${user.settings?.darkMode ? 'border-white/10 bg-[#121212]' : 'border-[#e0dcd3] bg-[#f9f8f6]'}`}
+                  style={{ boxShadow: user.settings?.darkMode ? 'inset 0 2px 10px rgba(255,255,255,0.02)' : 'inset 0 2px 10px rgba(0,0,0,0.02)' }}
                 >
                   <div className="flex items-center justify-between text-left">
-                    <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-[14px] flex items-center justify-center ${user.settings?.darkMode ? 'bg-[#d4af37]/10 text-[#d4af37]' : 'bg-amber-50 text-amber-600'}`}>
-                        <Moon size={22} strokeWidth={2.5} />
+                    <div className="flex items-center gap-5">
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border shadow-sm transition-all duration-500 ${user.settings?.darkMode ? 'bg-white/5 border-white/10 text-[#d4af37]' : 'bg-white border-[#e0dcd3] text-[#d4af37]'}`}>
+                        <Moon size={22} strokeWidth={2} />
                       </div>
-                      <div>
-                        <h3 className={`font-black text-lg mb-0.5 tracking-tight ${user.settings?.darkMode ? 'text-white' : 'text-slate-800'}`}>Ramadan Tracker</h3>
-                        <p className={`text-[10px] font-black uppercase tracking-[0.15em] ${user.settings?.darkMode ? 'text-[#d4af37]/80' : 'text-amber-500'}`}>
-                          {(user.settings?.ramadan_tracker?.length || 0)}/30 Days • Earn 200XP per day
+                      <div className="flex flex-col gap-1">
+                        <h3 className={`font-['Playfair_Display',serif] text-xl italic tracking-wide drop-shadow-sm ${user.settings?.darkMode ? 'text-[#e0dcd3]' : 'text-[#2c2b29]'}`}>
+                          Ramadan Tracker
+                        </h3>
+                        <p className={`text-[11px] font-medium tracking-[0.1em] uppercase ${user.settings?.darkMode ? 'text-white/40' : 'text-[#8a8782]'}`}>
+                          {(user.settings?.ramadan_tracker?.length || 0)}/30 Days • Earn 200XP
                         </p>
                       </div>
                     </div>
-                    <div className={`p-1.5 rounded-full ${user.settings?.darkMode ? 'text-white/20' : 'text-slate-300'}`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border transition-all duration-500 shadow-sm ${user.settings?.darkMode ? 'bg-white/5 border-white/10 text-white/60 group-hover:bg-white/10 group-hover:text-white' : 'bg-white border-[#e0dcd3] text-[#8a8782] group-hover:text-[#2c2b29] group-hover:border-[#d4af37]'}`}>
                       <ChevronRight size={18} />
                     </div>
                   </div>
@@ -1896,7 +1906,9 @@ const App: React.FC = () => {
 
                     return (
                       <div>
-                        <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 ml-2 flex items-center gap-2"><Star size={12} /> Sacred Duties</h3>
+                        <h3 className={`text-[11px] font-medium uppercase tracking-[0.15em] mb-4 ml-1 flex items-center gap-2 ${user.settings?.darkMode ? 'text-white/40' : 'text-[#8a8782]'}`}>
+                          <Star size={12} className={user.settings?.darkMode ? 'text-[#d4af37]' : 'text-[#d4af37]'} /> Sacred Duties
+                        </h3>
                         <div className="space-y-3">
                           {/* Active / Missed prayers — always visible */}
                           {visiblePrayers.map(q => {
@@ -2001,7 +2013,9 @@ const App: React.FC = () => {
                   {/* Side Quests (Voluntary) */}
                   {activeSideQuests.length > 0 && (
                     <div>
-                      <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 ml-2 flex items-center gap-2"><Sparkles size={12} /> Voluntary Acts</h3>
+                      <h3 className={`text-[11px] font-medium uppercase tracking-[0.15em] mb-4 ml-1 flex items-center gap-2 mt-4 ${user.settings?.darkMode ? 'text-white/40' : 'text-[#8a8782]'}`}>
+                        <Sparkles size={12} className={user.settings?.darkMode ? 'text-[#d4af37]' : 'text-[#d4af37]'} /> Voluntary Acts
+                      </h3>
                       <div className="space-y-3">
                         {activeSideQuests.map(q => (
                           <QuestCard
@@ -2023,7 +2037,9 @@ const App: React.FC = () => {
                   {/* Tracked Group Challenges */}
                   {trackedGroupQuests.filter(q => !q.completed && !isCompletedToday(q.id)).length > 0 && (
                     <div>
-                      <h3 className="text-xs font-black uppercase tracking-widest text-[#d4af37] mb-3 ml-2 flex items-center gap-2"><Shield size={12} /> Group Challenges</h3>
+                      <h3 className={`text-[11px] font-medium uppercase tracking-[0.15em] mb-4 ml-1 flex items-center gap-2 mt-4 ${user.settings?.darkMode ? 'text-[#d4af37]/80' : 'text-[#d4af37]'}`}>
+                        <Shield size={12} className={user.settings?.darkMode ? 'text-[#d4af37]' : 'text-[#d4af37]'} /> Group Challenges
+                      </h3>
                       <div className="space-y-3">
                         {trackedGroupQuests.filter(q => !q.completed && !isCompletedToday(q.id)).map(q => (
                           <QuestCard
