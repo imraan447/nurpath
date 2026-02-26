@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase, ensureSession } from '../lib/supabaseClient';
 import { User, Group, GroupMember, Friend, FriendRequest, Quest, GroupQuest, GroupInvite, GroupQuestItem, Dua } from '../types';
 import { ALL_QUESTS } from '../constants';
-import { HeartHandshake, Users, UserPlus, Search, Trophy, Crown, Globe, MapPin, Loader2, Plus, Check, X, Shield, Star, Sparkles, ChevronRight, ChevronDown, Heart, Send, Trash2, LogOut, Settings, Mail, Pin, CheckCircle2, Clock, Lock, Pencil, Save } from 'lucide-react';
+import { HeartHandshake, Users, UserPlus, UserMinus, Search, Trophy, Crown, Globe, MapPin, Loader2, Plus, Check, X, Shield, Star, Sparkles, ChevronRight, ChevronDown, Heart, Send, Trash2, LogOut, Settings, Mail, Pin, CheckCircle2, Clock, Lock, Pencil, Save } from 'lucide-react';
 import QuestCard from './QuestCard';
 import Leaderboard from './Leaderboard';
 
@@ -236,10 +236,33 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
         .from('friendships')
         .insert({ user_id_1: currentUser.id, user_id_2: targetId });
       if (error) throw error;
+      setSentRequestIds(prev => [...prev, targetId]);
       alert('Request sent!');
       setSearchResults(prev => prev.filter(p => p.id !== targetId));
     } catch (e: any) {
       alert('Error sending request (maybe already sent?)');
+    }
+  };
+
+  const cancelFriendRequest = async (targetId: string) => {
+    try {
+      setLoading(true);
+      const { error } = await supabase
+        .from('friendships')
+        .delete()
+        .eq('user_id_1', currentUser.id)
+        .eq('user_id_2', targetId)
+        .eq('status', 'pending');
+
+      if (error) throw error;
+
+      // Optimistically remove from state
+      setSentRequestIds(prev => prev.filter(id => id !== targetId));
+      setSentRequests(prev => prev.filter(s => s.id !== targetId));
+    } catch (e: any) {
+      alert('Error canceling request');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -838,7 +861,11 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
                       const isPendingIncoming = requests.some(r => r.sender?.id === res.id);
                       if (isFriend) return <span className={`text-[9px] font-bold uppercase tracking-widest ${darkMode ? 'text-white/20' : 'text-slate-300'}`}>Added</span>;
                       if (isPendingIncoming) return <span className={`text-[9px] font-bold uppercase tracking-widest ${darkMode ? 'text-[#d4af37]/40' : 'text-[#b8960b]/50'}`}>Pending</span>;
-                      if (isPendingOutgoing) return <span className={`text-[9px] font-bold uppercase tracking-widest ${darkMode ? 'text-white/15' : 'text-slate-300'}`}>Sent</span>;
+                      if (isPendingOutgoing) return (
+                        <button onClick={() => cancelFriendRequest(res.id)} className={`p-2 rounded-lg transition-all active:scale-90 ${darkMode ? 'bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300' : 'bg-rose-50 text-rose-500 hover:bg-rose-100 hover:text-rose-600'} group`} title="Cancel sent request">
+                          <UserMinus size={14} />
+                        </button>
+                      );
                       return (
                         <button onClick={() => sendFriendRequest(res.id)} className={`p-2 rounded-lg transition-all active:scale-90 ${darkMode ? 'bg-white/[0.06] text-white/40 hover:bg-white/10 hover:text-white' : 'bg-slate-100 text-slate-500 hover:bg-[#111] hover:text-white'}`}>
                           <UserPlus size={14} />
@@ -907,7 +934,9 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
                         <p className={`text-[10px] ${darkMode ? 'text-white/15' : 'text-slate-300'}`}>Waiting for response</p>
                       </div>
                     </div>
-                    <span className={`text-[9px] font-bold uppercase tracking-widest ${darkMode ? 'text-white/15' : 'text-slate-300'}`}>Pending</span>
+                    <button onClick={() => cancelFriendRequest(s.id)} className={`p-2 rounded-lg transition-all active:scale-90 ${darkMode ? 'bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300' : 'bg-rose-50 text-rose-500 hover:bg-rose-100 hover:text-rose-600'} group`} title="Cancel sent request">
+                      <UserMinus size={14} />
+                    </button>
                   </div>
                 ))
               )}
