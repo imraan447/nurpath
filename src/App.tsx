@@ -60,6 +60,7 @@ import {
 import QuestCard from './components/QuestCard';
 import ReflectionFeed from './components/ReflectionFeed';
 import RamadanTracker from './components/RamadanTracker';
+import JumuahTracker from './components/JumuahTracker';
 import Auth from './components/Auth';
 import Leaderboard from './components/Leaderboard';
 import Community from './components/Community';
@@ -101,7 +102,7 @@ const NavBtn = ({ active, label, icon, onClick, darkMode }: { active: boolean; l
   <button
     onClick={onClick}
     className={`flex-1 flex flex-col items-center gap-1 min-w-0 py-2 sm:py-3 rounded-[30px] transition-all relative ${active
-      ? (darkMode ? 'bg-white/10 text-white' : 'bg-[#064e3b] text-white shadow-lg')
+      ? (darkMode ? 'bg-[#d4af37]/20 text-[#d4af37]' : 'bg-[#d4af37] text-white shadow-lg shadow-[#d4af37]/30')
       : 'text-slate-400 hover:text-slate-600'
       }`}
   >
@@ -118,6 +119,7 @@ const App: React.FC = () => {
   const [showProfile, setShowProfile] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showRamadanTracker, setShowRamadanTracker] = useState(false);
+  const [showJumuahTracker, setShowJumuahTracker] = useState(false);
   const [confirmQuest, setConfirmQuest] = useState<Quest | null>(null);
   const pendingSyncs = useRef(0);
   const [selectedSubQuests, setSelectedSubQuests] = useState<string[]>([]);
@@ -1490,9 +1492,9 @@ const App: React.FC = () => {
                 className={`w-full p-6 min-h-[160px] rounded-[24px] border transition-all duration-500 active:scale-[0.98] outline-none group relative overflow-hidden ${user.settings?.darkMode ? 'border-white/10 bg-[#121212]' : 'border-[#e0dcd3] bg-[#f9f8f6]'}`}
                 style={{ boxShadow: user.settings?.darkMode ? 'inset 0 2px 10px rgba(255,255,255,0.02)' : 'inset 0 2px 10px rgba(0,0,0,0.02)' }}
               >
-                {/* Atmospheric Image Background with Grain */}
+                {/* Atmospheric Image Background */}
                 <div
-                  className="absolute inset-0 z-0 bg-cover bg-center opacity-60 group-hover:opacity-70 transition-opacity duration-700 mix-blend-overlay filter contrast-125 saturate-50"
+                  className="absolute inset-0 z-0 bg-cover bg-center opacity-40 group-hover:opacity-50 transition-opacity duration-700"
                   style={{ backgroundImage: "url('/images/routine.jpeg')" }}
                 />
                 {/* Gradient Fade & Noise Texture Overlay */}
@@ -1831,47 +1833,30 @@ const App: React.FC = () => {
                   const completedCount = JUMUAH_CHECKLIST.filter(item => isCompletedToday(item.id)).length;
 
                   return (
-                    <div className={`rounded-[24px] border-2 overflow-hidden relative ${user.settings?.darkMode ? 'bg-[#1a1500] border-[#d4af37]/30' : 'bg-[#fffbeb] border-[#d4af37]/20'}`}>
-                      <div className="absolute top-0 right-0 p-4 opacity-5"><CalendarDays size={80} /></div>
-                      <button
-                        onClick={() => setJumuahCollapsed(!jumuahCollapsed)}
-                        className="w-full relative z-10 p-4 flex items-center justify-between"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="text-[#d4af37] text-lg">☪</span>
-                          <div className="text-left">
-                            <h3 className={`text-sm font-bold ${user.settings?.darkMode ? 'text-[#d4af37]' : 'text-[#8b6914]'}`}>Jumu'ah Mubarak</h3>
-                            <p className={`text-[9px] uppercase tracking-widest ${user.settings?.darkMode ? 'text-[#d4af37]/60' : 'text-[#8b6914]/60'}`}>{completedCount}/{JUMUAH_CHECKLIST.length} Complete</p>
+                    <button
+                      onClick={() => setShowJumuahTracker(true)}
+                      className={`w-full mb-6 p-6 rounded-[24px] border transition-all duration-500 hover:-translate-y-0.5 active:translate-y-0 outline-none group flex flex-col items-stretch ${user.settings?.darkMode ? 'border-white/10 bg-[#1a1500]' : 'border-[#d4af37]/20 bg-[#fffbeb]'}`}
+                      style={{ boxShadow: user.settings?.darkMode ? 'inset 0 2px 10px rgba(255,255,255,0.02)' : 'inset 0 2px 10px rgba(0,0,0,0.02)' }}
+                    >
+                      <div className="flex items-center justify-between text-left">
+                        <div className="flex items-center gap-5">
+                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border shadow-sm transition-all duration-500 ${user.settings?.darkMode ? 'bg-white/5 border-[#d4af37]/30 text-[#d4af37]' : 'bg-white border-[#d4af37]/30 text-[#8b6914]'}`}>
+                            <Star size={22} strokeWidth={2} />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <h3 className={`font-['Playfair_Display',serif] text-xl italic tracking-wide drop-shadow-sm ${user.settings?.darkMode ? 'text-[#d4af37]' : 'text-[#8b6914]'}`}>
+                              Jumu'ah Checklist
+                            </h3>
+                            <p className={`text-[11px] font-medium tracking-[0.1em] uppercase ${user.settings?.darkMode ? 'text-[#d4af37]/60' : 'text-[#8b6914]/60'}`}>
+                              {completedCount}/{JUMUAH_CHECKLIST.length} Complete • Weekly Blessings
+                            </p>
                           </div>
                         </div>
-                        <ChevronDown size={16} className={`text-[#d4af37] transition-transform ${jumuahCollapsed ? '-rotate-90' : ''}`} />
-                      </button>
-                      {!jumuahCollapsed && (
-                        <div className="relative z-10 px-4 pb-4 space-y-1.5">
-                          {JUMUAH_CHECKLIST.map(item => {
-                            const isDone = isCompletedToday(item.id);
-                            return (
-                              <button
-                                key={item.id}
-                                onClick={() => !isDone && completeQuest({ id: item.id, title: item.title, xp: item.xp, category: QuestCategory.DHIKR, description: '' })}
-                                disabled={isDone}
-                                className={`w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-all ${isDone
-                                  ? 'opacity-40'
-                                  : (user.settings?.darkMode ? 'hover:bg-white/5 active:scale-[0.98]' : 'hover:bg-[#d4af37]/5 active:scale-[0.98]')}`}
-                              >
-                                <div className="flex items-center gap-3">
-                                  <div className={`w-4 h-4 rounded flex items-center justify-center border transition-all ${isDone ? 'bg-[#d4af37] border-[#d4af37]' : (user.settings?.darkMode ? 'border-[#d4af37]/40' : 'border-[#d4af37]/30')}`}>
-                                    {isDone && <Check size={10} className="text-white" />}
-                                  </div>
-                                  <span className={`text-xs font-bold ${isDone ? 'line-through' : ''} ${user.settings?.darkMode ? 'text-white' : 'text-slate-800'}`}>{item.title}</span>
-                                </div>
-                                <span className="text-[9px] font-black text-[#d4af37]">{isDone ? '✓' : `+${item.xp}`}</span>
-                              </button>
-                            );
-                          })}
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center border transition-all duration-500 shadow-sm ${user.settings?.darkMode ? 'bg-white/5 border-white/10 text-[#d4af37] group-hover:bg-[#d4af37]/10' : 'bg-white border-[#d4af37]/50 text-[#8b6914] group-hover:bg-[#d4af37]/5'}`}>
+                          <ChevronRight size={18} />
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    </button>
                   );
                 })()}
 
@@ -1956,13 +1941,13 @@ const App: React.FC = () => {
                             <>
                               <button
                                 onClick={() => setCompletedSalahExpanded(!completedSalahExpanded)}
-                                className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl text-[11px] uppercase tracking-widest font-bold border transition-all duration-300 ${user.settings?.darkMode ? 'bg-transparent border-emerald-500/20 text-emerald-400/80 hover:bg-emerald-500/5' : 'bg-transparent border-emerald-200 text-[#064e3b] hover:bg-emerald-50'}`}
+                                className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl text-[11px] uppercase tracking-widest font-bold border transition-all duration-300 ${user.settings?.darkMode ? 'bg-transparent border-white/10 text-emerald-400/90 hover:bg-white/5' : 'bg-transparent border-[#e0dcd3] text-[#2c2b29] hover:bg-[#2c2b29]/5'}`}
                               >
                                 <span className="flex items-center gap-2.5">
-                                  <CheckCircle2 size={14} strokeWidth={2.5} />
+                                  <CheckCircle2 size={14} className={user.settings?.darkMode ? 'text-emerald-400' : 'text-[#849a8d]'} strokeWidth={2.5} />
                                   {completedPrayers.length} completed prayer{completedPrayers.length > 1 ? 's' : ''}
                                 </span>
-                                <ChevronDown size={14} className={`transition-transform duration-500 ${completedSalahExpanded ? 'rotate-180' : ''}`} />
+                                <ChevronDown size={14} className={`transition-transform duration-500 text-slate-400 ${completedSalahExpanded ? 'rotate-180' : ''}`} />
                               </button>
 
                               {completedSalahExpanded && completedPrayers.map(q => {
@@ -1996,10 +1981,10 @@ const App: React.FC = () => {
                                 className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl text-[11px] uppercase tracking-widest font-bold border transition-all duration-300 ${user.settings?.darkMode ? 'bg-transparent border-white/10 text-white/40 hover:bg-white/5' : 'bg-transparent border-[#e0dcd3] text-[#8a8782] hover:bg-[#8a8782]/5'}`}
                               >
                                 <span className="flex items-center gap-2.5">
-                                  <Lock size={12} strokeWidth={2.5} />
+                                  <Lock size={12} strokeWidth={2.5} className="opacity-70" />
                                   {upcomingPrayers.length} upcoming prayer{upcomingPrayers.length > 1 ? 's' : ''}
                                 </span>
-                                <ChevronDown size={14} className={`transition-transform duration-500 ${upcomingSalahExpanded ? 'rotate-180' : ''}`} />
+                                <ChevronDown size={14} className={`transition-transform duration-500 opacity-60 ${upcomingSalahExpanded ? 'rotate-180' : ''}`} />
                               </button>
 
                               {upcomingSalahExpanded && upcomingPrayers.map(q => {
@@ -2399,6 +2384,19 @@ const App: React.FC = () => {
             user={user}
             onClose={() => setShowRamadanTracker(false)}
             onToggleDay={toggleRamadanDay}
+            darkMode={user.settings?.darkMode}
+          />
+        )
+      }
+
+      {/* Jumuah Tracker Modal */}
+      {
+        showJumuahTracker && user && (
+          <JumuahTracker
+            user={user}
+            onClose={() => setShowJumuahTracker(false)}
+            completeQuest={completeQuest}
+            isCompletedToday={isCompletedToday}
             darkMode={user.settings?.darkMode}
           />
         )
