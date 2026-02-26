@@ -54,7 +54,8 @@ import {
   Smartphone,
   Globe,
   ChevronLeft,
-  ListTodo
+  ListTodo,
+  AlertTriangle
 } from 'lucide-react';
 import QuestCard from './components/QuestCard';
 import ReflectionFeed from './components/ReflectionFeed';
@@ -1428,101 +1429,170 @@ const App: React.FC = () => {
         )}
         {activeTab === 'community' && <Community currentUser={user} darkMode={user.settings?.darkMode} onCompleteGroupQuest={(q) => completeQuest(q, 2)} onClose={() => setActiveTab(previousTabRef.current)} hasFriendRequests={hasFriendRequests} hasGroupInvites={hasGroupInvites} onTrackQuest={handleTrackGroupQuest} />}
 
+        {activeTab === 'reflect' && (
+          <div className="fixed inset-0 z-50 bg-black flex flex-col">
+            <ReflectionFeed
+              items={Array.isArray(reflections) ? reflections : CURATED_REFLECTIONS} // Safety fallback
+              loading={loadingReflections}
+              hasMore={hasMoreReflections}
+              onLoadMore={handleLoadMoreReflections}
+              onUpdateItem={(id, updates) => {
+                setReflections(prev => prev.map(item => item.id === id ? { ...item, ...updates } : item));
+              }}
+              onMarkAsRead={handleMarkReflectionAsRead}
+            />
+            {/* Back Button for Reflect Mode */}
+            <button
+              onClick={() => setActiveTab('collect')}
+              className="absolute top-6 left-6 z-[60] text-white/50 hover:text-white transition-colors bg-black/20 backdrop-blur-md p-2 rounded-full"
+            >
+              <ChevronLeft size={24} />
+            </button>
+          </div>
+        )}
+
+        {activeTab === 'guide' && <Citadel user={user} />}
+
+        {activeTab === 'seerah' && (
+          <div className="h-full flex items-center justify-center">
+            <button onClick={() => setActiveTab('guide')} className="px-6 py-3 bg-[#064e3b] text-white rounded-full font-bold">Go to Citadel Seerah</button>
+          </div>
+        )}
+
         {activeTab === 'collect' && (
           <div className="space-y-6 py-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
 
             {/* ROUTINE BUILDER BUTTON */}
-            <div className="px-6 pt-2">
+            <div className="pt-2"> {/* Removed px-6 to make it wider/bleed to edges */}
               <button
                 onClick={() => setShowRoutineBuilder(true)}
-                className={`w-full p-4 rounded-xl border border-dashed transition-all flex items-center justify-between group ${user.settings?.darkMode ? 'border-white/[0.15] bg-white/[0.02] hover:bg-white/[0.05]' : 'border-slate-200 bg-slate-50/50 hover:bg-slate-50'}`}
+                className={`w-full p-6 min-h-[160px] rounded-[32px] border transition-all flex flex-col justify-between group relative overflow-hidden ${user.settings?.darkMode ? 'border-white/10' : 'border-slate-300 shadow-xl'}`}
               >
-                <div className="flex items-center gap-3">
-                  <div className={`p-2.5 rounded-lg ${user.settings?.darkMode ? 'bg-white/10 text-white' : 'bg-white text-[#064e3b] shadow-sm'}`}>
-                    <ListTodo size={16} />
+                {/* Background Image & Ambient Overlay */}
+                <div
+                  className="absolute inset-0 z-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+                  style={{ backgroundImage: "url('/images/routine.jpeg')" }}
+                />
+                <div className="absolute inset-0 z-0 bg-black/40 backdrop-blur-[1px]" /> {/* Less blur/darkness to make musallah more visible */}
+
+                {/* Top Section: Icon & Title */}
+                <div className="w-full flex items-center justify-between relative z-10 transition-transform group-hover:translate-x-1">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-white shadow-xl flex items-center justify-center">
+                      <ListTodo size={28} />
+                    </div>
+                    <div className="text-left">
+                      <h3 className="font-extrabold text-[28px] uppercase leading-none tracking-tight text-white drop-shadow-md"> {/* Added uppercase here */}
+                        {(user.pinnedQuests?.length || 0) > 0 ? 'EDIT ROUTINE' : 'BUILD ROUTINE'}
+                      </h3>
+                      <p className="text-[14px] text-white/90 font-medium mt-1.5 drop-shadow-sm">
+                        {(user.pinnedQuests?.length || 0) > 0 ? `${user.pinnedQuests!.length} active daily duties.` : 'Configure your daily habits.'}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-left">
-                    <h3 className={`font-bold text-[13px] ${user.settings?.darkMode ? 'text-white' : 'text-slate-800'}`}>{(user.pinnedQuests?.length || 0) > 0 ? 'Edit Routine' : 'Build Your Routine'}</h3>
-                    <p className={`text-[10px] ${user.settings?.darkMode ? 'text-white/40' : 'text-slate-500'}`}>{(user.pinnedQuests?.length || 0) > 0 ? `${user.pinnedQuests!.length} quests configured.` : 'Set up your daily tasks.'}</p>
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center relative z-10 bg-white/10 backdrop-blur-md text-white border border-white/20 shadow-md">
+                    <ChevronRight size={24} />
                   </div>
                 </div>
-                <div className={`p-1.5 rounded-full transition-all group-hover:translate-x-1 ${user.settings?.darkMode ? 'text-white/20' : 'text-slate-300'}`}>
-                  <ChevronRight size={16} />
+
+                {/* Bottom Section: Subtext */}
+                <div className="relative z-10 mt-6 text-left w-full">
+                  <p className="text-[13px] font-bold tracking-normal text-[#f7f1e3] drop-shadow-md normal-case">
+                    Quests added to your routine will automatically be tracked daily!
+                  </p>
                 </div>
               </button>
             </div>
 
             {/* STANDARD CATEGORIES */}
-            <div className="space-y-2 pt-2">
-              {Object.entries(questSections).map(([category, quests]) => {
-                // FILTER: Hide if in Routine (Pinned) or actively tracked
-                // Re-add them if they are completed today (unless they are Routine pinned quests)
-                const displayQuests = quests.filter(q => {
-                  const isTracked = user.activeQuests.includes(q.id);
-                  const isPinned = user.pinnedQuests?.includes(q.id);
-                  const isCompleted = isCompletedToday(q.id);
+            <div className="pt-8 px-6">
+              <div className="space-y-3">
+                {Object.entries(questSections).map(([category, quests]) => {
+                  // FILTER: Hide if in Routine (Pinned) or actively tracked
+                  // Re-add them if they are completed today (unless they are Routine pinned quests)
+                  const displayQuests = quests.filter(q => {
+                    const isTracked = user.activeQuests.includes(q.id);
+                    const isPinned = user.pinnedQuests?.includes(q.id);
+                    const isCompleted = isCompletedToday(q.id);
 
-                  if (isPinned) return false; // Hide ALL routine quests permanently from All Quests
-                  if (isTracked && !isCompleted) return false; // Hide active side quests from All Quests until completed
-                  return true;
-                });
+                    if (isPinned) return false; // Hide ALL routine quests permanently from All Quests
+                    if (isTracked && !isCompleted) return false; // Hide active side quests from All Quests until completed
+                    return true;
+                  });
 
-                // Count available (not tracked and not completed)
-                const availableToStart = displayQuests.filter(q => !user.activeQuests.includes(q.id) && !isCompletedToday(q.id)).length;
+                  // Count available (not tracked and not completed)
+                  const availableToStart = displayQuests.filter(q => !user.activeQuests.includes(q.id) && !isCompletedToday(q.id)).length;
 
-                if (displayQuests.length === 0) return null;
-                const isOpen = openCategories.includes(category);
-                const isCorrection = category === 'Correction Quests';
+                  if (displayQuests.length === 0) return null;
+                  const isOpen = openCategories.includes(category);
+                  const isCorrection = category === 'Correction Quests';
 
-                // Minimal colors per category, matching screenshot requests
-                const categoryColors: Record<string, string> = {
-                  'The Five Pillars': 'bg-[#156b57]', // Darker green
-                  'Daily Remembrance': 'bg-[#2d5a8b]', // Deep Blue
-                  'Bonus Salaah': 'bg-[#064e3b]', // Deep Forest Green
-                  'Sunnah & Character': 'bg-[#673a7c]', // Purple
-                  'Community & Charity': 'bg-[#d88c22]', // Gold/Orange
-                  'Correction Quests': 'bg-[#b63c3c]' // Red
-                };
-                const bgColor = categoryColors[category] || 'bg-slate-700';
+                  // Using sophisticated Flat UI Colors
+                  const categoryColors: Record<string, string> = {
+                    'The Five Pillars': 'bg-[#16a085]',      // Green Sea
+                    'Daily Remembrance': 'bg-[#2980b9]',    // Belize Hole
+                    'Bonus Salaah': 'bg-[#064e3b]',         // Deep Forest Green
+                    'Sunnah & Character': 'bg-[#8e44ad]',   // Wisteria
+                    'Community & Charity': 'bg-[#d35400]',  // Pumpkin
+                    'Correction Quests': 'bg-[#c0392b]'     // Pomegranate
+                  };
 
-                return (
-                  <section key={category} className={`space-y-4 rounded-[30px] transition-all ${isCorrection && isOpen ? 'p-2 pb-6' : ''}`}>
-                    <button onClick={() => toggleCategory(category)} className={`sticky top-0 z-10 w-full flex items-center justify-between p-4 rounded-xl shadow-sm transition-all ${bgColor} text-white hover:opacity-90 active:scale-[0.99]`}>
-                      <h2 className="text-[10px] font-black uppercase tracking-[0.4em]">{category}</h2>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold opacity-80">{availableToStart}/{displayQuests.length}</span>
-                        <ChevronDown size={16} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                      </div>
-                    </button>
-                    {isOpen && (
-                      <div className="grid grid-cols-1 gap-4 pt-2 animate-in fade-in slide-in-from-top-2 px-1">
-                        {displayQuests.map(q => (
-                          <React.Fragment key={q.id}>
-                            <QuestCard
-                              quest={q}
-                              onAction={handleQuestSelect}
-                              isTracked={user.activeQuests.includes(q.id)}
-                              darkMode={user.settings?.darkMode}
-                              isGreyed={q.isGreyed || isCompletedToday(q.id)}
-                              onShowInfo={() => setInfoModalQuest(q)}
-                            />
-                            {q.id === 'fasting_ramadan' && (
-                              <button
-                                onClick={() => setActiveTab('active')}
-                                className="w-full text-center py-2 transition-opacity hover:opacity-80"
-                              >
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#064e3b] dark:text-[#d4af37]">
-                                  Trackable - see My Journey
-                                </span>
-                              </button>
-                            )}
-                          </React.Fragment>
-                        ))}
-                      </div>
-                    )}
-                  </section>
-                );
-              })}
+                  // Bonus Salaah fix to use class if hex isn't intended for direct injection
+                  const bgClass = categoryColors[category]?.startsWith('bg-') ? categoryColors[category] : 'bg-[#064e3b]';
+                  const customStyle = categoryColors[category]?.startsWith('#') ? { backgroundColor: categoryColors[category] } : {};
+                  const bgColor = categoryColors[category] || 'bg-slate-700';
+
+                  return (
+                    <section key={category} className="space-y-2 transition-all">
+                      <button
+                        onClick={() => toggleCategory(category)}
+                        className={`w-full flex items-center justify-between p-5 rounded-2xl shadow-sm transition-all border border-white/5 ${bgClass} text-white hover:brightness-110 active:scale-[0.98] outline-none`}
+                        style={customStyle}
+                      >
+                        <div className="flex items-center gap-3">
+                          {category === 'The Five Pillars' && <div className="p-1.5 rounded-lg bg-white/10"><Shield size={16} /></div>}
+                          {category === 'Daily Remembrance' && <div className="p-1.5 rounded-lg bg-white/10"><Sparkles size={16} /></div>}
+                          {category === 'Bonus Salaah' && <div className="p-1.5 rounded-lg bg-white/10"><Target size={16} /></div>}
+                          {category === 'Sunnah & Character' && <div className="p-1.5 rounded-lg bg-white/10"><UserIcon size={16} /></div>}
+                          {category === 'Community & Charity' && <div className="p-1.5 rounded-lg bg-white/10"><Users size={16} /></div>}
+                          {category === 'Correction Quests' && <div className="p-1.5 rounded-lg bg-white/10"><AlertTriangle size={16} /></div>}
+                          <h2 className="text-sm font-black uppercase tracking-widest">{category}</h2>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-bold bg-black/20 px-2 py-1 rounded-lg">{availableToStart}/{displayQuests.length}</span>
+                          <ChevronDown size={18} className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+                        </div>
+                      </button>
+                      {isOpen && (
+                        <div className="grid grid-cols-1 gap-4 pt-2 animate-in fade-in slide-in-from-top-2 px-1">
+                          {displayQuests.map(q => (
+                            <React.Fragment key={q.id}>
+                              <QuestCard
+                                quest={q}
+                                onAction={handleQuestSelect}
+                                isTracked={user.activeQuests.includes(q.id)}
+                                darkMode={user.settings?.darkMode}
+                                isGreyed={q.isGreyed || isCompletedToday(q.id)}
+                                onShowInfo={() => setInfoModalQuest(q)}
+                              />
+                              {q.id === 'fasting_ramadan' && (
+                                <button
+                                  onClick={() => setActiveTab('active')}
+                                  className="w-full text-center py-2 transition-opacity hover:opacity-80"
+                                >
+                                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#064e3b] dark:text-[#d4af37]">
+                                    Trackable - see My Journey
+                                  </span>
+                                </button>
+                              )}
+                            </React.Fragment>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
@@ -1952,7 +2022,6 @@ const App: React.FC = () => {
             )}
           </div>
         )}
-
         {activeTab === 'reflect' && (
           <div className="fixed inset-0 z-50 bg-black flex flex-col">
             <ReflectionFeed
@@ -1987,7 +2056,8 @@ const App: React.FC = () => {
         )}
       </main>
 
-      <nav className={`fixed bottom-0 left-0 right-0 max-w-md mx-auto p-6 z-50 transition-all`}>
+      {/* FIXED: Moving Nav out of Main, and properly matching tags */}
+      <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-6 z-50 transition-all">
         <div className={`rounded-[40px] p-2 flex items-center justify-between shadow-2xl border ${user.settings?.darkMode ? 'bg-[#050a09]/90 border-white/10 backdrop-blur-xl' : 'bg-white/95 border-[#064e3b]/5 backdrop-blur-md'}`}>
           <NavBtn active={activeTab === 'active'} label="My Quests" icon={<Target />} onClick={() => setActiveTab('active')} darkMode={user.settings?.darkMode} />
           <NavBtn active={activeTab === 'collect'} label="All Quests" icon={<LayoutGrid />} onClick={() => setActiveTab('collect')} darkMode={user.settings?.darkMode} />
@@ -2236,7 +2306,8 @@ const App: React.FC = () => {
             </button>
           </div >
         </div >
-      )}
+      )
+      }
 
       {/* CONFIRM QUEST MODAL */}
       {
@@ -2250,58 +2321,64 @@ const App: React.FC = () => {
         )
       }
       {/* ROUTINE BUILDER MODAL (Hoisted) */}
-      {showRoutineBuilder && (
-        <RoutineBuilder
-          currentRoutine={user.pinnedQuests || []}
-          onSave={handleSaveRoutine}
-          onClose={() => setShowRoutineBuilder(false)}
-          darkMode={user.settings?.darkMode}
-        />
-      )}
+      {
+        showRoutineBuilder && (
+          <RoutineBuilder
+            currentRoutine={user.pinnedQuests || []}
+            onSave={handleSaveRoutine}
+            onClose={() => setShowRoutineBuilder(false)}
+            darkMode={user.settings?.darkMode}
+          />
+        )
+      }
       {/* Ramadan Tracker Modal */}
-      {showRamadanTracker && user && (
-        <RamadanTracker
-          user={user}
-          onClose={() => setShowRamadanTracker(false)}
-          onToggleDay={toggleRamadanDay}
-          darkMode={user.settings?.darkMode}
-        />
-      )}
+      {
+        showRamadanTracker && user && (
+          <RamadanTracker
+            user={user}
+            onClose={() => setShowRamadanTracker(false)}
+            onToggleDay={toggleRamadanDay}
+            darkMode={user.settings?.darkMode}
+          />
+        )
+      }
 
       {/* QUEST INFO MODAL (Tasbeeh, Ishraq, Duha) */}
-      {infoModalQuest && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in">
-          <div className={`w-full max-w-sm p-6 rounded-[30px] space-y-4 shadow-2xl ${user.settings?.darkMode ? 'bg-slate-900 border border-white/10 text-white' : 'bg-white text-slate-900'}`}>
-            <div className="flex justify-between items-start">
-              <h3 className="text-xl font-bold">{infoModalQuest.title}</h3>
-              <button onClick={() => setInfoModalQuest(null)} className="p-2 rounded-full bg-slate-100 dark:bg-white/10 hover:opacity-80"><X size={16} /></button>
-            </div>
-            <p className="text-sm opacity-80 leading-relaxed font-medium">
-              Please reference the <strong>"Key to the Treasures of Jannah"</strong> book for the complete guide, rak'aat breakdown, and specific recitations required for this prayer.
-            </p>
-            {infoModalQuest.id === 'salatul_tasbeeh' && (
-              <div className="space-y-2 mt-2">
-                <p className="text-xs opacity-80 border-t pt-3 dark:border-white/10">300 Tasbeehs (Subhanallahi walhamdulillahi wa la ilaha illallahu wallahu akbar) split across 4 Rakaats (75 per Rakaat):</p>
-                <ul className="text-xs opacity-70 list-disc pl-4 space-y-1">
-                  <li><strong>15 times</strong>: After Surah Fatiha & another Surah, while standing.</li>
-                  <li><strong>10 times</strong>: In Ruku (after usual tasbeeh).</li>
-                  <li><strong>10 times</strong>: Coming up from Ruku (Qiyam).</li>
-                  <li><strong>10 times</strong>: In the first Sujood.</li>
-                  <li><strong>10 times</strong>: Sitting between the two Sujoods (Jalsa).</li>
-                  <li><strong>10 times</strong>: In the second Sujood.</li>
-                  <li><strong>10 times</strong>: Sitting after the second Sujood (before standing up for next rakaat).</li>
-                </ul>
+      {
+        infoModalQuest && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in">
+            <div className={`w-full max-w-sm p-6 rounded-[30px] space-y-4 shadow-2xl ${user.settings?.darkMode ? 'bg-slate-900 border border-white/10 text-white' : 'bg-white text-slate-900'}`}>
+              <div className="flex justify-between items-start">
+                <h3 className="text-xl font-bold">{infoModalQuest.title}</h3>
+                <button onClick={() => setInfoModalQuest(null)} className="p-2 rounded-full bg-slate-100 dark:bg-white/10 hover:opacity-80"><X size={16} /></button>
               </div>
-            )}
-            {infoModalQuest.id === 'ishraq_salah' && (
-              <p className="text-xs opacity-60 italic border-t pt-3 dark:border-white/10">Quick reminder: Prayed approx 15-20 minutes after sunrise. Sit doing dhikr from Fajr until then.</p>
-            )}
-            <button onClick={() => setInfoModalQuest(null)} className="w-full py-3 mt-4 rounded-2xl bg-[#064e3b] text-white font-bold tracking-widest uppercase text-xs">Got it</button>
+              <p className="text-sm opacity-80 leading-relaxed font-medium">
+                Please reference the <strong>"Key to the Treasures of Jannah"</strong> book for the complete guide, rak'aat breakdown, and specific recitations required for this prayer.
+              </p>
+              {infoModalQuest.id === 'salatul_tasbeeh' && (
+                <div className="space-y-2 mt-2">
+                  <p className="text-xs opacity-80 border-t pt-3 dark:border-white/10">300 Tasbeehs (Subhanallahi walhamdulillahi wa la ilaha illallahu wallahu akbar) split across 4 Rakaats (75 per Rakaat):</p>
+                  <ul className="text-xs opacity-70 list-disc pl-4 space-y-1">
+                    <li><strong>15 times</strong>: After Surah Fatiha & another Surah, while standing.</li>
+                    <li><strong>10 times</strong>: In Ruku (after usual tasbeeh).</li>
+                    <li><strong>10 times</strong>: Coming up from Ruku (Qiyam).</li>
+                    <li><strong>10 times</strong>: In the first Sujood.</li>
+                    <li><strong>10 times</strong>: Sitting between the two Sujoods (Jalsa).</li>
+                    <li><strong>10 times</strong>: In the second Sujood.</li>
+                    <li><strong>10 times</strong>: Sitting after the second Sujood (before standing up for next rakaat).</li>
+                  </ul>
+                </div>
+              )}
+              {infoModalQuest.id === 'ishraq_salah' && (
+                <p className="text-xs opacity-60 italic border-t pt-3 dark:border-white/10">Quick reminder: Prayed approx 15-20 minutes after sunrise. Sit doing dhikr from Fajr until then.</p>
+              )}
+              <button onClick={() => setInfoModalQuest(null)} className="w-full py-3 mt-4 rounded-2xl bg-[#064e3b] text-white font-bold tracking-widest uppercase text-xs">Got it</button>
+            </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
-    </div>
+    </div >
   );
 };
 
