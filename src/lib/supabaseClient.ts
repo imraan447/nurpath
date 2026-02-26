@@ -44,16 +44,32 @@ const startHeartbeat = () => {
 };
 
 // When user returns to the tab after being away, immediately refresh.
-if (typeof document !== 'undefined') {
-    document.addEventListener('visibilitychange', async () => {
+if (typeof document !== 'undefined' && typeof window !== 'undefined') {
+    const reconnectSupabase = async () => {
         if (document.visibilityState === 'visible') {
             try {
+                // 1. Force token refresh to ensure we aren't using a fatally stale token
                 await supabase.auth.refreshSession();
+                console.log('PWA Resume: Auth session refreshed');
+
+                // 2. iOS PWA Realtime Fix: Force reconnect the websocket
+                // When iOS suspends a PWA, websockets die silently.
+                // Disconnecting and reconnecting forces the Realtime client to wake up.
+                supabase.realtime.disconnect();
+                setTimeout(() => {
+                    supabase.realtime.connect();
+                    console.log('PWA Resume: Realtime connection forcefully re-established');
+                }, 500);
+
             } catch (e) {
-                console.warn('Visibility refresh failed:', e);
+                console.warn('PWA Resume: Recovery failed:', e);
             }
         }
-    });
+    };
+
+    // Listeners for waking up from background or regaining internet
+    document.addEventListener('visibilitychange', reconnectSupabase);
+    window.addEventListener('online', reconnectSupabase);
 }
 
 startHeartbeat();
