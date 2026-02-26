@@ -111,18 +111,25 @@ const QuestCard: React.FC<QuestCardProps> = ({
                 Tracking <CheckCircle2 size={10} />
               </span>
             )}
+          </div>
+          <h3 className={`font-bold text-lg transition-colors flex items-center gap-2 ${darkMode ? 'text-white' : 'text-slate-900'} ${isTracked || isCompleted ? 'opacity-70' : ''}`}>
+            {quest.title}
             {isCompleted && (
-              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full flex items-center gap-1 bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
+              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md flex items-center gap-1 bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
                 Done <CheckCircle2 size={10} /> {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
               </span>
             )}
-          </div>
-          <h3 className={`font-bold text-lg transition-colors ${darkMode ? 'text-white' : 'text-slate-900'} ${isTracked || isCompleted ? 'opacity-70' : ''}`}>{quest.title}</h3>
+          </h3>
         </div>
         <div className="flex flex-col items-end gap-2">
           <div className={`font-black text-sm transition-colors ${isLocked ? 'text-slate-400 flex items-center gap-1' : 'text-[#d4af37]'}`}>
             {isLocked ? <><Lock size={12} /> Locked</> : `+${quest.xp} XP`}
           </div>
+          {isCompleted && (
+            <div className="text-emerald-500">
+              <CheckCircle2 size={20} />
+            </div>
+          )}
           {!isCompleted && !isBundle && onPin && !effectiveIsGreyed && (
             <button
               onClick={(e) => { e.stopPropagation(); onPin(quest); }}
@@ -231,7 +238,6 @@ const QuestCard: React.FC<QuestCardProps> = ({
         </div>
       )}
 
-      {isCompleted && <div className="absolute top-4 right-4 text-emerald-500"><CheckCircle2 size={24} /></div>}
     </div>
   );
 };

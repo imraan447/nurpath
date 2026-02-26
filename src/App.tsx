@@ -164,6 +164,7 @@ const App: React.FC = () => {
   const [pullRefreshing, setPullRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const [upcomingSalahExpanded, setUpcomingSalahExpanded] = useState(false);
+  const [completedSalahExpanded, setCompletedSalahExpanded] = useState(false);
   const touchStartY = useRef(0);
   const mainScrollRef = useRef<HTMLElement>(null);
 
@@ -1207,59 +1208,44 @@ const App: React.FC = () => {
     return { time: formatTime(prayerTimeStr), status, timeLeft };
   };
 
-  // Determine Hero Quest
+  // NEW STRICT HERO LOGIC
   let heroQuest: Quest | undefined;
   let heroRelatedQuests: Quest[] = [];
-  const bundle = getHereAndNowBundle();
   let heroTimeStatus = null;
 
-  // STRICT HERO LOGIC: Only allow Current or Next Prayer
-  // Map 'duha' to allow 'dhuhr' as the next trackable fard prayer
-  let allowedPrayerIds: string[] = [currentPrayer, nextPrayer].filter((p): p is string => !!p);
+  if (user) {
+    let intendedHeroId: string | undefined;
 
-  // During Duha period (sunrise→dhuhr), always allow Dhuhr
-  if (currentPrayer === 'duha') {
-    if (!allowedPrayerIds.includes('dhuhr')) allowedPrayerIds.push('dhuhr');
-  }
-  // When current is 'sunrise', allow fajr (in case it was missed) and dhuhr
-  if (currentPrayer === 'sunrise' || nextPrayer === 'sunrise') {
-    if (!allowedPrayerIds.includes('fajr')) allowedPrayerIds.push('fajr');
-  }
+    // Check main fard progression
+    const trackedFard = fardSalahIds.filter(id => user.activeQuests.includes(id));
+    const firstIncomplete = trackedFard.find(id => !isCompletedToday(id));
+    const nowPrayer = trackedFard.find(id => getQuestTimeStatus(id)?.status === 'now');
 
-  if (bundle && user?.activeQuests.includes(bundle.mainQuest.id) && !isCompletedToday(bundle.mainQuest.id)) {
-    heroQuest = bundle.mainQuest;
-    heroRelatedQuests = bundle.relatedQuests;
-  } else if (user) {
-    const firstMain = user.activeQuests
-      .map(qid => ALL_QUESTS.find(q => q.id === qid))
-      .find(q => {
-        if (!q) return false;
-        // Skip if already completed today
-        if (isCompletedToday(q.id)) return false;
-        // Is it a Main Quest?
-        if (q.category !== QuestCategory.MAIN && !fardSalahIds.includes(q.id)) return false;
-
-        // If it IS a Fard Salah, is it allowed?
-        if (fardSalahIds.includes(q.id)) {
-          // If timings are missing, allow all prayers so the user isn't stuck with "No active focus"
-          if (!prayerTimes) return true;
-          return allowedPrayerIds.includes(q.id);
-        }
-
-        // If it's a non-Salah Main Quest, allow it (fallback)
-        return true;
+    // "It should make Asr the main card once i complete Dhuhr, or exactly when it's time for Asr and i haven't completed Dhuhr."
+    if (nowPrayer && !isCompletedToday(nowPrayer)) {
+      intendedHeroId = nowPrayer; // It is exactly time for this prayer and it isn't completed
+    } else if (firstIncomplete) {
+      intendedHeroId = firstIncomplete; // e.g. Dhuhr completed, Asr is next
+    } else {
+      // Fallback to first incomplete Main quest if all fard salah are done
+      intendedHeroId = user.activeQuests.find(id => {
+        const q = ALL_QUESTS.find(q => q.id === id);
+        return q && q.category === QuestCategory.MAIN && !isCompletedToday(id);
       });
+    }
 
-    if (firstMain) {
-      heroQuest = firstMain;
-      const relIds = PRAYER_RELATED_QUESTS[firstMain.id] || [];
-      heroRelatedQuests = relIds
-        .map(id => ALL_QUESTS.find(q => q.id === id))
-        .filter((q): q is Quest => !!q)
-        .map(q => ({
-          ...q,
-          completed: isCompletedToday(q.id)
-        }));
+    if (intendedHeroId) {
+      heroQuest = ALL_QUESTS.find(q => q.id === intendedHeroId);
+      if (heroQuest) {
+        const relIds = PRAYER_RELATED_QUESTS[heroQuest.id] || [];
+        heroRelatedQuests = relIds
+          .map(id => ALL_QUESTS.find(q => q.id === id))
+          .filter((q): q is Quest => !!q)
+          .map(q => ({
+            ...q,
+            completed: isCompletedToday(q.id)
+          }));
+      }
     }
   }
 
@@ -1271,34 +1257,11 @@ const App: React.FC = () => {
     .filter(rq => selectedHeroRelated.includes(rq.id))
     .reduce((sum, rq) => sum + rq.xp, 0) : 0;
 
-  // --- SACRED DUTIES: Salaah that are in the user's active list ---
-  // Always show ALL fard salaah that are tracked, sorted in prayer order.
-  // Completed ones show as done, current/next are active, future are locked.
-  const activeMainQuests = (user?.activeQuests
-    .map(qid => ALL_QUESTS.find(q => q.id === qid))
-    .filter(q => {
-      if (!q || q.isPackage) return false;
-      if (q.id === heroQuest?.id) return false;
-      // Include fard salaah (always visible) OR other Main quests that aren't completed yet
-      if (fardSalahIds.includes(q.id)) return true;
-      if (q.category === QuestCategory.MAIN) return !isCompletedToday(q.id);
-      return false;
-    }) as Quest[] || [])
-    .sort((a, b) => {
-      const indexA = fardSalahIds.indexOf(a.id);
-      const indexB = fardSalahIds.indexOf(b.id);
-      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-      if (indexA !== -1) return -1;
-      if (indexB !== -1) return 1;
-      return 0;
-    });
-
   // --- SIDE QUESTS: Only show non-completed ones (unless pinned) ---
   const activeSideQuests = user?.activeQuests
     .filter(qid => {
       const isPinned = user?.pinnedQuests?.includes(qid);
       const completed = isCompletedToday(qid);
-      // Pinned side quests stay visible even when done; non-pinned disappear
       return !completed || isPinned;
     })
     .map(qid => ALL_QUESTS.find(q => q.id === qid))
@@ -1732,45 +1695,65 @@ const App: React.FC = () => {
                 {/* Quest Lists */}
                 <div className="space-y-6">
                   {/* Sacred Duties (Salah + Tahajjud) with Sub-Quest Encapsulation */}
-                  {activeMainQuests.length > 0 && (() => {
-                    // Split prayers into visible (active/completed/past) and upcoming (locked/future)
+                  {user?.activeQuests.some(id => fardSalahIds.includes(id) || ALL_QUESTS.find(q => q.id === id)?.category === QuestCategory.MAIN) && (() => {
                     const visiblePrayers: Quest[] = [];
                     const upcomingPrayers: Quest[] = [];
+                    const completedPrayers: Quest[] = [];
 
-                    activeMainQuests.forEach(q => {
+                    // Gather all main quests and calculate their status
+                    const allMainQuests = user.activeQuests
+                      .map(id => ALL_QUESTS.find(q => q.id === id))
+                      .filter(q => q && !q.isPackage && q.id !== heroQuest?.id && (fardSalahIds.includes(q.id) || q.category === QuestCategory.MAIN)) as Quest[];
+
+                    allMainQuests.forEach(q => {
                       const isSalaah = fardSalahIds.includes(q.id);
                       const isCompleted = isCompletedToday(q.id);
 
-                      let isUpcoming = false;
-                      if (isSalaah && !isCompleted && prayerTimes) {
-                        const isCurrentOrNext = allowedPrayerIds.includes(q.id);
-                        if (!isCurrentOrNext) {
-                          const questTimeStatus = getQuestTimeStatus(q.id);
-                          const isPast = questTimeStatus?.status === 'past';
-                          if (!isPast) isUpcoming = true;
+                      if (isSalaah) {
+                        if (isCompleted) {
+                          completedPrayers.push(q);
+                        } else {
+                          const timeStatus = getQuestTimeStatus(q.id);
+                          // If it hasn't started, it goes to upcoming 
+                          if (timeStatus?.status === 'future') {
+                            upcomingPrayers.push(q);
+                          } else {
+                            visiblePrayers.push(q);
+                          }
                         }
+                      } else if (isCompleted) {
+                        // Non-salah main quests shouldn't stay in visible if completed unless pinned
+                        if (!user?.pinnedQuests?.includes(q.id)) {
+                          return; // drop it entirely
+                        } else {
+                          completedPrayers.push(q);
+                        }
+                      } else {
+                        visiblePrayers.push(q);
                       }
-
-                      if (isUpcoming) upcomingPrayers.push(q);
-                      else visiblePrayers.push(q);
                     });
+
+                    // Sort chronologically
+                    visiblePrayers.sort((a, b) => fardSalahIds.indexOf(a.id) - fardSalahIds.indexOf(b.id));
+                    upcomingPrayers.sort((a, b) => fardSalahIds.indexOf(a.id) - fardSalahIds.indexOf(b.id));
+                    completedPrayers.sort((a, b) => fardSalahIds.indexOf(a.id) - fardSalahIds.indexOf(b.id));
+
+                    if (visiblePrayers.length === 0 && upcomingPrayers.length === 0 && completedPrayers.length === 0) return null;
 
                     return (
                       <div>
                         <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 ml-2 flex items-center gap-2"><Star size={12} /> Sacred Duties</h3>
                         <div className="space-y-3">
-                          {/* Active / Completed / Missed prayers — always visible */}
+                          {/* Active / Missed prayers — always visible */}
                           {visiblePrayers.map(q => {
                             const timeStatus = getQuestTimeStatus(q.id);
-                            const isCompleted = isCompletedToday(q.id);
-
                             return (
-                              <div key={q.id} className={`rounded-[24px] overflow-hidden transition-all ${user.settings?.darkMode ? 'bg-white/5' : 'bg-white'} ${isCompleted ? 'opacity-50' : ''}`}>
+                              <div key={q.id} className={`rounded-[24px] overflow-hidden transition-all ${user.settings?.darkMode ? 'bg-white/5' : 'bg-white'}`}>
                                 <QuestCard
                                   quest={q}
-                                  isActive={!isCompleted}
-                                  isGreyed={isCompleted}
-                                  isCompleted={isCompleted}
+                                  isActive={timeStatus?.status !== 'future'}
+                                  isGreyed={timeStatus?.status === 'future'}
+                                  isCompleted={false}
                                   timeDisplay={timeStatus as any}
                                   onComplete={() => completeQuest(q)}
                                   onRemove={removeQuest}
@@ -1783,7 +1766,44 @@ const App: React.FC = () => {
                             );
                           })}
 
-                          {/* Upcoming/Locked prayers — collapsible */}
+                          {/* Completed prayers — collapsible, separated */}
+                          {completedPrayers.length > 0 && (
+                            <>
+                              <button
+                                onClick={() => setCompletedSalahExpanded(!completedSalahExpanded)}
+                                className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all ${user.settings?.darkMode ? 'bg-white/5 text-emerald-400/80 hover:bg-white/10' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}`}
+                              >
+                                <span className="flex items-center gap-2">
+                                  <CheckCircle2 size={14} />
+                                  {completedPrayers.length} completed prayer{completedPrayers.length > 1 ? 's' : ''}
+                                </span>
+                                <ChevronDown size={14} className={`transition-transform ${completedSalahExpanded ? 'rotate-180' : ''}`} />
+                              </button>
+
+                              {completedSalahExpanded && completedPrayers.map(q => {
+                                const timeStatus = getQuestTimeStatus(q.id);
+                                return (
+                                  <div key={q.id} className={`rounded-[24px] overflow-hidden transition-all opacity-80 ${user.settings?.darkMode ? 'bg-white/5' : 'bg-white'}`}>
+                                    <QuestCard
+                                      quest={q}
+                                      isActive={false}
+                                      isGreyed={false}
+                                      isCompleted={true}
+                                      timeDisplay={timeStatus as any}
+                                      onComplete={() => completeQuest(q)}
+                                      onRemove={removeQuest}
+                                      onPin={togglePinQuest}
+                                      isPinned={user.pinnedQuests?.includes(q.id)}
+                                      darkMode={user.settings?.darkMode}
+                                      onShowInfo={() => setInfoModalQuest(q)}
+                                    />
+                                  </div>
+                                );
+                              })}
+                            </>
+                          )}
+
+                          {/* Upcoming/Locked prayers — collapsible, separated */}
                           {upcomingPrayers.length > 0 && (
                             <>
                               <button
@@ -1800,11 +1820,12 @@ const App: React.FC = () => {
                               {upcomingSalahExpanded && upcomingPrayers.map(q => {
                                 const timeStatus = getQuestTimeStatus(q.id);
                                 return (
-                                  <div key={q.id} className={`rounded-[24px] overflow-hidden transition-all opacity-30 ${user.settings?.darkMode ? 'bg-white/5' : 'bg-white'}`}>
+                                  <div key={q.id} className={`rounded-[24px] overflow-hidden transition-all opacity-40 ${user.settings?.darkMode ? 'bg-white/5' : 'bg-white'}`}>
                                     <QuestCard
                                       quest={q}
                                       isActive={false}
                                       isGreyed={true}
+                                      isCompleted={false}
                                       timeDisplay={timeStatus as any}
                                       onComplete={() => completeQuest(q)}
                                       onRemove={removeQuest}
