@@ -1510,7 +1510,7 @@ const App: React.FC = () => {
               >
                 {/* Atmospheric Image Background */}
                 <div
-                  className="absolute inset-0 z-0 bg-cover bg-center opacity-[75%] group-hover:opacity-[87%] transition-opacity duration-700"
+                  className="absolute inset-0 z-0 bg-cover bg-center opacity-[67%] group-hover:opacity-[79%] transition-opacity duration-700"
                   style={{ backgroundImage: "url('/images/routine.jpeg')" }}
                 />
                 {/* Gradient Fade & Noise Texture Overlay */}
