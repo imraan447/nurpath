@@ -258,6 +258,26 @@ const App: React.FC = () => {
     }
   };
 
+  // Add listener for returning to app from background
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      // If the app becomes visible again, quietly refresh profile data
+      if (document.visibilityState === 'visible' && user) {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session) {
+            console.log('App resumed, fetching fresh data...');
+            fetchProfile(session.user.id, session.user.email!, session.user.created_at);
+          }
+        }).catch(console.error);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user?.id]); // Depend on user id so it has the closure, but doesn't over-trigger
+
   // Apply manual prayer time corrections
   const applyPrayerAdjustments = (timings: any): any => {
     if (!user?.settings?.manualPrayerCorrections || !user?.prayerTimeAdjustments) return timings;
@@ -1413,9 +1433,17 @@ const App: React.FC = () => {
             setPullDistance(0);
             try {
               const { data: { session } } = await supabase.auth.getSession();
-              if (session) await fetchProfile(session.user.id, session.user.email!, session.user.created_at);
-            } catch (e) { console.error(e); }
-            setPullRefreshing(false);
+              if (session) {
+                // 5-second timeout safeguard for pull-to-refresh hangs
+                const fetchPromise = fetchProfile(session.user.id, session.user.email!, session.user.created_at);
+                const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Refresh Timeout')), 5000));
+                await Promise.race([fetchPromise, timeoutPromise]);
+              }
+            } catch (e) {
+              console.error('Pull to refresh Error:', e);
+            } finally {
+              setPullRefreshing(false);
+            }
           } else {
             setPullDistance(0);
           }

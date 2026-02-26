@@ -176,12 +176,28 @@ const Community: React.FC<CommunityProps> = ({ currentUser, darkMode, onComplete
   };
 
   const sayAmeen = async (duaId: string) => {
+    // 1. Optimistic UI Update: Instantly show the ameen as clicked
+    setDuas(prev => prev.map(d =>
+      d.id === duaId
+        ? { ...d, ameen_count: d.ameen_count + 1, has_said_ameen: true }
+        : d
+    ));
+
     try {
+      // 2. Background sync
       const { error } = await supabase.from('dua_ameens').insert({ dua_id: duaId, user_id: currentUser.id });
-      if (error) throw error;
-      setDuas(prev => prev.map(d => d.id === duaId ? { ...d, ameen_count: d.ameen_count + 1, has_said_ameen: true } : d));
+      if (error) {
+        // If it's just a duplicate constraint error, we can ignore because it means they already liked it
+        if (error.code !== '23505') throw error;
+      }
     } catch (e) {
-      console.error('Already said ameen or error:', e);
+      console.error('Failed to save ameen:', e);
+      // 3. Rollback if it actually failed
+      setDuas(prev => prev.map(d =>
+        d.id === duaId
+          ? { ...d, ameen_count: Math.max(0, d.ameen_count - 1), has_said_ameen: false }
+          : d
+      ));
     }
   };
 

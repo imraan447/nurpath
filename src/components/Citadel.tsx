@@ -107,7 +107,7 @@ const Citadel: React.FC<CitadelProps> = ({ user }) => {
             <div className="relative h-full w-full bg-[#050a09] overflow-hidden flex justify-center">
 
                 {/* Mobile Constraint Container */}
-                <div className="relative w-full max-w-[440px] h-full shadow-[0_0_50px_rgba(0,0,0,0.8)] border-x border-[#ffffff10] overflow-hidden bg-[#1a1a1a]">
+                <div className="relative w-full h-full shadow-[0_0_50px_rgba(0,0,0,0.8)] overflow-hidden bg-[#1a1a1a]">
 
                     {/* Scrollable Map Container */}
                     <div
@@ -240,7 +240,7 @@ const Citadel: React.FC<CitadelProps> = ({ user }) => {
         if (librarySubView === 'seerah') {
             return (
                 <div className="relative h-full bg-[#050a09] text-slate-300 overflow-hidden flex justify-center">
-                    <div className="w-full max-w-[440px] h-full bg-[#050a09] flex flex-col animate-in fade-in duration-500 shadow-2xl border-x border-[#ffffff10]">
+                    <div className="w-full h-full bg-[#050a09] flex flex-col animate-in fade-in duration-500 shadow-2xl">
                         {/* Header */}
                         <div className="flex items-center justify-between p-6 border-b border-[#d4af37]/20 bg-[#050a09]/90 backdrop-blur z-20">
                             <button onClick={() => setLibrarySubView('hub')} className="flex items-center gap-2 text-[#d4af37] hover:text-[#d4af37]/80 transition-colors group">
@@ -293,7 +293,7 @@ const Citadel: React.FC<CitadelProps> = ({ user }) => {
         // SUB-VIEW: Library Hub (default - featured card + placeholders)
         return (
             <div className="relative h-full bg-[#050a09] text-slate-300 overflow-hidden flex justify-center">
-                <div className="w-full max-w-[440px] h-full bg-[#050a09] flex flex-col animate-in fade-in zoom-in duration-700 shadow-2xl border-x border-[#ffffff10]">
+                <div className="w-full h-full bg-[#050a09] flex flex-col animate-in fade-in zoom-in duration-700 shadow-2xl">
                     {/* Header / Nav */}
                     <div className="flex items-center justify-between p-6 border-b border-[#d4af37]/20 bg-[#050a09]/90 backdrop-blur z-20">
                         <button onClick={handleReturnToMap} className="flex items-center gap-2 text-[#d4af37] hover:text-[#d4af37]/80 transition-colors group">
