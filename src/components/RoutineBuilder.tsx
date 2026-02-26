@@ -6,7 +6,7 @@ import { ALL_QUESTS, PRAYER_PACKAGES } from '../constants';
 
 interface RoutineBuilderProps {
     currentRoutine: string[];
-    onSave: (selectedIds: string[]) => void;
+    onSave: (selectedIds: string[], removedIds: string[]) => void;
     onClose: () => void;
     darkMode?: boolean;
 }
@@ -15,6 +15,7 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({ currentRoutine, onSave,
     const [selectedIds, setSelectedIds] = useState<string[]>(currentRoutine);
     const [activeCategory, setActiveCategory] = useState<string>('All');
     const [expandedPackages, setExpandedPackages] = useState<string[]>(Object.keys(PRAYER_PACKAGES));
+    const [showConfirm, setShowConfirm] = useState(false);
 
     // Quests to exclude from Routine Builder
     const EXCLUDED_IDS = [
@@ -132,7 +133,14 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({ currentRoutine, onSave,
                         <span className={`text-xs font-bold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{selectedIds.length} quests selected</span>
                     </div>
                     <button
-                        onClick={() => onSave(selectedIds)}
+                        onClick={() => {
+                            const removedIds = currentRoutine.filter(id => !selectedIds.includes(id));
+                            if (removedIds.length > 0) {
+                                setShowConfirm(true);
+                            } else {
+                                onSave(selectedIds, []);
+                            }
+                        }}
                         className="w-full py-4 bg-[#064e3b] text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl hover:bg-[#059669] active:scale-95 transition-all flex items-center justify-center gap-2"
                     >
                         <Save size={18} /> Save Routine
@@ -140,6 +148,28 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({ currentRoutine, onSave,
                 </div>
 
             </div>
+
+            {/* CONFIRMATION MODAL */}
+            {showConfirm && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
+                    <div className={`w-full max-w-sm p-6 rounded-[30px] space-y-6 shadow-2xl ${darkMode ? 'bg-slate-900 border border-white/10 text-white' : 'bg-white text-slate-900'}`}>
+                        <div className="text-center space-y-2">
+                            <h3 className="text-xl font-bold text-rose-500">Remove Quests?</h3>
+                            <p className="text-sm opacity-80 leading-relaxed font-medium">
+                                You are removing quests from your routine. Any active tracking for those quests will be canceled. Are you sure you want to proceed?
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <button onClick={() => setShowConfirm(false)} className={`py-3 rounded-2xl font-bold text-sm ${darkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Cancel</button>
+                            <button onClick={() => {
+                                const removedIds = currentRoutine.filter(id => !selectedIds.includes(id));
+                                onSave(selectedIds, removedIds);
+                                setShowConfirm(false);
+                            }} className="py-3 rounded-2xl font-bold text-sm bg-rose-500 text-white hover:bg-rose-600 shadow-xl shadow-rose-500/20">Yes, Remove</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

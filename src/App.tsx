@@ -118,6 +118,7 @@ const App: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showRamadanTracker, setShowRamadanTracker] = useState(false);
   const [confirmQuest, setConfirmQuest] = useState<Quest | null>(null);
+  const pendingSyncs = useRef(0);
   const [selectedSubQuests, setSelectedSubQuests] = useState<string[]>([]);
   const [infoModalQuest, setInfoModalQuest] = useState<Quest | null>(null);
   const [openCategories, setOpenCategories] = useState<string[]>([]);
@@ -768,7 +769,9 @@ const App: React.FC = () => {
         const activeChanged = JSON.stringify(mergedActive.sort()) !== JSON.stringify([...user.activeQuests].sort());
         const completionsChanged = currentCompletionKeys !== freshCompletionKeys;
 
-        if (activeChanged || completionsChanged) {
+        if (pendingSyncs.current > 0) {
+          console.log('Skipping sync overwrite because a DB save is currently in-flight');
+        } else if (activeChanged || completionsChanged) {
           const updated = {
             ...user,
             activeQuests: mergedActive,
@@ -844,6 +847,7 @@ const App: React.FC = () => {
         pinnedQuests: u.pinnedQuests,
         settings: u.settings
       }));
+      pendingSyncs.current += 1;
       try {
         // Explicitly update columns to user custom names
         await supabase.from('profiles').update({
@@ -857,7 +861,11 @@ const App: React.FC = () => {
           calc_method: u.settings?.calcMethod,
           madhab: u.settings?.madhab
         }).eq('id', u.id);
-      } catch (e) { console.error("Save User Error:", e); }
+      } catch (e) {
+        console.error("Save User Error:", e);
+      } finally {
+        pendingSyncs.current = Math.max(0, pendingSyncs.current - 1);
+      }
     }
   };
 
@@ -1074,7 +1082,7 @@ const App: React.FC = () => {
     saveUser(updated);
   };
 
-  const handleSaveRoutine = async (selectedIds: string[]) => {
+  const handleSaveRoutine = async (selectedIds: string[], removedIds: string[] = []) => {
     if (!user) return;
 
     // Only add non-package (parent) quests to activeQuests — sub-quests live only in the routine definition
@@ -1082,7 +1090,11 @@ const App: React.FC = () => {
       const quest = ALL_QUESTS.find(q => q.id === id);
       return quest && !quest.isPackage;
     });
-    const newActiveQuests = Array.from(new Set([...user.activeQuests, ...parentIds]));
+
+    let newActiveQuests = Array.from(new Set([...user.activeQuests, ...parentIds]));
+    if (removedIds.length > 0) {
+      newActiveQuests = newActiveQuests.filter(id => !removedIds.includes(id));
+    }
 
     // 2. Prepare update object
     // Store routine in 'pinned_quests' column
@@ -1389,13 +1401,14 @@ const App: React.FC = () => {
             <div className="space-y-2 pt-2">
               {Object.entries(questSections).map(([category, quests]) => {
                 // FILTER: Hide if in Routine (Pinned) or actively tracked
-                // Re-add them if they are completed today
+                // Re-add them if they are completed today (unless they are Routine pinned quests)
                 const displayQuests = quests.filter(q => {
                   const isTracked = user.activeQuests.includes(q.id);
                   const isPinned = user.pinnedQuests?.includes(q.id);
                   const isCompleted = isCompletedToday(q.id);
 
-                  if ((isTracked || isPinned) && !isCompleted) return false;
+                  if (isPinned) return false; // Hide ALL routine quests permanently from All Quests
+                  if (isTracked && !isCompleted) return false; // Hide active side quests from All Quests until completed
                   return true;
                 });
 
@@ -2096,7 +2109,18 @@ const App: React.FC = () => {
               Please reference the <strong>"Key to the Treasures of Jannah"</strong> book for the complete guide, rak'aat breakdown, and specific recitations required for this prayer.
             </p>
             {infoModalQuest.id === 'salatul_tasbeeh' && (
-              <p className="text-xs opacity-60 italic border-t pt-3 dark:border-white/10">Quick reminder: 4 Rakaats, reading the tasbeeh 300 times in total (75 times per rakaat) in the specific postures.</p>
+              <div className="space-y-2 mt-2">
+                <p className="text-xs opacity-80 border-t pt-3 dark:border-white/10">300 Tasbeehs (Subhanallahi walhamdulillahi wa la ilaha illallahu wallahu akbar) split across 4 Rakaats (75 per Rakaat):</p>
+                <ul className="text-xs opacity-70 list-disc pl-4 space-y-1">
+                  <li><strong>15 times</strong>: After Surah Fatiha & another Surah, while standing.</li>
+                  <li><strong>10 times</strong>: In Ruku (after usual tasbeeh).</li>
+                  <li><strong>10 times</strong>: Coming up from Ruku (Qiyam).</li>
+                  <li><strong>10 times</strong>: In the first Sujood.</li>
+                  <li><strong>10 times</strong>: Sitting between the two Sujoods (Jalsa).</li>
+                  <li><strong>10 times</strong>: In the second Sujood.</li>
+                  <li><strong>10 times</strong>: Sitting after the second Sujood (before standing up for next rakaat).</li>
+                </ul>
+              </div>
             )}
             {infoModalQuest.id === 'ishraq_salah' && (
               <p className="text-xs opacity-60 italic border-t pt-3 dark:border-white/10">Quick reminder: Prayed approx 15-20 minutes after sunrise. Sit doing dhikr from Fajr until then.</p>
