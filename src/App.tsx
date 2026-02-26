@@ -858,14 +858,15 @@ const App: React.FC = () => {
   // Initial Load (removed legacy logic, handled by the effect above or default state)
   // We keep the initial state as CURATED_REFLECTIONS to ensure something is there before first tab switch if needed.
 
-  const saveUser = async (u: User) => {
+  const saveUser = (u: User) => {
+    // OPTIMISTIC: Update React state immediately for instant UI response
     setUser(u);
     if (u.id) {
       // 1. Sanitize: Remove duplicates, nulls, and ensure we have clean arrays
       const cleanActive = Array.from(new Set(u.activeQuests.filter(id => !!id)));
       const cleanPinned = Array.from(new Set((u.pinnedQuests || []).filter(id => !!id)));
 
-      // 2. Persist to localStorage
+      // 2. Persist to localStorage (instant, no network)
       localStorage.setItem(`nurpath_user_${u.id}`, JSON.stringify({
         activeQuests: cleanActive,
         completedDailyQuests: u.completedDailyQuests,
@@ -873,32 +874,24 @@ const App: React.FC = () => {
         settings: u.settings
       }));
 
-      pendingSyncs.current += 1;
-      try {
-        // 3. Update DB
-        await supabase.from('profiles').update({
-          active_quests: cleanActive,
-          pinned_quests: cleanPinned,
-          location: u.location,
-          auto_add_pinned: u.autoAddPinned,
-          settings: u.settings,
-          prayer_time_adjustments: u.prayerTimeAdjustments || {},
-          ramadan_fasting: u.ramadanFasting,
-          calc_method: u.settings?.calcMethod,
-          madhab: u.settings?.madhab
-        }).eq('id', u.id);
-      } catch (e) {
-        console.error("Save User Error:", e);
-      } finally {
-        // Release lock
-        setTimeout(() => {
-          pendingSyncs.current = Math.max(0, pendingSyncs.current - 1);
-        }, 800);
-      }
+      // 3. Fire-and-forget DB write (non-blocking)
+      supabase.from('profiles').update({
+        active_quests: cleanActive,
+        pinned_quests: cleanPinned,
+        location: u.location,
+        auto_add_pinned: u.autoAddPinned,
+        settings: u.settings,
+        prayer_time_adjustments: u.prayerTimeAdjustments || {},
+        ramadan_fasting: u.ramadanFasting,
+        calc_method: u.settings?.calcMethod,
+        madhab: u.settings?.madhab
+      }).eq('id', u.id).then(({ error }) => {
+        if (error) console.error('Background save error:', error);
+      });
     }
   };
 
-  const handleSaveSettings = async () => {
+  const handleSaveSettings = () => {
     if (!user) return;
     setIsSaving(true);
     setSaveSuccess(false);
@@ -911,14 +904,12 @@ const App: React.FC = () => {
       prayerTimeAdjustments: pendingPrayerAdjustments
     };
 
-    await saveUser(updatedUser);
+    saveUser(updatedUser); // Now non-blocking
 
-    // Animation Delay
-    setTimeout(() => {
-      setIsSaving(false);
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 2000);
-    }, 800);
+    // Instant feedback with brief success flash
+    setIsSaving(false);
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 1500);
   };
 
   const updateSettings = (s: Partial<UserSettings>) => {
@@ -999,64 +990,83 @@ const App: React.FC = () => {
   const completeQuests = async (quests: Quest[], xpMultiplier: number = 1) => {
     if (!user || !user.id || quests.length === 0) return;
 
+    // 1. Compute updated state IMMEDIATELY (optimistic)
+    let totalXp = 0;
+    const questIds = quests.map(q => q.id);
+    const dailyUpdates: Record<string, string> = {};
+    const today = new Date().toISOString().split('T')[0];
+
+    quests.forEach(q => {
+      totalXp += (q.xp * xpMultiplier);
+      dailyUpdates[q.id] = today;
+    });
+
+    const optimisticXp = user.xp + totalXp;
+
+    const updated = {
+      ...user,
+      xp: optimisticXp,
+      activeQuests: user.activeQuests.filter(id => !questIds.includes(id)),
+      completedDailyQuests: { ...user.completedDailyQuests, ...dailyUpdates }
+    };
+
+    // 2. OPTIMISTIC UI: Update React state instantly
+    saveUser(updated);
+
+    // Immediately update trackedGroupQuests UI (remove completed from list)
+    const groupQuests = quests.filter(q => (q as any).isGroupQuest);
+    if (groupQuests.length > 0) {
+      setTrackedGroupQuests(prev => prev.filter(tq => !questIds.includes(tq.id)));
+    }
+
+    if (xpMultiplier > 1) {
+      alert(`MashaAllah! Group Quests Completed. ${totalXp} XP (2x) Earned!`);
+    }
+
+    // 3. Fire DB writes in parallel (background, non-blocking for UI)
     try {
-      await ensureSession(); // Robust session check before critical DB write
+      await ensureSession(); // cached — skips if verified recently
 
-      let totalXp = 0;
-      const questIds = quests.map(q => q.id);
-      const dailyUpdates: Record<string, string> = {};
-      const today = new Date().toISOString().split('T')[0];
+      // Fetch authoritative XP to avoid race conditions
+      const { data: currentProfile } = await supabase.from('profiles').select('xp').eq('id', user.id).single();
+      const serverXp = (currentProfile?.xp || user.xp) + totalXp;
 
-      quests.forEach(q => {
-        totalXp += (q.xp * xpMultiplier);
-        dailyUpdates[q.id] = today;
-      });
-
-      const { data: currentProfile, error: fetchError } = await supabase.from('profiles').select('xp').eq('id', user.id).single();
-      if (fetchError) throw fetchError;
-
-      const newTotalXp = (currentProfile?.xp || user.xp) + totalXp;
-
-      await supabase.from('profiles').update({ xp: newTotalXp }).eq('id', user.id);
-
-      const questLogs = quests.map(q => ({
-        user_id: user.id,
-        quest_id: q.id,
-        quest_title: q.title,
-        xp_reward: q.xp * xpMultiplier
-      }));
-      await supabase.from('user_quests').insert(questLogs);
+      // Fire all writes in parallel
+      const writes: Promise<any>[] = [
+        supabase.from('profiles').update({ xp: serverXp }).eq('id', user.id),
+        supabase.from('user_quests').insert(
+          quests.map(q => ({
+            user_id: user.id,
+            quest_id: q.id,
+            quest_title: q.title,
+            xp_reward: q.xp * xpMultiplier
+          }))
+        )
+      ];
 
       // Handle Group Quest Completions
-      const groupQuests = quests.filter(q => (q as any).isGroupQuest);
       if (groupQuests.length > 0) {
-        const groupCompletions = groupQuests.map(q => ({
-          user_id: user.id,
-          group_quest_id: q.id.replace('gq_', ''), // Remove prefix for DB
-          is_claimed: true
-        }));
-        await supabase.from('group_quest_completions').upsert(groupCompletions, { onConflict: 'group_quest_id,user_id' });
+        writes.push(
+          supabase.from('group_quest_completions').upsert(
+            groupQuests.map(q => ({
+              user_id: user.id,
+              group_quest_id: q.id.replace('gq_', ''),
+              is_claimed: true
+            })),
+            { onConflict: 'group_quest_id,user_id' }
+          )
+        );
       }
 
-      const updated = {
-        ...user,
-        xp: newTotalXp,
-        activeQuests: user.activeQuests.filter(id => !questIds.includes(id)),
-        completedDailyQuests: { ...user.completedDailyQuests, ...dailyUpdates }
-      };
+      await Promise.all(writes);
 
-      saveUser(updated);
-
-      // Immediately update trackedGroupQuests UI (remove completed from list)
-      if (groupQuests.length > 0) {
-        setTrackedGroupQuests(prev => prev.filter(tq => !questIds.includes(tq.id)));
-      }
-
-      if (xpMultiplier > 1) {
-        alert(`MashaAllah! Group Quests Completed. ${totalXp} XP (2x) Earned!`);
+      // Reconcile server XP with optimistic if different
+      if (serverXp !== optimisticXp) {
+        setUser(prev => prev ? { ...prev, xp: serverXp } : prev);
       }
     } catch (e) {
-      console.error("Error completing quests", e);
+      console.error('Background quest completion error:', e);
+      // UI already updated optimistically — data will reconcile on next load
     }
   };
 

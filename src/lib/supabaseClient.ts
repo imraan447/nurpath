@@ -61,12 +61,22 @@ startHeartbeat();
 /**
  * Call this before any critical DB operation (complete quest, save user, load leaderboard).
  * It ensures the token is valid and retries once if expired.
+ * PERFORMANCE: Caches the result for 60s to avoid redundant network roundtrips.
  */
+let lastSessionCheck = 0;
+const SESSION_CACHE_MS = 60_000; // 60 seconds
+
 export const ensureSession = async (): Promise<boolean> => {
     // Check if device is physically offline first
     if (typeof window !== 'undefined' && !window.navigator.onLine) {
         console.warn('Cannot ensure session: Device is offline');
         return false;
+    }
+
+    // Skip network roundtrip if verified recently (heartbeat handles long-term)
+    const now = Date.now();
+    if (now - lastSessionCheck < SESSION_CACHE_MS) {
+        return true;
     }
 
     try {
@@ -76,6 +86,7 @@ export const ensureSession = async (): Promise<boolean> => {
             const { error } = await supabase.auth.refreshSession();
             if (error) return false;
         }
+        lastSessionCheck = Date.now();
         return true;
     } catch {
         return false;
