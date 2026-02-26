@@ -747,13 +747,7 @@ const App: React.FC = () => {
           });
         }
 
-        // 3. Merge: DB active quests + local-only additions (minus completed)
-        const dbActive: string[] = profileData?.active_quests || [];
-        const localOnly = user.activeQuests.filter(id => !dbActive.includes(id) && !freshCompletions[id]);
-        let mergedActive = [...dbActive, ...localOnly].filter(id => !freshCompletions[id]);
-
         // 3.5. Ensure Routine/Pinned quests are continually added for the new day
-        // ONLY add pinned quests that are ALSO in the DB pinned list (i.e. not explicitly removed)
         let pinned: string[] = profileData?.pinned_quests || [];
 
         // BACKWARD COMPATIBILITY: If a user has no routine set up, automatically default to the 5 daily prayers
@@ -761,12 +755,14 @@ const App: React.FC = () => {
           pinned = ["tahajjud", "fajr", "dhuhr", "asr", "maghrib", "isha"];
         }
 
-        const toAddFromPinned = pinned.filter(pid => !mergedActive.includes(pid) && !freshCompletions[pid]);
-        // Only add if DB also has them as active OR they were never removed (pinned === source of truth)
+        // 3. Merge: DB active quests + local-only additions (minus completed side-quests)
+        const dbActive: string[] = profileData?.active_quests || [];
+        const localOnly = user.activeQuests.filter(id => !dbActive.includes(id) && (!freshCompletions[id] || pinned.includes(id)));
+        let mergedActive = [...dbActive, ...localOnly].filter(id => !freshCompletions[id] || pinned.includes(id));
+
+        const toAddFromPinned = pinned.filter(pid => !mergedActive.includes(pid));
         if (toAddFromPinned.length > 0) {
-          // Respect DB active_quests: don't add back if it was explicitly removed (not in dbActive and not in freshCompletions)
-          const safeToAdd = toAddFromPinned.filter(pid => dbActive.includes(pid) || !freshCompletions[pid]);
-          mergedActive = [...mergedActive, ...safeToAdd];
+          mergedActive = [...mergedActive, ...toAddFromPinned];
         }
 
         // 4. Only update if something actually changed (prevents infinite re-renders)
@@ -1250,7 +1246,7 @@ const App: React.FC = () => {
     .reduce((sum, rq) => sum + rq.xp, 0) : 0;
 
   const activeMainQuests = (user?.activeQuests
-    .filter(qid => !isCompletedToday(qid)) // Don't show completed-today quests
+    .filter(qid => !isCompletedToday(qid) || user?.pinnedQuests?.includes(qid)) // Keep pinned quests on screen when completed
     .map(qid => ALL_QUESTS.find(q => q.id === qid))
     .filter(q => q && !q.isPackage && q.id !== heroQuest?.id && (q.category === QuestCategory.MAIN || fardSalahIds.includes(q.id))) as Quest[] || [])
     .sort((a, b) => {
@@ -1265,7 +1261,7 @@ const App: React.FC = () => {
     });
 
   const activeSideQuests = user?.activeQuests
-    .filter(qid => !isCompletedToday(qid)) // Don't show completed-today quests
+    .filter(qid => !isCompletedToday(qid) || user?.pinnedQuests?.includes(qid)) // Keep pinned quests on screen when completed
     .map(qid => ALL_QUESTS.find(q => q.id === qid))
     .filter(q => q && q.id !== heroQuest?.id && q.category !== QuestCategory.MAIN && !fardSalahIds.includes(q.id) && !q.isPackage) as Quest[] || [];
 
