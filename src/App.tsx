@@ -726,6 +726,21 @@ const App: React.FC = () => {
         const startOfUtcDay = new Date();
         startOfUtcDay.setUTCHours(0, 0, 0, 0);
 
+        // Helper to handle both native array and "JSON-string-in-array" corruption
+        const getArray = (val: any): string[] => {
+          if (!val) return [];
+          if (Array.isArray(val)) {
+            if (val.length === 1 && typeof val[0] === 'string' && val[0].startsWith('[')) {
+              try { return JSON.parse(val[0]); } catch (e) { return val; }
+            }
+            return val;
+          }
+          if (typeof val === 'string' && val.startsWith('[')) {
+            try { return JSON.parse(val); } catch (e) { return []; }
+          }
+          return [];
+        };
+
         // 1. Fetch latest profile from DB
         const { data: profileData } = await supabase
           .from('profiles')
@@ -747,15 +762,14 @@ const App: React.FC = () => {
           });
         }
 
-        // 3. Build the pinned (routine) list
-        let pinned: string[] = profileData?.pinned_quests || [];
-        // Backward compat: default to 5 prayers if no routine exists
+        // 3. Build the pinned (routine) list defensively
+        let pinned = getArray(profileData?.pinned_quests);
         if (pinned.length === 0) {
-          pinned = ['tahajjud', 'fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+          pinned = ["tahajjud", "fajr", "dhuhr", "asr", "maghrib", "isha"];
         }
 
         // 4. Merge active quests: start from DB, add local-only items
-        const dbActive: string[] = profileData?.active_quests || [];
+        const dbActive = getArray(profileData?.active_quests);
         const localOnly = user.activeQuests.filter(id => !dbActive.includes(id));
         let mergedActive = Array.from(new Set([...dbActive, ...localOnly]));
 
@@ -1216,6 +1230,8 @@ const App: React.FC = () => {
 
         // If it IS a Fard Salah, is it allowed?
         if (fardSalahIds.includes(q.id)) {
+          // If timings are missing, allow all prayers so the user isn't stuck with "No active focus"
+          if (!prayerTimes) return true;
           return allowedPrayerIds.includes(q.id);
         }
 
@@ -1718,7 +1734,8 @@ const App: React.FC = () => {
                           let isFuture = false;
                           let isLocked = false;
                           if (isSalaah && !isCompleted) {
-                            const isCurrentOrNext = allowedPrayerIds.includes(q.id);
+                            // If prayer times are missing, treat all as UNLOCKED so user isn't seeing a transparent list 
+                            const isCurrentOrNext = !prayerTimes || allowedPrayerIds.includes(q.id);
                             if (!isCurrentOrNext) {
                               isFuture = true;
                               isLocked = true;
@@ -1726,10 +1743,10 @@ const App: React.FC = () => {
                           }
 
                           return (
-                            <div key={q.id} className={`rounded-[24px] overflow-hidden transition-all ${user.settings?.darkMode ? 'bg-white/5' : 'bg-white'} ${isLocked ? 'opacity-40' : ''} ${isCompleted ? 'opacity-50' : ''}`}>
+                            <div key={q.id} className={`rounded-[24px] overflow-hidden transition-all ${user.settings?.darkMode ? 'bg-white/5' : 'bg-white'} ${isLocked ? 'opacity-30' : ''} ${isCompleted ? 'opacity-50' : ''}`}>
                               <QuestCard
                                 quest={q}
-                                isActive={!isFuture && !isCompleted}
+                                isActive={(!isFuture && !isCompleted) || !prayerTimes}
                                 isGreyed={isFuture || isCompleted}
                                 isCompleted={isCompleted}
                                 timeDisplay={timeStatus as any}
