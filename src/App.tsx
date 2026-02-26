@@ -1427,7 +1427,7 @@ const App: React.FC = () => {
           </div>
           <div className="px-6 pb-6 pt-0">
             <div className="flex justify-between items-end mb-1">
-              <span className={`text-[10px] font-black uppercase tracking-widest ${user.settings?.darkMode ? 'text-slate-400' : 'text-slate-400'}`}>Level {levelInfo.level} • {levelInfo.rank} <span className="text-[#d4af37] ml-2">{user.xp.toLocaleString()} XP</span></span>
+              <span className={`text-[10px] font-black uppercase tracking-widest ${user.settings?.darkMode ? 'text-slate-400' : 'text-slate-400'}`}>{user.name} • Level {levelInfo.level} • {levelInfo.rank} <span className="text-[#d4af37] ml-2">{user.xp.toLocaleString()} XP</span></span>
               <span className="text-[10px] font-bold text-[#d4af37]">{Math.floor(levelInfo.progress)}%</span>
             </div>
             <div className={`h-2 w-full rounded-full overflow-hidden ${user.settings?.darkMode ? 'bg-white/10' : 'bg-slate-100'}`}><div className="h-full bg-[#d4af37] transition-all duration-1000 ease-out" style={{ width: `${levelInfo.progress}%` }}></div></div>
