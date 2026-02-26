@@ -720,13 +720,13 @@ const App: React.FC = () => {
 
     const refreshQuests = async () => {
       try {
-        await ensureSession(); // Robust session refresh before sync
+        await ensureSession();
 
         const todayKey = new Date().toISOString().split('T')[0];
         const startOfUtcDay = new Date();
         startOfUtcDay.setUTCHours(0, 0, 0, 0);
 
-        // 1. Fetch latest active_quests from DB
+        // 1. Fetch latest profile from DB
         const { data: profileData } = await supabase
           .from('profiles')
           .select('active_quests, pinned_quests')
@@ -747,41 +747,45 @@ const App: React.FC = () => {
           });
         }
 
-        // 3.5. Ensure Routine/Pinned quests are continually added for the new day
+        // 3. Build the pinned (routine) list
         let pinned: string[] = profileData?.pinned_quests || [];
-
-        // BACKWARD COMPATIBILITY: If a user has no routine set up, automatically default to the 5 daily prayers
+        // Backward compat: default to 5 prayers if no routine exists
         if (pinned.length === 0) {
-          pinned = ["tahajjud", "fajr", "dhuhr", "asr", "maghrib", "isha"];
+          pinned = ['tahajjud', 'fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
         }
 
-        // 3. Merge: DB active quests + local-only additions (minus completed side-quests)
+        // 4. Merge active quests: start from DB, add local-only items
         const dbActive: string[] = profileData?.active_quests || [];
-        const localOnly = user.activeQuests.filter(id => !dbActive.includes(id) && (!freshCompletions[id] || pinned.includes(id)));
-        let mergedActive = [...dbActive, ...localOnly].filter(id => !freshCompletions[id] || pinned.includes(id));
+        const localOnly = user.activeQuests.filter(id => !dbActive.includes(id));
+        let mergedActive = Array.from(new Set([...dbActive, ...localOnly]));
 
-        const toAddFromPinned = pinned.filter(pid => !mergedActive.includes(pid));
-        if (toAddFromPinned.length > 0) {
-          mergedActive = [...mergedActive, ...toAddFromPinned];
-        }
+        // 5. Remove completed NON-PINNED quests (they go back to All Quests)
+        mergedActive = mergedActive.filter(id => !freshCompletions[id] || pinned.includes(id));
 
-        // 4. Only update if something actually changed (prevents infinite re-renders)
+        // 6. Force-add ALL pinned quests (routine ALWAYS syncs to active)
+        pinned.forEach(pid => {
+          if (!mergedActive.includes(pid)) {
+            mergedActive.push(pid);
+          }
+        });
+
+        // 7. Only update state if something changed
         const currentCompletionKeys = Object.keys(user.completedDailyQuests || {}).filter(k => (user.completedDailyQuests || {})[k] === todayKey).sort().join(',');
         const freshCompletionKeys = Object.keys(freshCompletions).sort().join(',');
-        const activeChanged = JSON.stringify(mergedActive.sort()) !== JSON.stringify([...user.activeQuests].sort());
+        const activeChanged = JSON.stringify([...mergedActive].sort()) !== JSON.stringify([...user.activeQuests].sort());
         const completionsChanged = currentCompletionKeys !== freshCompletionKeys;
+        const pinnedChanged = JSON.stringify([...pinned].sort()) !== JSON.stringify([...(user.pinnedQuests || [])].sort());
 
         if (pendingSyncs.current > 0) {
-          console.log('Skipping sync overwrite because a DB save is currently in-flight');
-        } else if (activeChanged || completionsChanged) {
+          console.log('Skipping sync overwrite — DB save in-flight');
+        } else if (activeChanged || completionsChanged || pinnedChanged) {
           const updated = {
             ...user,
             activeQuests: mergedActive,
-            completedDailyQuests: { ...freshCompletions }, // DB is source of truth for today
-            pinnedQuests: pinned // Use the fallback-applied pinned array if it was empty
+            completedDailyQuests: { ...freshCompletions },
+            pinnedQuests: pinned
           };
           setUser(updated);
-          // Update localStorage (but don't trigger DB write since we just read from DB)
           localStorage.setItem(`nurpath_user_${user.id}`, JSON.stringify({
             activeQuests: updated.activeQuests,
             completedDailyQuests: updated.completedDailyQuests,
@@ -1087,22 +1091,17 @@ const App: React.FC = () => {
   const handleSaveRoutine = async (selectedIds: string[], removedIds: string[] = []) => {
     if (!user) return;
 
-    // Only add non-package (parent) quests to activeQuests — sub-quests live only in the routine definition
-    const parentIds = selectedIds.filter(id => {
-      const quest = ALL_QUESTS.find(q => q.id === id);
-      return quest && !quest.isPackage;
-    });
+    // ALL selected routine IDs go into activeQuests (both parent and sub-quests)
+    let newActiveQuests = Array.from(new Set([...user.activeQuests, ...selectedIds]));
 
-    let newActiveQuests = Array.from(new Set([...user.activeQuests, ...parentIds]));
+    // Remove explicitly removed quests from active tracking
     if (removedIds.length > 0) {
       newActiveQuests = newActiveQuests.filter(id => !removedIds.includes(id));
     }
 
-    // 2. Prepare update object
-    // Store routine in 'pinned_quests' column
     const updatedUser = {
       ...user,
-      pinnedQuests: selectedIds, // This stores the routine definition
+      pinnedQuests: selectedIds, // Full routine definition
       activeQuests: newActiveQuests
     };
 
@@ -1245,23 +1244,36 @@ const App: React.FC = () => {
     .filter(rq => selectedHeroRelated.includes(rq.id))
     .reduce((sum, rq) => sum + rq.xp, 0) : 0;
 
+  // --- SACRED DUTIES: Salaah that are in the user's active list ---
+  // Always show ALL fard salaah that are tracked, sorted in prayer order.
+  // Completed ones show as done, current/next are active, future are locked.
   const activeMainQuests = (user?.activeQuests
-    .filter(qid => !isCompletedToday(qid) || user?.pinnedQuests?.includes(qid)) // Keep pinned quests on screen when completed
     .map(qid => ALL_QUESTS.find(q => q.id === qid))
-    .filter(q => q && !q.isPackage && q.id !== heroQuest?.id && (q.category === QuestCategory.MAIN || fardSalahIds.includes(q.id))) as Quest[] || [])
+    .filter(q => {
+      if (!q || q.isPackage) return false;
+      if (q.id === heroQuest?.id) return false;
+      // Include fard salaah (always visible) OR other Main quests that aren't completed yet
+      if (fardSalahIds.includes(q.id)) return true;
+      if (q.category === QuestCategory.MAIN) return !isCompletedToday(q.id);
+      return false;
+    }) as Quest[] || [])
     .sort((a, b) => {
-      // Sort Salaah specifically by fardSalahIds order
       const indexA = fardSalahIds.indexOf(a.id);
       const indexB = fardSalahIds.indexOf(b.id);
       if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-      // Put Salaah first before other main quests
       if (indexA !== -1) return -1;
       if (indexB !== -1) return 1;
       return 0;
     });
 
+  // --- SIDE QUESTS: Only show non-completed ones (unless pinned) ---
   const activeSideQuests = user?.activeQuests
-    .filter(qid => !isCompletedToday(qid) || user?.pinnedQuests?.includes(qid)) // Keep pinned quests on screen when completed
+    .filter(qid => {
+      const isPinned = user?.pinnedQuests?.includes(qid);
+      const completed = isCompletedToday(qid);
+      // Pinned side quests stay visible even when done; non-pinned disappear
+      return !completed || isPinned;
+    })
     .map(qid => ALL_QUESTS.find(q => q.id === qid))
     .filter(q => q && q.id !== heroQuest?.id && q.category !== QuestCategory.MAIN && !fardSalahIds.includes(q.id) && !q.isPackage) as Quest[] || [];
 
@@ -1698,19 +1710,28 @@ const App: React.FC = () => {
                       <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 ml-2 flex items-center gap-2"><Star size={12} /> Sacred Duties</h3>
                       <div className="space-y-3">
                         {activeMainQuests.map(q => {
+                          const isSalaah = fardSalahIds.includes(q.id);
                           const timeStatus = getQuestTimeStatus(q.id);
-                          const isFuture = timeStatus?.status === 'future';
                           const isCompleted = isCompletedToday(q.id);
-                          const packageSubIds = PRAYER_PACKAGES[q.id];
-                          const hasPackage = !!packageSubIds && packageSubIds.length > 0;
+
+                          // SALAAH ROTATION: current/next prayer is active, completed shows done, others locked
+                          let isFuture = false;
+                          let isLocked = false;
+                          if (isSalaah && !isCompleted) {
+                            const isCurrentOrNext = allowedPrayerIds.includes(q.id);
+                            if (!isCurrentOrNext) {
+                              isFuture = true;
+                              isLocked = true;
+                            }
+                          }
 
                           return (
-                            <div key={q.id} className={`rounded-[24px] overflow-hidden transition-all ${user.settings?.darkMode ? 'bg-white/5' : 'bg-white'} ${isFuture ? 'opacity-50' : ''} ${isCompleted ? 'opacity-40' : ''}`}>
-                              {/* Main Prayer Card */}
+                            <div key={q.id} className={`rounded-[24px] overflow-hidden transition-all ${user.settings?.darkMode ? 'bg-white/5' : 'bg-white'} ${isLocked ? 'opacity-40' : ''} ${isCompleted ? 'opacity-50' : ''}`}>
                               <QuestCard
                                 quest={q}
-                                isActive={!isFuture}
-                                isGreyed={isFuture}
+                                isActive={!isFuture && !isCompleted}
+                                isGreyed={isFuture || isCompleted}
+                                isCompleted={isCompleted}
                                 timeDisplay={timeStatus as any}
                                 onComplete={() => completeQuest(q)}
                                 onRemove={removeQuest}
