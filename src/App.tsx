@@ -726,18 +726,28 @@ const App: React.FC = () => {
         const startOfUtcDay = new Date();
         startOfUtcDay.setUTCHours(0, 0, 0, 0);
 
-        // Helper to handle both native array and "JSON-string-in-array" corruption
+        // Helper to handle BOTH native arrays AND messy "stringified" JSON in the DB
         const getArray = (val: any): string[] => {
           if (!val) return [];
-          if (Array.isArray(val)) {
-            if (val.length === 1 && typeof val[0] === 'string' && val[0].startsWith('[')) {
-              try { return JSON.parse(val[0]); } catch (e) { return val; }
-            }
-            return val;
+
+          let parsed = val;
+          // Handle doubly-encoded strings or stray JSON strings in the DB
+          if (typeof val === 'string') {
+            try { parsed = JSON.parse(val); } catch (e) { return []; }
           }
-          if (typeof val === 'string' && val.startsWith('[')) {
-            try { return JSON.parse(val); } catch (e) { return []; }
+
+          // If we have an array, sanitize every element
+          if (Array.isArray(parsed)) {
+            // Some rows might contain further stringified elements (e.g. ["[\"id\"]"])
+            return parsed.flatMap(item => {
+              if (typeof item === 'string' && item.startsWith('[')) {
+                try { return JSON.parse(item); } catch (e) { return item; }
+              }
+              return item;
+            }).filter(item => typeof item === 'string' && item.trim().length > 0)
+              .map(item => item.trim()); // Trim whitespace to prevent ID mismatches
           }
+
           return [];
         };
 
@@ -861,22 +871,28 @@ const App: React.FC = () => {
   const saveUser = async (u: User) => {
     setUser(u);
     if (u.id) {
+      // 1. Sanitize: Remove duplicates, nulls, and ensure we have clean arrays
+      const cleanActive = Array.from(new Set(u.activeQuests.filter(id => !!id)));
+      const cleanPinned = Array.from(new Set((u.pinnedQuests || []).filter(id => !!id)));
+
+      // 2. Persist to localStorage
       localStorage.setItem(`nurpath_user_${u.id}`, JSON.stringify({
-        activeQuests: u.activeQuests,
+        activeQuests: cleanActive,
         completedDailyQuests: u.completedDailyQuests,
-        pinnedQuests: u.pinnedQuests,
+        pinnedQuests: cleanPinned,
         settings: u.settings
       }));
+
       pendingSyncs.current += 1;
       try {
-        // Explicitly update columns to user custom names
+        // 3. Update DB
         await supabase.from('profiles').update({
-          active_quests: u.activeQuests,
+          active_quests: cleanActive,
+          pinned_quests: cleanPinned,
           location: u.location,
           auto_add_pinned: u.autoAddPinned,
-          pinned_quests: u.pinnedQuests,
           settings: u.settings,
-          prayer_time_adjustments: u.prayerTimeAdjustments,
+          prayer_time_adjustments: u.prayerTimeAdjustments || u.settings?.prayer_time_adjustments || {},
           ramadan_fasting: u.ramadanFasting,
           calc_method: u.settings?.calcMethod,
           madhab: u.settings?.madhab
@@ -884,7 +900,10 @@ const App: React.FC = () => {
       } catch (e) {
         console.error("Save User Error:", e);
       } finally {
-        pendingSyncs.current = Math.max(0, pendingSyncs.current - 1);
+        // Release lock
+        setTimeout(() => {
+          pendingSyncs.current = Math.max(0, pendingSyncs.current - 1);
+        }, 800);
       }
     }
   };
@@ -1105,17 +1124,21 @@ const App: React.FC = () => {
   const handleSaveRoutine = async (selectedIds: string[], removedIds: string[] = []) => {
     if (!user) return;
 
-    // ALL selected routine IDs go into activeQuests (both parent and sub-quests)
-    let newActiveQuests = Array.from(new Set([...user.activeQuests, ...selectedIds]));
+    // Sanitize incoming IDs
+    const cleanSelected = Array.from(new Set(selectedIds.map(id => id.trim()).filter(id => !!id)));
+    const cleanRemoved = Array.from(new Set(removedIds.map(id => id.trim()).filter(id => !!id)));
+
+    // ALL selected routine IDs go into activeQuests
+    let newActiveQuests = Array.from(new Set([...user.activeQuests, ...cleanSelected]));
 
     // Remove explicitly removed quests from active tracking
-    if (removedIds.length > 0) {
-      newActiveQuests = newActiveQuests.filter(id => !removedIds.includes(id));
+    if (cleanRemoved.length > 0) {
+      newActiveQuests = newActiveQuests.filter(id => !cleanRemoved.includes(id));
     }
 
     const updatedUser = {
       ...user,
-      pinnedQuests: selectedIds, // Full routine definition
+      pinnedQuests: cleanSelected,
       activeQuests: newActiveQuests
     };
 
